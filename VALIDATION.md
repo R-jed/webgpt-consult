@@ -12,7 +12,7 @@ python -m py_compile scripts/*.py
 Local review run on 2026-08-04:
 
 ```text
-11 tests passed
+13 tests passed
 Python syntax compilation passed
 ```
 
@@ -26,8 +26,12 @@ Coverage added for:
 - direct text-attachment credential blocking;
 - binary manual-review gate;
 - multiple project workstreams in the conversation registry;
+- canonical git-root identity across project subdirectories;
+- conversation rollover history when a workstream moves to a new ChatGPT URL;
 - missing bundle input failure;
 - Markdown fence collision handling.
+
+The registry implementation also uses atomic writes and a cross-process lock to avoid lost updates when multiple Codex sessions write local conversation state concurrently.
 
 GitHub Actions runs the deterministic suite on Python 3.10 and 3.12.
 
@@ -49,6 +53,7 @@ Text attachment preflight/upload: pending
 Binary manual-review path: pending
 Exact result verification: pending
 Registry record/reopen after tab closure: pending
+Concurrent registry update smoke test: pending
 ```
 
 A Web UI change can require workflow adaptation even when all deterministic tests remain green.
