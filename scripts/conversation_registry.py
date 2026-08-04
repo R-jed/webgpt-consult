@@ -19,6 +19,8 @@ DEFAULT_STATE = Path.home() / ".codex" / "webgpt-consult" / "conversations.json"
 MAX_THREADS_PER_PROJECT = 20
 LOCK_TIMEOUT_SECONDS = 5.0
 STALE_LOCK_SECONDS = 30.0
+ROLLOVER_MODES = frozenset({"branch", "fresh"})
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def utc_now() -> str:
@@ -170,6 +172,7 @@ def rollover_plan(data: dict, identity: dict, thread_key: str) -> dict:
     return {
         "thread_key": thread_key,
         "current_conversation_url": thread["conversation_url"],
+        "root_task_id": thread.get("root_task_id") or base_task_id,
         "branch_base_task_id": base_task_id,
         "last_task_id": thread.get("last_task_id"),
         "next_rollover_index": int(thread.get("rollover_count", 0)) + 1,
@@ -190,6 +193,7 @@ def record_thread(
     parent_conversation_url: str | None = None,
     continuity_capsule_sha256: str | None = None,
     rollover: bool = False,
+    rollover_mode: str | None = None,
 ) -> dict:
     if not _valid_conversation_url(conversation_url):
         raise ValueError("conversation_url must be a canonical chatgpt.com conversation URL")
@@ -197,18 +201,37 @@ def record_thread(
         raise ValueError("parent_conversation_url must be a canonical chatgpt.com conversation URL")
     if not thread_key.strip():
         raise ValueError("thread_key must not be empty")
+    if continuity_capsule_sha256 and not SHA256_RE.fullmatch(continuity_capsule_sha256):
+        raise ValueError("continuity_capsule_sha256 must be a lowercase SHA-256 hex digest")
+    if rollover and rollover_mode not in ROLLOVER_MODES:
+        raise ValueError("rollover_mode must be branch or fresh when rollover is true")
+    if not rollover and rollover_mode is not None:
+        raise ValueError("rollover_mode is only valid with rollover")
 
     bucket = _project_bucket(data, identity)
     now = utc_now()
     existing = next((t for t in bucket["threads"] if t.get("thread_key") == thread_key), None)
 
-    effective_base = branch_base_task_id or (existing or {}).get("branch_base_task_id") or task_id
+    if existing and existing.get("status", "active") != "active":
+        raise ValueError("retired workstream cannot be silently reactivated; use a new workstream key")
+
+    previous_base = (existing or {}).get("branch_base_task_id") or (existing or {}).get("last_task_id")
+    previous_root = (existing or {}).get("root_task_id") or previous_base
+    if existing and branch_base_task_id and previous_base and branch_base_task_id != previous_base:
+        raise ValueError("branch_base_task_id is stable and cannot be changed directly")
+
+    effective_root = previous_root or task_id
+    effective_base = previous_base or branch_base_task_id or task_id
+    if rollover and rollover_mode == "fresh":
+        effective_base = task_id
+
     payload = {
         "thread_key": thread_key,
         "conversation_url": conversation_url,
         "scope": scope.strip(),
         "last_task_id": task_id,
         "summary": summary.strip(),
+        "root_task_id": effective_root,
         "branch_base_task_id": effective_base,
         "last_used_at": now,
         "status": "active",
@@ -218,23 +241,29 @@ def record_thread(
 
     if existing:
         previous_url = existing.get("conversation_url")
-        if previous_url and previous_url != conversation_url:
+        if previous_url != conversation_url and not rollover:
+            raise ValueError("changing an active workstream conversation URL requires explicit rollover")
+        if rollover:
+            if not previous_url or previous_url == conversation_url:
+                raise ValueError("rollover requires a new conversation URL")
+            if not parent_conversation_url or parent_conversation_url != previous_url:
+                raise ValueError("rollover parent must exactly match the current registered conversation")
+            if not continuity_capsule_sha256:
+                raise ValueError("rollover requires a validated continuity capsule SHA-256")
             history = existing.setdefault("previous_conversations", [])
             if previous_url not in history:
                 history.insert(0, previous_url)
                 del history[5:]
-        if rollover:
-            if not previous_url or previous_url == conversation_url:
-                raise ValueError("rollover requires a new conversation URL")
-            if parent_conversation_url and parent_conversation_url != previous_url:
-                raise ValueError("rollover parent must match the current registered conversation")
             payload["parent_conversation_url"] = previous_url
             payload["rollover_count"] = int(existing.get("rollover_count", 0)) + 1
             payload["last_rollover_at"] = now
+            payload["last_rollover_mode"] = rollover_mode
         else:
             payload["rollover_count"] = int(existing.get("rollover_count", 0))
             if existing.get("parent_conversation_url"):
                 payload["parent_conversation_url"] = existing["parent_conversation_url"]
+            if existing.get("last_rollover_mode"):
+                payload["last_rollover_mode"] = existing["last_rollover_mode"]
         existing.update(payload)
         result = existing
     else:
@@ -281,6 +310,7 @@ def main() -> int:
     record.add_argument("--parent-conversation-url")
     record.add_argument("--continuity-capsule-sha256")
     record.add_argument("--rollover", action="store_true")
+    record.add_argument("--rollover-mode", choices=sorted(ROLLOVER_MODES))
     retire = sub.add_parser("retire")
     retire.add_argument("--thread-key", required=True)
     args = parser.parse_args()
@@ -311,6 +341,7 @@ def main() -> int:
                             parent_conversation_url=args.parent_conversation_url,
                             continuity_capsule_sha256=args.continuity_capsule_sha256,
                             rollover=args.rollover,
+                            rollover_mode=args.rollover_mode,
                         )
                         save_state(path, data)
                     else:
