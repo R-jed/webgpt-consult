@@ -4,25 +4,25 @@
     {
       "id": 1,
       "prompt": "我在设计一个新的内容生产 Skill，里面有几个方案拿不准。帮我把上下文打包给 GPT 5.6 Sol Pro 做严格评审，然后把它的意见合并成最终方案。",
-      "expected_output": "Uses the Codex Chrome plugin by default; builds a high-quality context packet with user intent, local judgment, evidence, options, and risks; confirms Pro or High tier; returns a local adoption decision.",
+      "expected_output": "Writes local judgment first, builds a structured context packet, resolves project/workstream continuity, runs fail-closed preflight, uses Codex Chrome, verifies Pro or High, verifies exact result binding, and returns a local adoption decision.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "这个商业咨询问题有点复杂：我想把企业 AI 培训拆成公开课、闭门课、训练营和陪跑，你先自己判断，再请 GPT 5.6 Sol 挑最大漏洞。",
-      "expected_output": "Uses the Codex Chrome plugin for the text-only consultation; includes concrete business context and tradeoffs rather than over-sanitizing; asks the model for the biggest flaw and stronger path; integrates advice without treating it as final truth.",
+      "expected_output": "Uses a fresh workstream unless a clearly matching registered consultation exists, preserves concrete business tradeoffs, asks for the biggest flaw, and treats the external result as advisory.",
       "files": []
     },
     {
       "id": 3,
       "prompt": "我有一份客户合同和报价单，里面有公司名、金额、联系人和微信。这个问题很复杂，帮我整理好关键上下文给 GPT 5.6 Sol 评估风险，但里面如果有 token 或 cookie 这种凭据就不要发。",
-      "expected_output": "Uses the Codex Chrome plugin by default; includes contract and pricing facts that affect judgment; removes executable credentials such as tokens, cookies, and private keys; focuses on context quality.",
+      "expected_output": "Runs submission preflight across packet and intended text attachments, blocks executable credentials, keeps relevant business facts, and does not upload the local conversation registry.",
       "files": []
     },
     {
       "id": 4,
       "prompt": "请让 GPT 5.6 Sol 审查这个本地 Skill 目录：/path/to/skills/docx-template-reformatter。它要看完整源码和说明，判断泛化能力。",
-      "expected_output": "Uses the skill and treats local paths as inaccessible to ChatGPT Web; selects the relevant Skill files or builds a text attachment bundle; uploads the actual files or pasted bundle through the Chrome file chooser when attachments are required; does not use the text-only wrapper for real file uploads; does not claim GPT can read /Users paths.",
+      "expected_output": "Treats local paths as inaccessible to ChatGPT Web, bundles or uploads actual files, fails on missing explicit evidence, runs preflight on the exact payload, and never claims a filename alone was reviewed.",
       "files": [
         "/path/to/skills/docx-template-reformatter/SKILL.md",
         "/path/to/skills/docx-template-reformatter/scripts/reformat.py"
@@ -30,32 +30,62 @@
     },
     {
       "id": 5,
-      "prompt": "Pro available in picker → should select Pro",
-      "expected_output": "Uses Chrome by default. Routing selects Pro (preferred). downgraded=false. Reports selected_tier=pro.",
+      "prompt": "Pro available in picker -> should select Pro",
+      "expected_output": "Deterministic routing selects verified usable GPT-5.6 Sol Pro and reports downgraded=false.",
       "files": []
     },
     {
       "id": 6,
-      "prompt": "Pro absent, High available in picker → should select High",
-      "expected_output": "Uses Chrome by default. Routing selects High as fallback. downgraded=true. Reports selected_tier=high.",
+      "prompt": "Pro absent, High available in picker -> should select High",
+      "expected_output": "Deterministic routing selects verified usable GPT-5.6 Sol High and reports downgraded=true.",
       "files": []
     },
     {
       "id": 7,
-      "prompt": "Only Medium available in picker → should fail closed",
-      "expected_output": "Uses Chrome by default. No supported GPT-5.6 Sol Pro or High tier available. Consultation fails with clear error.",
+      "prompt": "Pro visible but disabled, High is available",
+      "expected_output": "Disabled Pro does not block the valid High fallback.",
       "files": []
     },
     {
       "id": 8,
-      "prompt": "Only Extra High available in picker → should fail closed",
-      "expected_output": "Uses Chrome by default. No supported GPT-5.6 Sol Pro or High tier available. Consultation fails with clear error.",
+      "prompt": "Only Extra High or Medium available in picker",
+      "expected_output": "No supported GPT-5.6 Sol Pro or High tier is available, so the consultation fails closed.",
       "files": []
     },
     {
       "id": 9,
-      "prompt": "High currently selected, Pro also available → should upgrade to Pro",
-      "expected_output": "Uses Chrome by default. Routing evaluates full picker, finds Pro available, upgrades from High to Pro. downgraded=false.",
+      "prompt": "Generic GPT-5 Pro test id is present without GPT-5.6 Sol evidence",
+      "expected_output": "Does not treat generic GPT-5 Pro as verified GPT-5.6 Sol Pro.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "继续我们刚才对这个项目 routing architecture 的 WebGPT 咨询，我根据上次意见改完了，现在想让它 review 新实现。",
+      "expected_output": "Lists the current project's registry, identifies the same routing-architecture workstream, reopens its exact ChatGPT conversation URL, sends a continuation-delta packet, and updates the same registry entry after success.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "还是这个 repo，但这次我想让 GPT 5.6 Sol 独立审查完全不同的 pricing strategy，不要受上次架构讨论影响。",
+      "expected_output": "Starts a fresh ChatGPT conversation despite the same project because the workstream is different and the user requested an independent review; records a separate registry workstream.",
+      "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "我切到另一个项目了，继续用 webgpt-consult。",
+      "expected_output": "Different project fingerprint prevents automatic reuse of conversations from the previous project.",
+      "files": []
+    },
+    {
+      "id": 13,
+      "prompt": "The latest assistant answer contains the sentinel in paragraph three but starts with ordinary prose.",
+      "expected_output": "Result verification fails because the sentinel is not the first non-empty line and task binding is not exact.",
+      "files": []
+    },
+    {
+      "id": 14,
+      "prompt": "Upload a PDF attachment through webgpt-consult.",
+      "expected_output": "Preflight marks an unscanned binary as manual_review_required and blocks until the Agent locally reviews and explicitly confirms the intended binary attachment; known detected credentials remain non-overridable.",
       "files": []
     }
   ]
