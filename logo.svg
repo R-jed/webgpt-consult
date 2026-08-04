@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#grad)" />
+
+  <!-- Chat bubble (consultation) -->
+  <path d="M38 45 C38 38, 44 32, 52 32 L76 32 C84 32, 90 38, 90 45 L90 62 C90 69, 84 75, 76 75 L60 75 L48 85 L48 75 L52 75 C44 75, 38 69, 38 62 Z"
+        fill="white" opacity="0.95"/>
+
+  <!-- Brain/AI symbol inside -->
+  <circle cx="64" cy="52" r="12" fill="none" stroke="#7C3AED" stroke-width="2.5"/>
+
+  <!-- Neural connections -->
+  <circle cx="58" cy="48" r="2" fill="#7C3AED"/>
+  <circle cx="70" cy="48" r="2" fill="#7C3AED"/>
+  <circle cx="64" cy="56" r="2" fill="#7C3AED"/>
+  <line x1="58" y1="48" x2="64" y2="56" stroke="#7C3AED" stroke-width="1.5"/>
+  <line x1="70" y1="48" x2="64" y2="56" stroke="#7C3AED" stroke-width="1.5"/>
+  <line x1="58" y1="48" x2="70" y2="48" stroke="#7C3AED" stroke-width="1.5"/>
+
+  <!-- Second opinion arrow -->
+  <path d="M85 82 L95 92 L85 102" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="72" y1="92" x2="95" y2="92" stroke="white" stroke-width="3" stroke-linecap="round"/>
+</svg>

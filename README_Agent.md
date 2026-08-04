@@ -1,149 +1,149 @@
 # WebGPT Consult — AI Agent Bootstrap
 
-> ⚡ **仅限 AI Agent 阅读。** 如果你是人类读者，请返回 [README.md](README.md)（中文）或 [README_en.md](README_en.md)（English）。
+> ⚡ **For AI agents only.** If you are a human reader, go back to [README.md](README.md) (中文) or [README_en.md](README_en.md) (English).
 
-本文件包含 AI Agent 的引导指令、路由策略和行为链。如果你是 AI Agent（Claude Code、Codex CLI、Cursor 等），**读完本文件后立即执行第 0 节**。
+This file contains bootstrap instructions, routing strategy, and behavior chain for AI agents. If you are an AI agent (Claude Code, Codex CLI, Cursor, etc.), **execute section 0 immediately** after finishing this file.
 
 ---
 
-## 0. AI Agent 首要指令（读完本文件后立即执行）
+## 0. First Instruction for the AI (Execute Immediately After Reading This File)
 
-> **AI 读完本文件后，必须自动执行以下配置流程并报告结果。用户无需手动操作。**
+> **After the AI finishes reading this file, it must automatically execute the following configuration process and then report what was changed. The user does not need to operate manually.**
 
-### 自动配置流程
+### Automatic Configuration Process
 
 ```text
-1. 检测本包的实际安装路径（从本文件位置推导，即包含 README.md 的目录）
-2. 检测本地环境：
-   - 操作系统类型
-   - Python 版本
-   - Chrome 是否可用
-   - OpenCLI 是否可用
-3. 读取 SKILL.md → 执行其中的所有指令
-4. 根据路由策略选择咨询路径：
-   - Chrome 插件可用 → 使用 Chrome 工作流
-   - Chrome 不可用 + OpenCLI 就绪 → 使用 OpenCLI 备选
-   - 两者都不可用 → 停止并报告连接缺失
-5. 执行用户任务
+1. Detect the actual installation path of this package (derived from the location of this file, i.e., the directory containing README.md)
+2. Detect the local environment:
+   - Operating system type
+   - Python version
+   - Chrome availability
+   - OpenCLI availability
+3. Read SKILL.md → execute all instructions inside it
+4. Select consultation path based on routing strategy:
+   - Chrome plugin available → use Chrome workflow
+   - Chrome unavailable + OpenCLI ready → use OpenCLI fallback
+   - Neither available → stop and report missing connection
+5. Execute user task
 ```
 
-### 示例报告格式
+### Example Report Format
 
 ```markdown
-✅ **WebGPT Consult 配置完成**
+✅ **WebGPT Consult Configured Successfully**
 
-**安装路径**: /path/to/webgpt-consult
-**系统环境**: macOS / Linux / Windows
-**Python 版本**: 3.x.x
-**Chrome 插件**: 可用 / 不可用
-**OpenCLI**: 可用 / 不可用
-**咨询路径**: Chrome 工作流 / OpenCLI 备选 / 无可用路径
-**模型**: GPT-5.6 Sol Pro / High
-**状态**: 就绪，等待用户任务
+**Installation path**: /path/to/webgpt-consult
+**System**: macOS / Linux / Windows
+**Python version**: 3.x.x
+**Chrome plugin**: available / unavailable
+**OpenCLI**: available / unavailable
+**Consultation path**: Chrome workflow / OpenCLI fallback / no available path
+**Model**: GPT-5.6 Sol Pro / High
+**Status**: ready, awaiting user task
 ```
 
 ---
 
-## 这是什么
+## What Is This
 
-这不是一个普通的 Skill，而是一个**结构化第二意见咨询系统**。它解决两个问题：
+This is not a regular Skill — it is a **structured second-opinion consultation system**. It solves two problems:
 
-1. **本地 Agent 需要外部视角**：复杂决策、架构设计、调试难题需要第二意见
-2. **保护本地判断**：上下文包保留本地证据、约束和判断，外部模型仅提供建议
-
----
-
-## 核心工作流
-
-```
-用户任务
-  → 本地 Agent 判断（先写出来）
-  → 构建上下文包（8K-15K 字符）
-  → 安全扫描（凭证检查）
-  → Chrome 插件（默认）或 OpenCLI（备选）
-  → 选择 GPT-5.6 Sol Pro/High
-  → 发送、等待、提取并验证哨兵标记
-  → 本地采纳决策（采纳/拒绝/修改）
-```
+1. **Local agents need outside perspective**: complex decisions, architecture design, debugging challenges require a second opinion
+2. **Preserve local judgment**: context packets retain local evidence, constraints, and judgment; the external model only provides advice
 
 ---
 
-## 文件清单
+## Core Workflow
 
-如果你只读三个文件，按这个顺序：
+```
+User task
+  → Local Agent judgment (write it first)
+  → Build context packet (8K-15K chars)
+  → Safety scan (credentials check)
+  → Chrome plugin (default) or OpenCLI (fallback)
+  → Select GPT-5.6 Sol Pro/High
+  → Send, wait, extract with sentinel verification
+  → Local adoption decision (adopt/reject/modify)
+```
 
-| 顺序 | 文件 | 用途 |
-|------|------|------|
-| 1 | [SKILL.md](SKILL.md) | 主技能文档，完整工作流和规则 |
-| 2 | [references/context-packet-template.md](references/context-packet-template.md) | 上下文包模板 |
-| 3 | [references/chrome-workflow.md](references/chrome-workflow.md) | Chrome 插件工作流 |
+---
 
-### 完整文件结构
+## File List
+
+If you only read three files, read them in this order:
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | [SKILL.md](SKILL.md) | Main skill documentation, complete workflow and rules |
+| 2 | [references/context-packet-template.md](references/context-packet-template.md) | Context packet template |
+| 3 | [references/chrome-workflow.md](references/chrome-workflow.md) | Chrome plugin workflow |
+
+### Complete File Structure
 
 ```text
 webgpt-consult/
-├── SKILL.md                    # 主技能文档（必须阅读）
-├── README.md                   # 中文说明（人类读者）
-├── README_en.md                # 英文说明（人类读者）
-├── README_Agent.md             # 本文件（AI Agent）
+├── SKILL.md                    # Main skill documentation (must read)
+├── README.md                   # Chinese README (human readers)
+├── README_en.md                # English README (human readers)
+├── README_Agent.md             # This file (AI Agent)
 ├── agents/
-│   └── openai.yaml            # Agent 配置
+│   └── openai.yaml            # Agent configuration
 ├── evals/
-│   └── evals.json             # 评估提示词
+│   └── evals.json             # Evaluation prompts
 ├── references/
-│   ├── chrome-workflow.md     # Chrome 插件工作流（必须阅读）
-│   ├── opencli-fallback.md    # OpenCLI 备选指南
-│   └── context-packet-template.md  # 上下文包模板（必须阅读）
+│   ├── chrome-workflow.md     # Chrome plugin workflow (must read)
+│   ├── opencli-fallback.md    # OpenCLI fallback guide
+│   └── context-packet-template.md  # Context packet template (must read)
 ├── scripts/
-│   ├── run_webgpt_consult.py  # 主咨询运行器
-│   ├── check_packet_safety.py # 凭证扫描器
-│   ├── build_attachment_bundle.py  # 文件打包器
-│   ├── extract_chatgpt_reply.py    # 回复提取器
-│   └── model_router.py        # 模型选择逻辑
+│   ├── run_webgpt_consult.py  # Main consultation runner
+│   ├── check_packet_safety.py # Credential scanner
+│   ├── build_attachment_bundle.py  # File bundler
+│   ├── extract_chatgpt_reply.py    # Reply extractor
+│   └── model_router.py        # Model selection logic
 └── tests/
-    └── test_*.py              # 测试套件
+    └── test_*.py              # Test suite
 ```
 
 ---
 
-## 路由策略
+## Routing Strategy
 
-### 模型选择优先级
+### Model Selection Priority
 
-| 优先级 | 模型 | 状态 | 说明 |
-|--------|------|------|------|
-| 1 | GPT-5.6 Sol Pro | 首选 | 最强推理能力 |
-| 2 | GPT-5.6 Sol High | 备选 | Pro 不可用时使用 |
-| - | Extra High/Medium/Instant | 不支持 | 失败关闭 |
+| Priority | Model | Status | Description |
+|----------|-------|--------|-------------|
+| 1 | GPT-5.6 Sol Pro | Preferred | Strongest reasoning capability |
+| 2 | GPT-5.6 Sol High | Fallback | Used when Pro is unavailable |
+| - | Extra High/Medium/Instant | Unsupported | Fail closed |
 
-### 路径选择
+### Path Selection
 
-| 条件 | 路径 | 操作 |
-|------|------|------|
-| 默认 | Codex Chrome 插件 | 遵循 [chrome-workflow.md](references/chrome-workflow.md) |
-| Chrome 不可用 + OpenCLI 就绪 | OpenCLI 备选 | 遵循 [opencli-fallback.md](references/opencli-fallback.md) |
-| 两者都不可用 | 停止 | 报告连接缺失，等待用户配置 |
+| Condition | Path | Action |
+|-----------|------|--------|
+| Default | Codex Chrome plugin | Follow [chrome-workflow.md](references/chrome-workflow.md) |
+| Chrome unavailable + OpenCLI ready | OpenCLI fallback | Follow [opencli-fallback.md](references/opencli-fallback.md) |
+| Neither available | Stop | Report missing connection, await user configuration |
 
 ---
 
-## 安全规则
+## Safety Rules
 
-### 凭证卫生
+### Credential Hygiene
 
-**禁止发送**：
-- Token、Cookie、密码
-- API Key、私钥
-- OAuth Header、浏览器配置文件
-- Session Dump
+**Do not send**:
+- Tokens, cookies, passwords
+- API keys, private keys
+- OAuth headers, browser profiles
+- Session dumps
 
-**允许发送**：
-- 普通用户业务和项目上下文
-- 代码片段、架构设计
-- 错误日志、调试信息
+**May send**:
+- Normal user business and project context
+- Code snippets, architecture design
+- Error logs, debugging information
 
-### 安全扫描
+### Safety Scan
 
-每次咨询前必须运行：
+Must run before every consultation:
 
 ```bash
 SKILL_DIR="<path-to-installed-webgpt-consult>"
@@ -152,125 +152,125 @@ python3 "$SKILL_DIR/scripts/check_packet_safety.py" packet.md
 
 ---
 
-## 咨询完成条件
+## Completion Conditions
 
-一个咨询**只有满足以下所有条件**才算完成：
+A consultation is **complete only when all conditions are met**:
 
-1. ✅ 已验证支持的 GPT-5.6 Sol 层级（Pro 或 High）
-2. ✅ 发送前提示词和所有必需附件已可见
-3. ✅ 助手已停止生成
-4. ✅ 已提取完整的助手回复
-5. ✅ `WEBGPT_CONSULT_RESULT_...` 哨兵标记出现在回复中
+1. ✅ Verified supported GPT-5.6 Sol tier (Pro or High)
+2. ✅ Prompt and all required attachments visible before sending
+3. ✅ Assistant stopped generating
+4. ✅ Complete assistant reply extracted
+5. ✅ `WEBGPT_CONSULT_RESULT_...` sentinel appears in the reply
 
-**如果用户说结果已经可见**：重新提取现有对话，不要重复提交。
-
----
-
-## 失败处理
-
-| 场景 | 处理方式 |
-|------|----------|
-| Chrome 插件不可用 | 仅在 OpenCLI 预检成功时使用；否则停止并报告 |
-| 未登录 | 请用户在 Chrome 配置文件中登录 ChatGPT Web |
-| 无 Pro 或 High | 停止并报告未找到 GPT-5.6 Sol Pro 或 High |
-| 选择后验证失败 | 停止并报告选择了哪个层级但无法确认 |
-| 附件失败 | 通过 Chrome 真实文件选择器重试、粘贴内容或使用 Markdown 打包 |
-| 仍在生成 | 在同一对话中继续等待 |
-| 完成后缺少哨兵 | 再次提取完整助手回复；否则标记咨询未完成 |
-| 低质量回答 | 仅使用支持的部分，本地 Agent 保留最终判断 |
+**If user says result is already visible**: re-extract the existing conversation, do not resubmit.
 
 ---
 
-## 快速开始
+## Failure Handling
 
-### 环境要求
+| Scenario | Handling |
+|----------|----------|
+| Chrome plugin unavailable | Only use OpenCLI if preflight succeeds; otherwise stop and report |
+| Not logged in | Ask user to sign in to ChatGPT Web in Chrome profile |
+| No Pro or High | Stop and report GPT-5.6 Sol Pro or High not found |
+| Post-selection verification failed | Stop and report which tier was selected but could not be confirmed |
+| Attachment failed | Retry through Chrome's real file chooser, paste content, or use Markdown bundle |
+| Still generating | Continue waiting in the same conversation |
+| Missing sentinel after completion | Extract complete assistant reply again; otherwise mark incomplete |
+| Low-quality answer | Use only supported parts; local Agent retains final judgment |
 
-- **Codex CLI** 已连接 Chrome 插件（默认路径）
-- **Chrome 配置文件** 已登录 ChatGPT Web
-- **ChatGPT Plus/Pro** 账户，可用 GPT-5.6 Sol Pro 或 High
-- **Python 3.x**（用于安全扫描和文件打包）
+---
 
-### 验证设置
+## Quick Start
+
+### Requirements
+
+- **Codex CLI** with Chrome plugin connected (default path)
+- **Chrome profile** logged into ChatGPT Web
+- **ChatGPT Plus/Pro** account with GPT-5.6 Sol Pro or High available
+- **Python 3.x** (for safety scanner and bundle builder)
+
+### Verify Setup
 
 ```bash
-# 检查 Python
+# Check Python
 python3 --version
 
-# 检查安全扫描器
+# Check safety scanner
 python3 scripts/check_packet_safety.py --help
 
-# 检查文件打包器
+# Check bundle builder
 python3 scripts/build_attachment_bundle.py --help
 ```
 
 ---
 
-## 依赖表格
+## Dependency Table
 
-### 核心依赖
+### Core Dependencies
 
-| 组件 | 是否必需 | 用途 |
-|------|----------|------|
-| Python 3.x | 必需 | 安全扫描、文件打包、回复提取 |
-| Codex CLI | 推荐 | AI 编程助手，默认咨询路径 |
-| Chrome 插件 | 推荐 | 默认咨询路径 |
-| OpenCLI | 可选 | 备选咨询路径 |
+| Component | Required | Purpose |
+|-----------|----------|---------|
+| Python 3.x | Yes | Safety scan, file bundling, reply extraction |
+| Codex CLI | Recommended | AI coding assistant, default consultation path |
+| Chrome plugin | Recommended | Default consultation path |
+| OpenCLI | Optional | Fallback consultation path |
 
-### Python 脚本
+### Python Scripts
 
-| 脚本 | 用途 |
-|------|------|
-| `check_packet_safety.py` | 凭证扫描，防止敏感数据泄露 |
-| `build_attachment_bundle.py` | 多文件打包成单一 Markdown |
-| `extract_chatgpt_reply.py` | 从 OpenCLI 提取回复 |
-| `model_router.py` | 模型选择逻辑 |
-| `run_webgpt_consult.py` | 主咨询运行器 |
-
----
-
-## 常见问题
-
-**Q1: Chrome 插件不可用怎么办？**
-A: 检查 OpenCLI 是否就绪（`opencli doctor`）。如果都不可用，停止并报告连接缺失。
-
-**Q2: 为什么选择 Pro 后显示降级？**
-A: 这是预期行为。当 Pro 不可用时，系统自动降级到 High，并在元数据中报告 `downgraded=true`。
-
-**Q3: 上下文包应该多大？**
-A: 8K-15K 字符。太短会丢失因果细节，太长会稀释关键信息。
-
-**Q4: 哨兵标记是什么？**
-A: `WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS` 格式的标记，用于验证咨询是否完成。
-
-**Q5: 可以发送代码吗？**
-A: 可以。代码是普通项目上下文，不是凭证。但不要发送包含密钥的配置文件。
+| Script | Purpose |
+|--------|---------|
+| `check_packet_safety.py` | Credential scan, prevent sensitive data leakage |
+| `build_attachment_bundle.py` | Bundle multiple files into single Markdown |
+| `extract_chatgpt_reply.py` | Extract reply from OpenCLI |
+| `model_router.py` | Model selection logic |
+| `run_webgpt_consult.py` | Main consultation runner |
 
 ---
 
-## 行为链摘要
+## FAQ
 
-AI Agent 的完整行为链：
+**Q1: Chrome plugin is unavailable, what should I do?**
+A: Check if OpenCLI is ready (`opencli doctor`). If neither is available, stop and report missing connection.
 
-1. **读取本文件** → 理解整体结构
-2. **执行第 0 节** → 自动配置并报告
-3. **读取 SKILL.md** → 理解完整工作流
-4. **根据路由策略选择路径** → Chrome 或 OpenCLI
-5. **构建上下文包** → 使用模板
-6. **运行安全扫描** → 凭证检查
-7. **执行咨询** → 发送、等待、提取
-8. **验证哨兵标记** → 确认完成
-9. **本地采纳决策** → 采纳/拒绝/修改
-10. **返回结果** → 格式化输出
+**Q2: Why does it show downgrade after selecting Pro?**
+A: This is expected behavior. When Pro is unavailable, the system automatically falls back to High and reports `downgraded=true` in metadata.
 
----
+**Q3: How large should the context packet be?**
+A: 8K-15K characters. Too short loses causal details; too long dilutes key information.
 
-## 许可证
+**Q4: What is the sentinel?**
+A: A marker in `WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS` format used to verify consultation completion.
 
-MIT 许可证 - 详见 [LICENSE](LICENSE)。
+**Q5: Can I send code?**
+A: Yes. Code is normal project context, not credentials. But do not send config files containing secrets.
 
 ---
 
-## 返回
+## Behavior Chain Summary
 
-- [README.md](README.md) - 中文说明
-- [README_en.md](README_en.md) - 英文说明
+The complete AI Agent behavior chain:
+
+1. **Read this file** → understand overall structure
+2. **Execute section 0** → auto-configure and report
+3. **Read SKILL.md** → understand complete workflow
+4. **Select path based on routing strategy** → Chrome or OpenCLI
+5. **Build context packet** → use template
+6. **Run safety scan** → credentials check
+7. **Execute consultation** → send, wait, extract
+8. **Verify sentinel** → confirm completion
+9. **Local adoption decision** → adopt/reject/modify
+10. **Return result** → formatted output
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## Back
+
+- [README.md](README.md) - Chinese README
+- [README_en.md](README_en.md) - English README
