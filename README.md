@@ -59,12 +59,14 @@ Subtap
 
 原因很简单：`Branch in new chat` 会继承所选消息之前的历史。从最新消息分支，长历史仍然会被完整带过去，基本没有完成真正的上下文压缩。
 
-每个 workstream 第一次成功咨询时会固定一个 `branch_base_task_id`。后续需要 rollover 时：
+每个 workstream 第一次成功咨询时会同时建立两个锚点：`root_task_id` 永久表示整条咨询链的起点，`branch_base_task_id` 表示当前 ChatGPT 会话里实际可用于下一次分支的紧凑基线。正常情况下两者一开始相同。
+
+后续需要 rollover 时：
 
 ```text
 current long conversation
         ↓
-locate stable branch-base assistant result
+locate active branch-base assistant result
         ↓
 Branch in new chat from that older compact point
         ↓
@@ -80,11 +82,13 @@ CONTINUITY_CAPSULE_V1
 continue same workstream in bounded context
 ```
 
-Codex 会先在本地整理并验证累计 `CONTINUITY_CAPSULE_V1`。它是状态迁移包，不是简单聊天摘要，要求把从 branch base 到当前为止仍有复用价值的决策、事实、约束和未决问题带过去。
+Codex 会先在本地根据项目证据和已验证的咨询结果整理累计 `CONTINUITY_CAPSULE_V1`。它是状态迁移包，不是简单聊天摘要，也不会让已经接近上限的 Web ChatGPT 自己负责总结自己。capsule 必须把从 active branch base 到当前为止仍有复用价值的决策、事实、约束、死路和未决问题带过去，并经过本地校验。
 
-如果当前 ChatGPT UI 无法可靠执行 `Branch in new chat`，则退化为 `rollover_fresh`：创建一个全新 ChatGPT 会话，发送同一个可独立恢复上下文的 capsule，并重新上传当前仍然必要的证据。不会继续向已经过满的父会话发送请求。
+如果 `Branch in new chat` 成功，新分支仍然包含原 active branch base，因此 `branch_base_task_id` 保持不变。
 
-registry 会保留当前 URL、父会话 URL、稳定 branch base、rollover 次数和 capsule hash，因此整个 workstream 的 lineage 仍然可追踪。
+如果当前 ChatGPT UI 无法可靠执行 Branch、原 branch-base 消息无法唯一定位、父会话已经打不开，或分支继承内容不正确，则退化为 `rollover_fresh`：创建一个全新 ChatGPT 会话，发送同一个可独立恢复上下文的 capsule，并重新上传当前仍然必要的证据。全新会话里不存在旧 branch base，所以第一次成功回复会成为新的 active `branch_base_task_id`，而最初的 `root_task_id` 永久保留。
+
+registry 会保留当前 URL、最近的父会话 URL、root task、active branch base、rollover 次数、rollover mode 和 capsule hash，因此整个 workstream 的 lineage 仍然可追踪。
 
 ## 安全和真实性
 
