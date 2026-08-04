@@ -11,7 +11,8 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from check_packet_safety import scan
-from conversation_registry import project_identity, record_thread, list_threads
+from continuity_capsule import validate_capsule
+from conversation_registry import list_threads, project_identity, record_thread, rollover_plan
 from model_router import ModelRoutingError, resolve_model_from_state, selection_is_confirmed
 from result_verifier import verify
 from submission_preflight import build_manifest
@@ -96,6 +97,42 @@ class PreflightTests(unittest.TestCase):
             self.assertTrue(allowed["ok"])
 
 
+class ContinuityCapsuleTests(unittest.TestCase):
+    def _capsule(self) -> str:
+        headings = [
+            "## WORKSTREAM",
+            "## BASELINE",
+            "## USER_INTENT",
+            "## STANDING_CONSTRAINTS",
+            "## ACCEPTED_DECISIONS",
+            "## REJECTED_OR_DEFERRED_PATHS",
+            "## OPEN_QUESTIONS",
+            "## EVIDENCE_INDEX",
+            "## CURRENT_STATE",
+            "## CURRENT_ASK",
+            "## COVERAGE_ATTESTATION",
+        ]
+        body = [
+            "CONTINUITY_CAPSULE_V1",
+            "Base-Task-ID: t1",
+            "Last-Task-ID: t9",
+            "Material-Reusable-Context-Omitted: no",
+        ]
+        for heading in headings:
+            body.extend(["", heading, "state"])
+        return "\n".join(body) + "\n"
+
+    def test_valid_capsule_has_hash(self):
+        result = validate_capsule(self._capsule(), base_task_id="t1", last_task_id="t9")
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(result["sha256"]), 64)
+
+    def test_capsule_requires_no_omission_attestation(self):
+        text = self._capsule().replace("Material-Reusable-Context-Omitted: no", "Material-Reusable-Context-Omitted: yes")
+        result = validate_capsule(text, base_task_id="t1", last_task_id="t9")
+        self.assertFalse(result["ok"])
+
+
 class RegistryTests(unittest.TestCase):
     def test_project_scoped_multiple_threads(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -115,13 +152,64 @@ class RegistryTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(root), "init"], check=True, capture_output=True)
             self.assertEqual(project_identity(root)["fingerprint"], project_identity(child)["fingerprint"])
 
-    def test_thread_rollover_preserves_previous_url(self):
+    def test_thread_url_change_preserves_previous_url(self):
         with tempfile.TemporaryDirectory() as tmp:
             identity = project_identity(Path(tmp))
             data = {"version": 1, "projects": {}}
             record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
             updated = record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/two", scope="routing", task_id="t2", summary="two")
             self.assertEqual(updated["previous_conversations"], ["https://chatgpt.com/c/one"])
+            self.assertEqual(updated["branch_base_task_id"], "t1")
+
+    def test_rollover_plan_keeps_stable_base(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t2", summary="two")
+            plan = rollover_plan(data, identity, "architecture")
+            self.assertEqual(plan["branch_base_task_id"], "t1")
+            self.assertEqual(plan["last_task_id"], "t2")
+            self.assertEqual(plan["next_rollover_index"], 1)
+
+    def test_rollover_records_parent_and_capsule_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            updated = record_thread(
+                data,
+                identity,
+                thread_key="architecture",
+                conversation_url="https://chatgpt.com/c/two",
+                scope="routing",
+                task_id="t3",
+                summary="rolled",
+                parent_conversation_url="https://chatgpt.com/c/one",
+                continuity_capsule_sha256="a" * 64,
+                rollover=True,
+            )
+            self.assertEqual(updated["branch_base_task_id"], "t1")
+            self.assertEqual(updated["parent_conversation_url"], "https://chatgpt.com/c/one")
+            self.assertEqual(updated["rollover_count"], 1)
+            self.assertEqual(updated["continuity_capsule_sha256"], "a" * 64)
+
+    def test_rollover_requires_new_url(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            with self.assertRaises(ValueError):
+                record_thread(
+                    data,
+                    identity,
+                    thread_key="architecture",
+                    conversation_url="https://chatgpt.com/c/one",
+                    scope="routing",
+                    task_id="t2",
+                    summary="bad rollover",
+                    rollover=True,
+                )
 
 
 class BundleCliTests(unittest.TestCase):
