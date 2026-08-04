@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/AI-Consultant-blueviolet?style=for-the-badge&logo=openai&logoColor=white" alt="AI Consultant" />
 </p>
 
-<h1 align="center">WebGPT Consult</h1>
+<h1 align="center">webgpt consult</h1>
 
 <p align="center">
   <strong>GPT-5.6 Sol Pro/High 专业第二意见伙伴</strong><br/>
@@ -20,8 +20,7 @@
   <a href="#快速开始">快速开始</a> ·
   <a href="#使用场景">使用场景</a> ·
   <a href="#工作流程">工作流程</a> ·
-  <a href="references/">参考文档</a> ·
-  <a href="#参与贡献">参与贡献</a>
+  <a href="references/">参考文档</a>
 </p>
 
 <br/>
@@ -232,20 +231,6 @@ webgpt-consult/
 
 <p align="right">(<a href="#执行示例">返回顶部</a>)</p>
 
-<a id="参与贡献"></a>
-
-## 参与贡献
-
-欢迎贡献！请：
-
-1. Fork 本仓库
-2. 创建功能分支（`git checkout -b feature/amazing-feature`）
-3. 提交更改（`git commit -m 'Add amazing feature'`）
-4. 推送分支（`git push origin feature/amazing-feature`）
-5. 提交 Pull Request
-
-<p align="right">(<a href="#参与贡献">返回顶部</a>)</p>
-
 <a id="许可证"></a>
 
 ## 许可证
@@ -253,14 +238,3 @@ webgpt-consult/
 MIT 许可证 - 详见 [LICENSE](LICENSE)。
 
 <p align="right">(<a href="#许可证">返回顶部</a>)</p>
-
-<a id="致谢"></a>
-
-## 致谢
-
-基于以下项目构建：
-- [Codex CLI](https://github.com/openai/codex) - AI 编程助手
-- ChatGPT Web - GPT-5.6 Sol Pro/High 模型访问
-- OpenCLI - 可选的浏览器自动化
-
-<p align="right">(<a href="#致谢">返回顶部</a>)</p>

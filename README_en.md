@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/AI-Consultant-blueviolet?style=for-the-badge&logo=openai&logoColor=white" alt="AI Consultant" />
 </p>
 
-<h1 align="center">WebGPT Consult</h1>
+<h1 align="center">webgpt consult</h1>
 
 <p align="center">
   <strong>GPT-5.6 Sol Pro/High Verified Second-Opinion Partner</strong><br/>
@@ -20,8 +20,7 @@
   <a href="#getting-started">Getting Started</a> ·
   <a href="#usage">Usage</a> ·
   <a href="#workflow">Workflow</a> ·
-  <a href="references/">References</a> ·
-  <a href="#contributing">Contributing</a>
+  <a href="references/">References</a>
 </p>
 
 <br/>
@@ -231,20 +230,6 @@ Result: fail closed
 
 <p align="right">(<a href="#examples">back to top</a>)</p>
 
-<a id="contributing"></a>
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-<p align="right">(<a href="#contributing">back to top</a>)</p>
-
 <a id="license"></a>
 
 ## License
@@ -252,14 +237,3 @@ Contributions welcome! Please:
 MIT License - see [LICENSE](LICENSE) for details.
 
 <p align="right">(<a href="#license">back to top</a>)</p>
-
-<a id="acknowledgments"></a>
-
-## Acknowledgments
-
-Built on top of:
-- [Codex CLI](https://github.com/openai/codex) - AI coding assistant
-- ChatGPT Web - GPT-5.6 Sol Pro/High model access
-- OpenCLI - Optional browser automation
-
-<p align="right">(<a href="#acknowledgments">back to top</a>)</p>
