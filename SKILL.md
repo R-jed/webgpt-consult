@@ -37,6 +37,36 @@ If the Chrome plugin is unavailable or disconnected, prepare the context packet 
 - The selected Chrome profile must be logged into ChatGPT Web.
 - The account must expose Pro or High in the ChatGPT model picker.
 
+### Chrome plugin check
+
+Before attempting consultation, verify the Chrome plugin is available:
+
+1. Check if `chrome:control-chrome` Skill exists in your Codex installation
+2. If not installed, tell the user:
+
+```
+Chrome 插件未安装。WebGPT Consult 需要 Codex Chrome 插件才能工作。
+
+安装方式：
+1. 打开 Codex CLI
+2. 运行 /plugins 命令
+3. 搜索 "chrome" 并安装 Chrome 插件
+4. 重启 Codex CLI
+
+安装完成后，重新运行此命令。
+```
+
+If the plugin exists but is disconnected, tell the user:
+
+```
+Chrome 插件已安装但未连接。
+
+请检查：
+1. Chrome 浏览器是否正在运行
+2. Codex Chrome 插件是否已启用
+3. Chrome 是否已登录 ChatGPT Web
+```
+
 ## Hard gates
 
 ### Model truthfulness
