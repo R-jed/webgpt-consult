@@ -25,6 +25,20 @@ REQUIRED_HEADINGS = (
 DEFAULT_MAX_CHARS = 12_000
 
 
+def _section_has_content(lines: list[str], heading: str) -> bool:
+    try:
+        start = lines.index(heading) + 1
+    except ValueError:
+        return False
+    for line in lines[start:]:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            break
+        if stripped:
+            return True
+    return False
+
+
 def validate_capsule(
     text: str,
     *,
@@ -45,6 +59,8 @@ def validate_capsule(
     for heading in REQUIRED_HEADINGS:
         if heading not in lines:
             errors.append(f"missing heading: {heading}")
+        elif not _section_has_content(lines, heading):
+            errors.append(f"empty section: {heading}")
 
     required_markers = (
         f"Base-Task-ID: {base_task_id}",
