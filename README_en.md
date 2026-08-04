@@ -5,8 +5,8 @@
 <h1 align="center">webgpt consult</h1>
 
 <p align="center">
-  <strong>GPT-5.6 Sol Pro/High Verified Second-Opinion Partner</strong><br/>
-  <em>For difficult planning, architecture, debugging, business, product, content-strategy, risk-review, and Skill-design work</em>
+  <strong>GPT-5.6 Sol Pro/High Second-Opinion Consultation</strong><br/>
+  <em>Ask GPT-5.6 Sol when you're not sure</em>
 </p>
 
 <p align="center">
@@ -31,23 +31,23 @@
 
 > **If you are an AI Agent, read [README_Agent.md](README_Agent.md) for bootstrap instructions.**
 
-When your local AI agent (Claude Code, Codex CLI, Cursor, etc.) encounters a difficult problem that needs an outside perspective, WebGPT Consult routes it to the best available GPT-5.6 Sol tier, builds a structured context packet, executes the consultation, and brings back a verified result for local adoption.
+When your local agent hits a complex problem, call this tool to ask GPT-5.6 Sol. It packs your context, sends the request, gets the reply, and you decide what to adopt.
 
 ```
-Local Agent judgment
-  → Build context packet (8K-15K chars)
-  → Safety scan (credentials check)
-  → Chrome plugin (default) or OpenCLI (fallback)
+Your judgment
+  → Pack context (8K-15K chars)
+  → Safety scan (credential check)
+  → Chrome plugin
   → Select GPT-5.6 Sol Pro/High
-  → Send, wait, extract with sentinel verification
-  → Local adoption decision
+  → Send, wait, verify sentinel
+  → You decide: adopt, reject, or modify
 ```
 
-**Why this exists:**
-- Local agents need a second opinion on complex decisions but shouldn't blindly trust external models
-- Context packets preserve local judgment, evidence, and constraints
-- Sentinel-based completion verification prevents incomplete or corrupted results
-- Credential hygiene protects sensitive data from leaking to external models
+**Why it exists:**
+- Complex decisions need outside perspective, but don't blindly trust external models
+- Context packets preserve your judgment, evidence, and constraints
+- Sentinel marks confirm complete replies, preventing half-baked results
+- Safety scan prevents sensitive data leakage
 
 <p align="right">(<a href="#about">back to top</a>)</p>
 
@@ -55,30 +55,40 @@ Local Agent judgment
 
 ## Getting Started
 
-### Prerequisites
+### Requirements
 
-- **Codex CLI** with Chrome plugin connected (default path)
-- **Chrome profile** logged into ChatGPT Web
-- **ChatGPT Plus/Pro** account with GPT-5.6 Sol Pro or High available
-- **Python 3.x** (for safety scanner and bundle builder)
+| Dependency | Purpose | Required |
+|------------|---------|----------|
+| Python 3.x | Safety scan, file bundling | Yes |
+| Codex CLI | AI coding assistant | Yes |
+| Chrome plugin | Consultation path | Yes |
+| ChatGPT Plus/Pro | GPT-5.6 Sol access | Yes |
 
 ### Installation
 
 ```bash
 git clone https://github.com/R-jed/webgpt-consult.git
+cd webgpt-consult
 ```
 
-Add to your Codex skills directory or reference directly.
+### Setup
 
-### Verify setup
+1. Install Codex CLI
+2. Connect Chrome plugin
+3. Sign in to ChatGPT Web in Chrome
+4. Confirm GPT-5.6 Sol Pro or High is available in model picker
+
+### Verify
 
 ```bash
-# Check Chrome plugin connection
-opencli doctor
-
-# Test safety scanner
+# Safety scanner works
 python3 scripts/check_packet_safety.py --help
+
+# Bundle builder works
+python3 scripts/build_attachment_bundle.py --help
 ```
+
+Both pass and you're good. See [SKILL.md](SKILL.md) for issues.
 
 <p align="right">(<a href="#getting-started">back to top</a>)</p>
 
@@ -86,25 +96,14 @@ python3 scripts/check_packet_safety.py --help
 
 ## Usage
 
-### Supported consultation types
-
-| Type | Description |
-|------|-------------|
-| Architecture review | System design, API design, database schema, infrastructure |
-| Business consultation | Strategy, pricing, market analysis, competitive positioning |
-| Content strategy | Documentation, marketing, technical writing |
-| Skill design | AI agent skills, workflow automation, tool integration |
-| Risk review | Security audit, compliance, technical debt assessment |
+| Scenario | Description |
+|----------|-------------|
+| Architecture review | System design, API design, database schema |
+| Business consultation | Strategy, pricing, market analysis |
 | Debugging | Complex bugs, performance issues, race conditions |
-| Planning | Project planning, sprint planning, resource allocation |
-
-### Routing contract
-
-| Condition | Path |
-|-----------|------|
-| Default | Codex Chrome plugin |
-| Chrome unavailable + OpenCLI ready | OpenCLI fallback |
-| Neither available | Stop and report missing connection |
+| Risk review | Security audit, technical debt |
+| Planning | Project planning, sprint planning |
+| Content strategy | Documentation, marketing, technical writing |
 
 <p align="right">(<a href="#usage">back to top</a>)</p>
 
@@ -112,43 +111,39 @@ python3 scripts/check_packet_safety.py --help
 
 ## Workflow
 
-### 1. Local judgment first
+### 1. Write your judgment first
 
-Before consulting, write your best local assessment:
+Before asking, think through:
+- What's the problem, what's success
+- What evidence and constraints you have
+- What options exist, what each costs
+- What you've tried, what's still unknown
 
-- Decision or problem statement
-- Success criteria and user intent
-- Evidence and constraints
-- Options and tradeoffs
-- Attempts and unknowns
+### 2. Pack context
 
-### 2. Build context packet
-
-Use the [template](references/context-packet-template.md) to structure your consultation:
+Use the [template](references/context-packet-template.md). For many files, bundle:
 
 ```bash
-# For many files, build a bundle
 python3 scripts/build_attachment_bundle.py /path/to/artifacts -o /tmp/bundle.md
 ```
 
-### 3. Safety check
+### 3. Safety scan
 
 ```bash
 python3 scripts/check_packet_safety.py packet.md
 ```
 
-Removes credential-like material while preserving useful project context.
+Strip credentials, keep useful project context.
 
-### 4. Execute consultation
+### 4. Send request
 
-- **Chrome path**: Follow [Chrome workflow](references/chrome-workflow.md)
-- **OpenCLI path**: Follow [OpenCLI fallback](references/opencli-fallback.md) (only when eligible)
+Follow the [Chrome workflow](references/chrome-workflow.md).
 
-### 5. Verify and adopt
+### 5. Verify and decide
 
 - Confirm `WEBGPT_CONSULT_RESULT_...` sentinel appears
-- Compare with local evidence
-- Decide: adopt, reject, or modify
+- Compare with your judgment
+- Adopt, reject, or modify
 
 <p align="right">(<a href="#workflow">back to top</a>)</p>
 
@@ -156,19 +151,15 @@ Removes credential-like material while preserving useful project context.
 
 ## Model Routing
 
-### Selection hierarchy
+| Priority | Model | Description |
+|----------|-------|-------------|
+| 1 | GPT-5.6 Sol Pro | Preferred, strongest reasoning |
+| 2 | GPT-5.6 Sol High | Fallback when Pro unavailable |
+| - | Extra High/Medium/Instant | Unsupported, fail closed |
 
-| Priority | Model | Status |
-|----------|-------|--------|
-| 1 | GPT-5.6 Sol Pro | Preferred |
-| 2 | GPT-5.6 Sol High | Fallback |
-| - | Extra High/Medium/Instant | Unsupported (fail closed) |
-
-### Verification
-
-After selecting a tier, verify:
-1. Tier name appears in checked `menuitemradio`
-2. `aria-checked=true` attribute present
+After selection, verify:
+1. Selected tier appears in `menuitemradio`
+2. `aria-checked=true` present
 3. GPT-5.6 Sol family evidence in picker
 
 <p align="right">(<a href="#model-routing">back to top</a>)</p>
@@ -179,24 +170,22 @@ After selecting a tier, verify:
 
 ```
 webgpt-consult/
-├── SKILL.md                    # Main skill documentation
-├── README.md                   # This file
+├── SKILL.md                    # Main docs
+├── README.md                   # Chinese README
+├── README_en.md                # This file
 ├── agents/
-│   └── openai.yaml            # Agent configuration
-├── evals/
-│   └── evals.json             # Evaluation prompts
+│   └── openai.yaml            # Agent config
 ├── references/
-│   ├── chrome-workflow.md     # Chrome plugin workflow
-│   ├── opencli-fallback.md    # OpenCLI fallback guide
+│   ├── chrome-workflow.md     # Chrome workflow
 │   └── context-packet-template.md  # Packet template
 ├── scripts/
-│   ├── run_webgpt_consult.py  # Main consultation runner
-│   ├── check_packet_safety.py # Credential scanner
+│   ├── run_webgpt_consult.py  # Main runner
+│   ├── check_packet_safety.py # Credential scan
 │   ├── build_attachment_bundle.py  # File bundler
 │   ├── extract_chatgpt_reply.py    # Reply extractor
-│   └── model_router.py        # Model selection logic
+│   └── model_router.py        # Model selection
 └── tests/
-    └── test_*.py              # Test suite
+    └── test_*.py
 ```
 
 <p align="right">(<a href="#repository-layout">back to top</a>)</p>
@@ -205,27 +194,27 @@ webgpt-consult/
 
 ## Examples
 
-### Pro available (preferred)
+### Pro available
 
 ```
 Available: Pro, High
 Selected: Pro
-downgraded=false
+downgraded: no
 ```
 
-### Pro unavailable (fallback)
+### Pro unavailable
 
 ```
 Available: High
 Selected: High
-downgraded=true
+downgraded: yes
 ```
 
 ### No supported tier
 
 ```
 Available: Extra High, Medium, Instant
-Result: fail closed
+Result: fail
 ```
 
 <p align="right">(<a href="#examples">back to top</a>)</p>
@@ -234,6 +223,6 @@ Result: fail closed
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT - see [LICENSE](LICENSE).
 
 <p align="right">(<a href="#license">back to top</a>)</p>

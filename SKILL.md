@@ -1,6 +1,6 @@
 ---
 name: webgpt-consult
-description: Use ChatGPT Web's GPT 5.6 Sol Pro or High as a verified second-opinion partner for difficult planning, architecture, debugging, business, product, content-strategy, risk-review, and Skill-design work. Uses adaptive routing: Pro (preferred) > High. Use when the user asks for GPT 5.6 Sol, ChatGPT Pro, a deeper outside judgment, or a file-grounded review. Default to the Codex Chrome plugin for text, model selection, file uploads, waiting, and extraction. Use OpenCLI only when the user explicitly requests it or the Chrome plugin is unavailable and OpenCLI passes preflight.
+description: Use ChatGPT Web's GPT 5.6 Sol Pro or High as a verified second-opinion partner for difficult planning, architecture, debugging, business, product, content-strategy, risk-review, and Skill-design work. Uses adaptive routing: Pro (preferred) > High. Use when the user asks for GPT 5.6 Sol, ChatGPT Pro, a deeper outside judgment, or a file-grounded review. Default to the Codex Chrome plugin for text, model selection, file uploads, waiting, and extraction.
 ---
 
 > **If you are an AI Agent, read [README_Agent.md](README_Agent.md) first for bootstrap instructions.**
@@ -25,27 +25,17 @@ The runtime selects based on actual verified picker capability, not assumed subs
 
 **Downgrade reporting:** When Pro is unavailable and High is used, the execution metadata reports `downgraded=true`. This is expected behavior, not an error.
 
-The historical skill identifier contains "pro", but runtime model routing falls back to High when Pro is unavailable.
-
 ## Routing contract
 
-Use the Codex Chrome plugin by default for every consultation, including text-only requests. Read and follow the installed `chrome:control-chrome` Skill before browser work, then read [Chrome workflow](references/chrome-workflow.md).
+Use the Codex Chrome plugin for every consultation, including text-only requests. Read and follow the installed `chrome:control-chrome` Skill before browser work, then read [Chrome workflow](references/chrome-workflow.md).
 
-Use OpenCLI only when one of these is true:
-
-- The user explicitly requests OpenCLI.
-- The Codex Chrome plugin is unavailable or disconnected, and `opencli doctor` confirms a working browser bridge.
-
-When OpenCLI is eligible, read [OpenCLI fallback](references/opencli-fallback.md). Do not choose OpenCLI merely because it is installed. Do not use OpenCLI for file uploads.
-
-If neither path is available, prepare the context packet and tell the user exactly which browser connection is missing. Never imply that a consultation completed.
+If the Chrome plugin is unavailable or disconnected, prepare the context packet and tell the user exactly which browser connection is missing. Never imply that a consultation completed.
 
 ## Requirements
 
-- The default path requires Codex with the Chrome plugin connected.
+- Codex with the Chrome plugin connected.
 - The selected Chrome profile must be logged into ChatGPT Web.
 - The account must expose Pro or High in the ChatGPT model picker.
-- OpenCLI is optional and is not an installation prerequisite.
 
 ## Hard gates
 
@@ -89,7 +79,7 @@ python3 "$SKILL_DIR/scripts/check_packet_safety.py" packet.md
 2. Build a restorable context packet using [the template](references/context-packet-template.md). Separate facts, local judgment, and unknowns.
 3. Select the smallest evidence set that still contains the truth. Use real attachments when structure, formatting, source layout, logs, images, or implementation details matter.
 4. Run the safety scanner. Remove credential-like material; keep useful project context.
-5. Execute the default [Chrome workflow](references/chrome-workflow.md). Use the optional [OpenCLI fallback](references/opencli-fallback.md) only when the routing contract permits it.
+5. Execute the [Chrome workflow](references/chrome-workflow.md).
 6. Confirm the selected GPT-5.6 Sol tier before sending. Record the model evidence, timestamp, context strategy, attachment names, and sentinel.
 7. Wait for the complete assistant turn. A preamble or missing sentinel while the page is still generating means "not ready." Continue the same conversation; do not submit a duplicate request.
 8. Extract the complete answer, verify the sentinel, compare it with local evidence, and decide what to adopt, reject, or modify.
@@ -174,7 +164,6 @@ Return:
 - Selected model: <display name from picker>
 - Downgraded: true | false
 - Sentinel verified: yes | no
-- Browser path: Codex Chrome | OpenCLI
 
 ## What the Model Said
 <concise summary>
@@ -191,7 +180,7 @@ Return:
 
 ## Failure handling
 
-- **Chrome plugin unavailable:** use OpenCLI only when its preflight succeeds; otherwise stop and report the missing connection.
+- **Chrome plugin unavailable:** stop and report the missing connection.
 - **Not logged in:** ask the user to sign in to ChatGPT Web in the selected Chrome profile.
 - **No Pro or High available:** stop and report that neither GPT-5.6 Sol Pro nor High was found.
 - **Post-selection verification failed:** stop and report which tier was selected but could not be confirmed.

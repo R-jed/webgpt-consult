@@ -37,7 +37,7 @@
 你的判断
   → 打包上下文（8K-15K 字符）
   → 安全扫描（防止泄露凭证）
-  → Chrome 插件（默认）或 OpenCLI（备选）
+  → Chrome 插件
   → 选 GPT-5.6 Sol Pro/High
   → 发送、等回复、验证哨兵标记
   → 你来决定采纳、拒绝还是修改
@@ -60,9 +60,8 @@
 | 依赖 | 用途 | 是否必需 |
 |------|------|----------|
 | Python 3.x | 安全扫描、文件打包 | 必需 |
-| Codex CLI | AI 编程助手 | 推荐 |
-| Chrome 插件 | 默认咨询路径 | 推荐 |
-| OpenCLI | 备选咨询路径 | 可选 |
+| Codex CLI | AI 编程助手 | 必需 |
+| Chrome 插件 | 咨询路径 | 必需 |
 | ChatGPT Plus/Pro | GPT-5.6 Sol 访问 | 必需 |
 
 ### 安装
@@ -74,24 +73,10 @@ cd webgpt-consult
 
 ### 配置
 
-**方式一：Chrome 插件（默认）**
-
 1. 安装 Codex CLI
 2. 连接 Chrome 插件
 3. 在 Chrome 中登录 ChatGPT Web
 4. 确认模型选择器有 GPT-5.6 Sol Pro 或 High
-
-**方式二：OpenCLI（备选）**
-
-```bash
-# 检查 OpenCLI 是否可用
-opencli doctor
-
-# 检查浏览器桥接
-opencli profile list
-```
-
-两个条件满足一个就行：Chrome 插件可用，或 OpenCLI 预检通过。
 
 ### 验证安装
 
@@ -119,14 +104,6 @@ python3 scripts/build_attachment_bundle.py --help
 | 风险审查 | 安全审计、技术债务 |
 | 规划 | 项目规划、Sprint 计划 |
 | 内容策略 | 文档、营销、技术写作 |
-
-### 路由
-
-| 条件 | 路径 |
-|------|------|
-| 默认 | Chrome 插件 |
-| Chrome 不可用 + OpenCLI 就绪 | OpenCLI |
-| 都不可用 | 停止，报告连接缺失 |
 
 <p align="right">(<a href="#使用场景">返回顶部</a>)</p>
 
@@ -160,8 +137,7 @@ python3 scripts/check_packet_safety.py packet.md
 
 ### 4. 发请求
 
-- **Chrome**：走 [Chrome 工作流](references/chrome-workflow.md)
-- **OpenCLI**：走 [OpenCLI 备选](references/opencli-fallback.md)（符合条件时）
+走 [Chrome 工作流](references/chrome-workflow.md)。
 
 ### 5. 验证并决策
 
@@ -200,7 +176,6 @@ webgpt-consult/
 │   └── openai.yaml            # Agent 配置
 ├── references/
 │   ├── chrome-workflow.md     # Chrome 工作流
-│   ├── opencli-fallback.md    # OpenCLI 备选
 │   └── context-packet-template.md  # 上下文包模板
 ├── scripts/
 │   ├── run_webgpt_consult.py  # 主运行器

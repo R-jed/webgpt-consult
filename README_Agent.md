@@ -17,14 +17,9 @@ This file contains bootstrap instructions, routing strategy, and behavior chain 
 2. Detect the local environment:
    - Operating system type
    - Python version
-   - Chrome availability
-   - OpenCLI availability
+   - Chrome plugin availability
 3. Read SKILL.md → execute all instructions inside it
-4. Select consultation path based on routing strategy:
-   - Chrome plugin available → use Chrome workflow
-   - Chrome unavailable + OpenCLI ready → use OpenCLI fallback
-   - Neither available → stop and report missing connection
-5. Execute user task
+4. Execute user task
 ```
 
 ### Example Report Format
@@ -36,8 +31,6 @@ This file contains bootstrap instructions, routing strategy, and behavior chain 
 **System**: macOS / Linux / Windows
 **Python version**: 3.x.x
 **Chrome plugin**: available / unavailable
-**OpenCLI**: available / unavailable
-**Consultation path**: Chrome workflow / OpenCLI fallback / no available path
 **Model**: GPT-5.6 Sol Pro / High
 **Status**: ready, awaiting user task
 ```
@@ -46,7 +39,7 @@ This file contains bootstrap instructions, routing strategy, and behavior chain 
 
 ## What Is This
 
-This is not a regular Skill — it is a **structured second-opinion consultation system**. It solves two problems:
+This is not a regular Skill — it is a **structured second-opinion consultation system** built specifically for Codex. It solves two problems:
 
 1. **Local agents need outside perspective**: complex decisions, architecture design, debugging challenges require a second opinion
 2. **Preserve local judgment**: context packets retain local evidence, constraints, and judgment; the external model only provides advice
@@ -60,7 +53,7 @@ User task
   → Local Agent judgment (write it first)
   → Build context packet (8K-15K chars)
   → Safety scan (credentials check)
-  → Chrome plugin (default) or OpenCLI (fallback)
+  → Chrome plugin
   → Select GPT-5.6 Sol Pro/High
   → Send, wait, extract with sentinel verification
   → Local adoption decision (adopt/reject/modify)
@@ -92,7 +85,6 @@ webgpt-consult/
 │   └── evals.json             # Evaluation prompts
 ├── references/
 │   ├── chrome-workflow.md     # Chrome plugin workflow (must read)
-│   ├── opencli-fallback.md    # OpenCLI fallback guide
 │   └── context-packet-template.md  # Context packet template (must read)
 ├── scripts/
 │   ├── run_webgpt_consult.py  # Main consultation runner
@@ -116,13 +108,12 @@ webgpt-consult/
 | 2 | GPT-5.6 Sol High | Fallback | Used when Pro is unavailable |
 | - | Extra High/Medium/Instant | Unsupported | Fail closed |
 
-### Path Selection
+### Verification
 
-| Condition | Path | Action |
-|-----------|------|--------|
-| Default | Codex Chrome plugin | Follow [chrome-workflow.md](references/chrome-workflow.md) |
-| Chrome unavailable + OpenCLI ready | OpenCLI fallback | Follow [opencli-fallback.md](references/opencli-fallback.md) |
-| Neither available | Stop | Report missing connection, await user configuration |
+After selecting a tier, verify:
+1. Tier name appears in checked `menuitemradio`
+2. `aria-checked=true` attribute present
+3. GPT-5.6 Sol family evidence in picker
 
 ---
 
@@ -170,7 +161,7 @@ A consultation is **complete only when all conditions are met**:
 
 | Scenario | Handling |
 |----------|----------|
-| Chrome plugin unavailable | Only use OpenCLI if preflight succeeds; otherwise stop and report |
+| Chrome plugin unavailable | Stop and report missing connection |
 | Not logged in | Ask user to sign in to ChatGPT Web in Chrome profile |
 | No Pro or High | Stop and report GPT-5.6 Sol Pro or High not found |
 | Post-selection verification failed | Stop and report which tier was selected but could not be confirmed |
@@ -185,21 +176,18 @@ A consultation is **complete only when all conditions are met**:
 
 ### Requirements
 
-- **Codex CLI** with Chrome plugin connected (default path)
+- **Codex CLI** with Chrome plugin connected
 - **Chrome profile** logged into ChatGPT Web
 - **ChatGPT Plus/Pro** account with GPT-5.6 Sol Pro or High available
-- **Python 3.x** (for safety scanner and bundle builder)
+- **Python 3.x**
 
 ### Verify Setup
 
 ```bash
-# Check Python
-python3 --version
-
-# Check safety scanner
+# Safety scanner works
 python3 scripts/check_packet_safety.py --help
 
-# Check bundle builder
+# Bundle builder works
 python3 scripts/build_attachment_bundle.py --help
 ```
 
@@ -212,9 +200,9 @@ python3 scripts/build_attachment_bundle.py --help
 | Component | Required | Purpose |
 |-----------|----------|---------|
 | Python 3.x | Yes | Safety scan, file bundling, reply extraction |
-| Codex CLI | Recommended | AI coding assistant, default consultation path |
-| Chrome plugin | Recommended | Default consultation path |
-| OpenCLI | Optional | Fallback consultation path |
+| Codex CLI | Yes | AI coding assistant |
+| Chrome plugin | Yes | Consultation path |
+| ChatGPT Plus/Pro | Yes | GPT-5.6 Sol access |
 
 ### Python Scripts
 
@@ -222,7 +210,7 @@ python3 scripts/build_attachment_bundle.py --help
 |--------|---------|
 | `check_packet_safety.py` | Credential scan, prevent sensitive data leakage |
 | `build_attachment_bundle.py` | Bundle multiple files into single Markdown |
-| `extract_chatgpt_reply.py` | Extract reply from OpenCLI |
+| `extract_chatgpt_reply.py` | Extract reply from Chrome |
 | `model_router.py` | Model selection logic |
 | `run_webgpt_consult.py` | Main consultation runner |
 
@@ -231,7 +219,7 @@ python3 scripts/build_attachment_bundle.py --help
 ## FAQ
 
 **Q1: Chrome plugin is unavailable, what should I do?**
-A: Check if OpenCLI is ready (`opencli doctor`). If neither is available, stop and report missing connection.
+A: Stop and report missing connection. This skill requires the Codex Chrome plugin.
 
 **Q2: Why does it show downgrade after selecting Pro?**
 A: This is expected behavior. When Pro is unavailable, the system automatically falls back to High and reports `downgraded=true` in metadata.
@@ -254,13 +242,12 @@ The complete AI Agent behavior chain:
 1. **Read this file** → understand overall structure
 2. **Execute section 0** → auto-configure and report
 3. **Read SKILL.md** → understand complete workflow
-4. **Select path based on routing strategy** → Chrome or OpenCLI
-5. **Build context packet** → use template
-6. **Run safety scan** → credentials check
-7. **Execute consultation** → send, wait, extract
-8. **Verify sentinel** → confirm completion
-9. **Local adoption decision** → adopt/reject/modify
-10. **Return result** → formatted output
+4. **Build context packet** → use template
+5. **Run safety scan** → credentials check
+6. **Execute consultation** → send via Chrome, wait, extract
+7. **Verify sentinel** → confirm completion
+8. **Local adoption decision** → adopt/reject/modify
+9. **Return result** → formatted output
 
 ---
 
