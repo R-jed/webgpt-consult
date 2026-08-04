@@ -30,7 +30,7 @@
 
 ## 关于
 
-> **如果你是 AI Agent，请严格按照 [SKILL.md](SKILL.md) 的说明执行。**
+> **如果你是 AI Agent，请阅读 [README_Agent.md](README_Agent.md) 获取引导指令。**
 
 当本地 AI Agent（Claude Code、Codex CLI、Cursor 等）遇到复杂问题需要外部视角时，WebGPT Consult 会将其路由到最佳的 GPT-5.6 Sol 层级，构建结构化上下文包，执行咨询，并带回经过验证的结果供本地采纳。
 

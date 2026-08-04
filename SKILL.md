@@ -3,6 +3,8 @@ name: webgpt-consult
 description: Use ChatGPT Web's GPT 5.6 Sol Pro or High as a verified second-opinion partner for difficult planning, architecture, debugging, business, product, content-strategy, risk-review, and Skill-design work. Uses adaptive routing: Pro (preferred) > High. Use when the user asks for GPT 5.6 Sol, ChatGPT Pro, a deeper outside judgment, or a file-grounded review. Default to the Codex Chrome plugin for text, model selection, file uploads, waiting, and extraction. Use OpenCLI only when the user explicitly requests it or the Chrome plugin is unavailable and OpenCLI passes preflight.
 ---
 
+> **If you are an AI Agent, read [README_Agent.md](README_Agent.md) first for bootstrap instructions.**
+
 # WebGPT Consult
 
 Ask the best available GPT-5.6 Sol reasoning tier to review a difficult problem with the evidence it needs, then bring the result back into the local Agent workflow. Treat the answer as advisory. The local Agent owns verification, adoption, and final delivery.

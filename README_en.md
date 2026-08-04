@@ -30,7 +30,7 @@
 
 ## About
 
-> **If you are an AI Agent, follow the [SKILL.md](SKILL.md) instructions strictly.**
+> **If you are an AI Agent, read [README_Agent.md](README_Agent.md) for bootstrap instructions.**
 
 When your local AI agent (Claude Code, Codex CLI, Cursor, etc.) encounters a difficult problem that needs an outside perspective, WebGPT Consult routes it to the best available GPT-5.6 Sol tier, builds a structured context packet, executes the consultation, and brings back a verified result for local adoption.
 
