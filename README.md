@@ -53,6 +53,39 @@ Subtap
 
 关闭浏览器标签页不会丢失连续性，因为 registry 保存的是 ChatGPT conversation URL，而不是 tab 状态。
 
+## 会话上下文满时
+
+如果同一个 workstream 的 Web ChatGPT 会话已经出现 context/conversation length 压力，Skill 不会继续在原会话里反复重试，也不会从最新一条消息直接分支。
+
+原因很简单：`Branch in new chat` 会继承所选消息之前的历史。从最新消息分支，长历史仍然会被完整带过去，基本没有完成真正的上下文压缩。
+
+每个 workstream 第一次成功咨询时会固定一个 `branch_base_task_id`。后续需要 rollover 时：
+
+```text
+current long conversation
+        ↓
+locate stable branch-base assistant result
+        ↓
+Branch in new chat from that older compact point
+        ↓
+CONTINUITY_CAPSULE_V1
+  accepted decisions
+  rejected paths
+  standing constraints
+  open questions
+  evidence index
+  current state
+  current ask
+        ↓
+continue same workstream in bounded context
+```
+
+Codex 会先在本地整理并验证累计 `CONTINUITY_CAPSULE_V1`。它是状态迁移包，不是简单聊天摘要，要求把从 branch base 到当前为止仍有复用价值的决策、事实、约束和未决问题带过去。
+
+如果当前 ChatGPT UI 无法可靠执行 `Branch in new chat`，则退化为 `rollover_fresh`：创建一个全新 ChatGPT 会话，发送同一个可独立恢复上下文的 capsule，并重新上传当前仍然必要的证据。不会继续向已经过满的父会话发送请求。
+
+registry 会保留当前 URL、父会话 URL、稳定 branch base、rollover 次数和 capsule hash，因此整个 workstream 的 lineage 仍然可追踪。
+
 ## 安全和真实性
 
 发送之前必须运行统一 preflight：
@@ -145,10 +178,12 @@ webgpt-consult/
 │   └── openai.yaml
 ├── references/
 │   ├── chrome-workflow.md
+│   ├── continuity-capsule-template.md
 │   └── context-packet-template.md
 ├── scripts/
 │   ├── build_attachment_bundle.py
 │   ├── check_packet_safety.py
+│   ├── continuity_capsule.py
 │   ├── conversation_registry.py
 │   ├── model_router.py
 │   ├── result_verifier.py
