@@ -1,221 +1,165 @@
 <h1 align="center">webgpt consult</h1>
 
 <p align="center">
-  <strong>GPT-5.6 Sol Pro/High 第二意见咨询</strong><br/>
-  <em>拿不准的时候，问问 GPT-5.6 Sol</em>
-</p>
-
-<p align="center">
-  <a href="https://github.com/R-jed/webgpt-consult/releases"><img src="https://img.shields.io/badge/release-v1.0.0-blue" alt="release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
+  <strong>让 Codex 把复杂问题交给 GPT-5.6 Sol Pro/High 做第二意见审查</strong><br/>
+  保留项目上下文，也保留本地 Agent 的最终判断权
 </p>
 
 <p align="center">
   <a href="README_en.md">English</a> ·
-  <a href="#关于">关于</a> ·
-  <a href="#快速开始">快速开始</a> ·
-  <a href="#使用场景">使用场景</a> ·
-  <a href="#工作流程">工作流程</a> ·
-  <a href="references/">参考文档</a>
+  <a href="SKILL.md">Skill 规范</a> ·
+  <a href="README_Agent.md">AI Agent 指引</a>
 </p>
 
-<br/>
+## 它解决什么
 
-<a id="关于"></a>
+`webgpt-consult` 是一个 Codex Skill。Codex 遇到复杂架构、调试、产品、商业或风险问题时，可以通过 Chrome 将经过整理的证据交给 ChatGPT Web 的 GPT-5.6 Sol 做第二意见审查，再由本地 Codex 判断哪些意见值得采用。
 
-## 关于
+当前只支持这一条执行路径：
 
-> **如果你是 AI Agent，请阅读 [README_Agent.md](README_Agent.md) 获取引导指令。**
-
-本地 Agent 遇到复杂问题时，可以调用这个工具去问 GPT-5.6 Sol。它会帮你打包上下文、发请求、拿回复，然后你自己决定采不采纳。
-
-```
-你的判断
-  → 打包上下文（8K-15K 字符）
-  → 安全扫描（防止泄露凭证）
-  → Chrome 插件
-  → 选 GPT-5.6 Sol Pro/High
-  → 发送、等回复、验证哨兵标记
-  → 你来决定采纳、拒绝还是修改
+```text
+Codex local judgment
+  -> project/workstream conversation routing
+  -> context packet + exact attachments
+  -> fail-closed preflight
+  -> Codex Chrome plugin
+  -> GPT-5.6 Sol Pro, then High
+  -> exact result verification
+  -> local adoption decision
 ```
 
-**为什么需要它：**
-- 复杂决策需要外部视角，但不能盲目信外模型
-- 上下文包保留你的判断、证据和约束
-- 哨兵标记确认回复完整，防止半截结果
-- 安全扫描防泄露敏感信息
+它不会把外部模型的结果直接当成最终答案。
 
-<p align="right">(<a href="#关于">返回顶部</a>)</p>
+## 会话连续性
 
-<a id="快速开始"></a>
+同一个项目不再每次都盲目新建 ChatGPT 对话，也不会把整个项目永久塞进同一个超长会话。
 
-## 快速开始
+Skill 在本地维护一个项目级 conversation registry：
 
-### 环境要求
+```text
+~/.codex/webgpt-consult/conversations.json
+```
 
-| 依赖 | 用途 | 是否必需 |
-|------|------|----------|
-| Python 3.x | 安全扫描、文件打包 | 必需 |
-| Codex CLI | AI 编程助手 | 必需 |
-| Chrome 插件 | 咨询路径 | 必需 |
-| ChatGPT Plus/Pro | GPT-5.6 Sol 访问 | 必需 |
+每个项目可以有多个 workstream，例如：
 
-### 安装
+```text
+Subtap
+  architecture-routing  -> ChatGPT conversation A
+  tui-performance       -> ChatGPT conversation B
+  release-risk          -> ChatGPT conversation C
+```
+
+直接跟进同一个决策、Bug、PR、分支、架构议题或实现计划时，Codex 会优先接回原会话。主题已经明显改变、需要独立第二意见、旧上下文可能造成锚定，或项目不同，则创建新会话。
+
+关闭浏览器标签页不会丢失连续性，因为 registry 保存的是 ChatGPT conversation URL，而不是 tab 状态。
+
+## 安全和真实性
+
+发送之前必须运行统一 preflight：
+
+```bash
+python3 scripts/submission_preflight.py packet.md \
+  --task-id webgpt-consult-20260804-220000 \
+  --sentinel WEBGPT_CONSULT_RESULT_20260804_220000 \
+  --attachment ./src/example.py
+```
+
+文本 packet 和文本附件都会扫描 credential-like 内容。发现 token、cookie、API key、private key、Authorization header 等内容时直接失败。
+
+二进制附件默认标记为 `manual_review_required`。确认它确实是用户希望上传且已经做过本地检查后，才可以显式确认。这个确认不会覆盖已经检测到的凭证。
+
+文件 bundle 现在对以下情况默认失败：
+
+- 明确指定的输入文件不存在
+- 没有任何可打包文本
+- 支持的文本文件会被静默截断
+- 总大小限制导致支持的文本文件被静默漏掉
+- bundle 内检测到 credential-like 内容
+
+## 模型路由
+
+只支持：
+
+```text
+GPT-5.6 Sol Pro
+      ↓ unavailable / disabled / ambiguous / not actionable
+GPT-5.6 Sol High
+      ↓ unavailable
+fail closed
+```
+
+`model_router.py` 是模型选择的 deterministic policy source。DOM ref 只用于点击，不作为模型身份依据。普通 `GPT-5 Pro` selector 不能证明它属于 GPT-5.6 Sol。
+
+## 结果验证
+
+外部模型回复必须以前两行开始：
+
+```text
+WEBGPT_CONSULT_RESULT_<unique-id>
+Task-ID: <task-id>
+```
+
+之后使用：
+
+```bash
+python3 scripts/result_verifier.py /tmp/assistant-reply.txt \
+  --sentinel WEBGPT_CONSULT_RESULT_... \
+  --task-id webgpt-consult-...
+```
+
+sentinel 只是在正文中出现不算成功。
+
+## 环境要求
+
+- Python >= 3.10
+- Codex
+- Codex Chrome plugin 已安装并连接
+- Chrome 中已登录 ChatGPT Web
+- 账号实际提供 GPT-5.6 Sol Pro 或 High
+
+Plugin 是否可安装还可能受方案、workspace policy、角色和 supported surface 影响。如果 Chrome plugin 本身不可用，本 Skill 会停止，不会改走其他浏览器 transport。
+
+## 安装
+
+如果你通过 Codex / ChatGPT 的 Skills 或 Plugin 机制使用本项目，请将整个 Skill 目录作为一个完整单元安装，确保 `SKILL.md`、`scripts/`、`references/` 和 `agents/` 一起存在。
+
+如果你是在开发或审查源码：
 
 ```bash
 git clone https://github.com/R-jed/webgpt-consult.git
 cd webgpt-consult
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-### 配置
-
-1. 安装 Codex CLI
-2. 连接 Chrome 插件
-3. 在 Chrome 中登录 ChatGPT Web
-4. 确认模型选择器有 GPT-5.6 Sol Pro 或 High
-
-### 验证安装
-
-```bash
-# 安全扫描器能跑
-python3 scripts/check_packet_safety.py --help
-
-# 文件打包器能跑
-python3 scripts/build_attachment_bundle.py --help
-```
-
-都没报错就能用了。遇到问题看 [SKILL.md](SKILL.md)。
-
-<p align="right">(<a href="#快速开始">返回顶部</a>)</p>
-
-<a id="使用场景"></a>
-
-## 使用场景
-
-| 场景 | 说明 |
-|------|------|
-| 架构审查 | 系统设计、API 设计、数据库 schema |
-| 商业咨询 | 战略、定价、市场分析 |
-| 调试 | 复杂 Bug、性能问题、竞态条件 |
-| 风险审查 | 安全审计、技术债务 |
-| 规划 | 项目规划、Sprint 计划 |
-| 内容策略 | 文档、营销、技术写作 |
-
-<p align="right">(<a href="#使用场景">返回顶部</a>)</p>
-
-<a id="工作流程"></a>
-
-## 工作流程
-
-### 1. 先写你的判断
-
-别急着问，先想清楚：
-- 问题是什么，成功标准是什么
-- 你有什么证据和约束
-- 有哪些选项，各自代价是什么
-- 你试过什么，还有哪些不确定
-
-### 2. 打包上下文
-
-用[模板](references/context-packet-template.md)组织内容。文件多的话打包：
-
-```bash
-python3 scripts/build_attachment_bundle.py /path/to/artifacts -o /tmp/bundle.md
-```
-
-### 3. 安全扫描
-
-```bash
-python3 scripts/check_packet_safety.py packet.md
-```
-
-去掉凭证，保留有用的项目上下文。
-
-### 4. 发请求
-
-走 [Chrome 工作流](references/chrome-workflow.md)。
-
-### 5. 验证并决策
-
-- 确认 `WEBGPT_CONSULT_RESULT_...` 哨兵出现
-- 和你的判断对比
-- 采纳、拒绝或修改
-
-<p align="right">(<a href="#工作流程">返回顶部</a>)</p>
-
-<a id="模型路由"></a>
-
-## 模型路由
-
-| 优先级 | 模型 | 说明 |
-|--------|------|------|
-| 1 | GPT-5.6 Sol Pro | 首选，推理最强 |
-| 2 | GPT-5.6 Sol High | Pro 不可用时降级 |
-| - | Extra High/Medium/Instant | 不支持，直接失败 |
-
-选完之后验证：
-1. 选中的层级名出现在 `menuitemradio`
-2. `aria-checked=true` 存在
-3. 选择器里有 GPT-5.6 Sol 系列证据
-
-<p align="right">(<a href="#模型路由">返回顶部</a>)</p>
-
-<a id="项目结构"></a>
+仅 `git clone` 只是获取源码，不等于已经在你的 Codex 环境中完成 Skill 安装。
 
 ## 项目结构
 
-```
+```text
 webgpt-consult/
-├── SKILL.md                    # 主文档
-├── README.md                   # 本文件
+├── SKILL.md
+├── README.md
+├── README_en.md
+├── README_Agent.md
 ├── agents/
-│   └── openai.yaml            # Agent 配置
+│   └── openai.yaml
 ├── references/
-│   ├── chrome-workflow.md     # Chrome 工作流
-│   └── context-packet-template.md  # 上下文包模板
+│   ├── chrome-workflow.md
+│   └── context-packet-template.md
 ├── scripts/
-│   ├── check_packet_safety.py # 凭证扫描
-│   ├── build_attachment_bundle.py  # 文件打包
-│   └── model_router.py        # 模型选择
-└── tests/
-    └── test_*.py
+│   ├── build_attachment_bundle.py
+│   ├── check_packet_safety.py
+│   ├── conversation_registry.py
+│   ├── model_router.py
+│   ├── result_verifier.py
+│   └── submission_preflight.py
+├── tests/
+│   └── test_*.py
+└── VALIDATION.md
 ```
 
-<p align="right">(<a href="#项目结构">返回顶部</a>)</p>
+如果你是 AI Agent，请从 [README_Agent.md](README_Agent.md) 开始，然后以 [SKILL.md](SKILL.md) 为唯一执行规范。
 
-<a id="执行示例"></a>
+## License
 
-## 执行示例
-
-### Pro 可用
-
-```
-可用：Pro, High
-选择：Pro
-降级：否
-```
-
-### Pro 不可用
-
-```
-可用：High
-选择：High
-降级：是
-```
-
-### 无支持层级
-
-```
-可用：Extra High, Medium, Instant
-结果：失败
-```
-
-<p align="right">(<a href="#执行示例">返回顶部</a>)</p>
-
-<a id="许可证"></a>
-
-## 许可证
-
-MIT - 详见 [LICENSE](LICENSE)。
-
-<p align="right">(<a href="#许可证">返回顶部</a>)</p>
+MIT
