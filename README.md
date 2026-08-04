@@ -18,6 +18,7 @@
 </p>
 
 <p align="center">
+  <a href="README_zh.md">中文</a> ·
   <a href="#about">About</a> ·
   <a href="#getting-started">Getting Started</a> ·
   <a href="#usage">Usage</a> ·
