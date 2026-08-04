@@ -1,30 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#E8D5B7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C4A882;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="ink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D2D2D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A1A1A;stop-opacity:1" />
     </linearGradient>
   </defs>
 
-  <!-- Background circle -->
-  <circle cx="64" cy="64" r="60" fill="url(#grad)" />
+  <!-- Paper background -->
+  <rect x="16" y="8" width="96" height="112" rx="4" fill="url(#grad)" />
 
-  <!-- Chat bubble (consultation) -->
-  <path d="M38 45 C38 38, 44 32, 52 32 L76 32 C84 32, 90 38, 90 45 L90 62 C90 69, 84 75, 76 75 L60 75 L48 85 L48 75 L52 75 C44 75, 38 69, 38 62 Z"
-        fill="white" opacity="0.95"/>
+  <!-- Paper grain texture -->
+  <rect x="16" y="8" width="96" height="112" rx="4" fill="url(#grad)" opacity="0.9"/>
+  <line x1="20" y1="20" x2="108" y2="20" stroke="#D4C4A8" stroke-width="0.5" opacity="0.5"/>
+  <line x1="20" y1="28" x2="108" y2="28" stroke="#D4C4A8" stroke-width="0.5" opacity="0.3"/>
+  <line x1="20" y1="36" x2="108" y2="36" stroke="#D4C4A8" stroke-width="0.5" opacity="0.5"/>
 
-  <!-- Brain/AI symbol inside -->
-  <circle cx="64" cy="52" r="12" fill="none" stroke="#7C3AED" stroke-width="2.5"/>
+  <!-- Title block -->
+  <rect x="24" y="16" width="72" height="8" fill="url(#ink)" opacity="0.9"/>
 
-  <!-- Neural connections -->
-  <circle cx="58" cy="48" r="2" fill="#7C3AED"/>
-  <circle cx="70" cy="48" r="2" fill="#7C3AED"/>
-  <circle cx="64" cy="56" r="2" fill="#7C3AED"/>
-  <line x1="58" y1="48" x2="64" y2="56" stroke="#7C3AED" stroke-width="1.5"/>
-  <line x1="70" y1="48" x2="64" y2="56" stroke="#7C3AED" stroke-width="1.5"/>
-  <line x1="58" y1="48" x2="70" y2="48" stroke="#7C3AED" stroke-width="1.5"/>
+  <!-- Subtitle -->
+  <rect x="24" y="28" width="48" height="4" fill="url(#ink)" opacity="0.6"/>
 
-  <!-- Second opinion arrow -->
-  <path d="M85 82 L95 92 L85 102" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="72" y1="92" x2="95" y2="92" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <!-- Image well (photo placeholder) -->
+  <rect x="24" y="40" width="80" height="48" rx="2" fill="#F5F0E8" stroke="#C4A882" stroke-width="1"/>
+
+  <!-- Image icon -->
+  <circle cx="64" cy="64" r="12" fill="none" stroke="#A89070" stroke-width="1.5"/>
+  <circle cx="64" cy="64" r="4" fill="#A89070"/>
+  <path d="M56 72 L64 60 L72 72" fill="none" stroke="#A89070" stroke-width="1.5"/>
+
+  <!-- Caption -->
+  <rect x="24" y="94" width="56" height="3" fill="url(#ink)" opacity="0.4"/>
+  <rect x="24" y="100" width="40" height="3" fill="url(#ink)" opacity="0.3"/>
+
+  <!-- Margin annotation (Editorial style) -->
+  <rect x="108" y="40" width="2" height="48" fill="#C4A882" opacity="0.6"/>
+
+  <!-- Grid lines (Swiss style) -->
+  <line x1="64" y1="40" x2="64" y2="88" stroke="#C4A882" stroke-width="0.5" opacity="0.3" stroke-dasharray="2,2"/>
 </svg>

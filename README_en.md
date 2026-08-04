@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/AI-Consultant-blueviolet?style=for-the-badge&logo=openai&logoColor=white" alt="AI Consultant" />
+  <img src="logo.svg" alt="webgpt consult" width="128" />
 </p>
 
 <h1 align="center">webgpt consult</h1>
