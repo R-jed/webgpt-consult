@@ -107,6 +107,22 @@ class RegistryTests(unittest.TestCase):
             threads = list_threads(data, identity)
             self.assertEqual({t["thread_key"] for t in threads}, {"architecture", "bug-42"})
 
+    def test_git_subdirectories_share_project_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            child = root / "src"
+            child.mkdir(parents=True)
+            subprocess.run(["git", "-C", str(root), "init"], check=True, capture_output=True)
+            self.assertEqual(project_identity(root)["fingerprint"], project_identity(child)["fingerprint"])
+
+    def test_thread_rollover_preserves_previous_url(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            updated = record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/two", scope="routing", task_id="t2", summary="two")
+            self.assertEqual(updated["previous_conversations"], ["https://chatgpt.com/c/one"])
+
 
 class BundleCliTests(unittest.TestCase):
     def test_missing_input_fails(self):
