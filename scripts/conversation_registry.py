@@ -155,23 +155,67 @@ def _valid_conversation_url(value: str) -> bool:
     return parsed.scheme == "https" and parsed.hostname == "chatgpt.com" and parsed.path not in {"", "/"}
 
 
-def record_thread(data: dict, identity: dict, *, thread_key: str, conversation_url: str, scope: str, task_id: str, summary: str) -> dict:
+def _find_thread(data: dict, identity: dict, thread_key: str) -> dict | None:
+    bucket = data["projects"].get(identity["fingerprint"], {})
+    return next((t for t in bucket.get("threads", []) if t.get("thread_key") == thread_key), None)
+
+
+def rollover_plan(data: dict, identity: dict, thread_key: str) -> dict:
+    thread = _find_thread(data, identity, thread_key)
+    if thread is None or thread.get("status", "active") != "active":
+        raise ValueError(f"active workstream not found: {thread_key}")
+    base_task_id = thread.get("branch_base_task_id") or thread.get("last_task_id")
+    if not base_task_id:
+        raise ValueError("workstream has no branch base task id")
+    return {
+        "thread_key": thread_key,
+        "current_conversation_url": thread["conversation_url"],
+        "branch_base_task_id": base_task_id,
+        "last_task_id": thread.get("last_task_id"),
+        "next_rollover_index": int(thread.get("rollover_count", 0)) + 1,
+        "continuity_capsule_sha256": thread.get("continuity_capsule_sha256"),
+    }
+
+
+def record_thread(
+    data: dict,
+    identity: dict,
+    *,
+    thread_key: str,
+    conversation_url: str,
+    scope: str,
+    task_id: str,
+    summary: str,
+    branch_base_task_id: str | None = None,
+    parent_conversation_url: str | None = None,
+    continuity_capsule_sha256: str | None = None,
+    rollover: bool = False,
+) -> dict:
     if not _valid_conversation_url(conversation_url):
         raise ValueError("conversation_url must be a canonical chatgpt.com conversation URL")
+    if parent_conversation_url and not _valid_conversation_url(parent_conversation_url):
+        raise ValueError("parent_conversation_url must be a canonical chatgpt.com conversation URL")
     if not thread_key.strip():
         raise ValueError("thread_key must not be empty")
+
     bucket = _project_bucket(data, identity)
     now = utc_now()
     existing = next((t for t in bucket["threads"] if t.get("thread_key") == thread_key), None)
+
+    effective_base = branch_base_task_id or (existing or {}).get("branch_base_task_id") or task_id
     payload = {
         "thread_key": thread_key,
         "conversation_url": conversation_url,
         "scope": scope.strip(),
         "last_task_id": task_id,
         "summary": summary.strip(),
+        "branch_base_task_id": effective_base,
         "last_used_at": now,
         "status": "active",
     }
+    if continuity_capsule_sha256:
+        payload["continuity_capsule_sha256"] = continuity_capsule_sha256
+
     if existing:
         previous_url = existing.get("conversation_url")
         if previous_url and previous_url != conversation_url:
@@ -179,13 +223,33 @@ def record_thread(data: dict, identity: dict, *, thread_key: str, conversation_u
             if previous_url not in history:
                 history.insert(0, previous_url)
                 del history[5:]
+        if rollover:
+            if not previous_url or previous_url == conversation_url:
+                raise ValueError("rollover requires a new conversation URL")
+            if parent_conversation_url and parent_conversation_url != previous_url:
+                raise ValueError("rollover parent must match the current registered conversation")
+            payload["parent_conversation_url"] = previous_url
+            payload["rollover_count"] = int(existing.get("rollover_count", 0)) + 1
+            payload["last_rollover_at"] = now
+        else:
+            payload["rollover_count"] = int(existing.get("rollover_count", 0))
+            if existing.get("parent_conversation_url"):
+                payload["parent_conversation_url"] = existing["parent_conversation_url"]
         existing.update(payload)
         result = existing
     else:
+        if rollover:
+            raise ValueError("cannot rollover an unregistered workstream")
         payload["created_at"] = now
+        payload["rollover_count"] = 0
         bucket["threads"].append(payload)
         result = payload
-    bucket["threads"] = sorted(bucket["threads"], key=lambda t: t.get("last_used_at", ""), reverse=True)[:MAX_THREADS_PER_PROJECT]
+
+    bucket["threads"] = sorted(
+        bucket["threads"],
+        key=lambda t: t.get("last_used_at", ""),
+        reverse=True,
+    )[:MAX_THREADS_PER_PROJECT]
     return result
 
 
@@ -205,12 +269,18 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("identity")
     sub.add_parser("list")
+    plan = sub.add_parser("plan-rollover")
+    plan.add_argument("--thread-key", required=True)
     record = sub.add_parser("record")
     record.add_argument("--thread-key", required=True)
     record.add_argument("--conversation-url", required=True)
     record.add_argument("--scope", required=True)
     record.add_argument("--task-id", required=True)
     record.add_argument("--summary", default="")
+    record.add_argument("--branch-base-task-id")
+    record.add_argument("--parent-conversation-url")
+    record.add_argument("--continuity-capsule-sha256")
+    record.add_argument("--rollover", action="store_true")
     retire = sub.add_parser("retire")
     retire.add_argument("--thread-key", required=True)
     args = parser.parse_args()
@@ -223,17 +293,24 @@ def main() -> int:
             path = state_path()
             if args.command == "list":
                 out = {"project": identity, "threads": list_threads(load_state(path), identity)}
+            elif args.command == "plan-rollover":
+                out = rollover_plan(load_state(path), identity, args.thread_key)
             else:
                 with registry_lock(path):
                     data = load_state(path)
                     if args.command == "record":
                         out = record_thread(
-                            data, identity,
+                            data,
+                            identity,
                             thread_key=args.thread_key,
                             conversation_url=args.conversation_url,
                             scope=args.scope,
                             task_id=args.task_id,
                             summary=args.summary,
+                            branch_base_task_id=args.branch_base_task_id,
+                            parent_conversation_url=args.parent_conversation_url,
+                            continuity_capsule_sha256=args.continuity_capsule_sha256,
+                            rollover=args.rollover,
                         )
                         save_state(path, data)
                     else:
