@@ -87,6 +87,18 @@
       "prompt": "Upload a PDF attachment through webgpt-consult.",
       "expected_output": "Preflight marks an unscanned binary as manual_review_required and blocks until the Agent locally reviews and explicitly confirms the intended binary attachment; known detected credentials remain non-overridable.",
       "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "这个 routing workstream 的 Web ChatGPT 会话提示上下文太长了，但我要继续同一条咨询链，不能丢掉前面已经确认的架构决策。",
+      "expected_output": "Does not retry in the overfull parent. Builds and validates a cumulative continuity capsule, gets the registry rollover plan, branches from the stable branch-base task rather than the latest message, sends a rollover_capsule packet in the new branch, and records parent URL, capsule hash, and rollover lineage after success.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "同一个 workstream 已经触发 context rollover，但当前 ChatGPT UI 找不到 Branch in new chat。",
+      "expected_output": "Falls back to rollover_fresh: creates a completely fresh ChatGPT conversation, sends the same validated standalone continuity capsule plus current evidence, preserves the same project/workstream identity and branch-base task in the registry, and never continues sending into the overfull parent thread.",
+      "files": []
     }
   ]
 }
