@@ -1,9 +1,9 @@
 ---
-name: gpt56-sol-pro-consult
+name: webgpt-consult
 description: Use ChatGPT Web's GPT 5.6 Sol Pro or High as a verified second-opinion partner for difficult planning, architecture, debugging, business, product, content-strategy, risk-review, and Skill-design work. Uses adaptive routing: Pro (preferred) > High. Use when the user asks for GPT 5.6 Sol, ChatGPT Pro, a deeper outside judgment, or a file-grounded review. Default to the Codex Chrome plugin for text, model selection, file uploads, waiting, and extraction. Use OpenCLI only when the user explicitly requests it or the Chrome plugin is unavailable and OpenCLI passes preflight.
 ---
 
-# GPT 5.6 Sol Consult
+# WebGPT Consult
 
 Ask the best available GPT-5.6 Sol reasoning tier to review a difficult problem with the evidence it needs, then bring the result back into the local Agent workflow. Treat the answer as advisory. The local Agent owns verification, adoption, and final delivery.
 
@@ -77,7 +77,7 @@ Do not send executable credentials: tokens, cookies, passwords, API keys, privat
 Run the bundled scanner before submission:
 
 ```bash
-SKILL_DIR="<path-to-installed-gpt56-sol-pro-consult>"
+SKILL_DIR="<path-to-installed-webgpt-consult>"
 python3 "$SKILL_DIR/scripts/check_packet_safety.py" packet.md
 ```
 
@@ -140,10 +140,10 @@ Use attachments when the answer depends on local Skills, repositories, source fi
 When a directory contains many text files, build one reviewable bundle:
 
 ```bash
-SKILL_DIR="<path-to-installed-gpt56-sol-pro-consult>"
+SKILL_DIR="<path-to-installed-webgpt-consult>"
 python3 "$SKILL_DIR/scripts/build_attachment_bundle.py" \
   /path/to/artifact-or-directory \
-  -o /tmp/gpt56-sol-pro-attachment-bundle.md
+  -o /tmp/webgpt-consult-attachment-bundle.md
 ```
 
 List every attachment in the packet. Upload original human-readable files first; use a generated Markdown bundle when there are too many files or archives are rejected. Exclude caches, dependencies, build output, `.git`, secrets, and irrelevant binaries.
@@ -156,7 +156,7 @@ A consultation is complete only when all are true:
 - The prompt and every required attachment were visibly present before sending.
 - The assistant stopped generating.
 - The complete assistant turn was extracted.
-- The expected `GPT56_SOL_PRO_RESULT_...` sentinel appears in that assistant turn.
+- The expected `WEBGPT_CONSULT_RESULT_...` sentinel appears in that assistant turn.
 
 If the user says the result is already visible, re-extract the existing conversation before retrying. Never start a duplicate while the original run may still be active.
 

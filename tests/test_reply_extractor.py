@@ -63,12 +63,12 @@ class TestFencedCodeAwareness(unittest.TestCase):
     def test_sentinel_retained_in_full_response(self) -> None:
         content = (
             "#### ChatGPT said:\n"
-            "GPT56_SOL_PRO_RESULT_20260726_TEST\n"
+            "WEBGPT_CONSULT_RESULT_20260726_TEST\n"
             "Analysis follows...\n"
             "Detailed response."
         )
         result = split_latest_assistant(content)
-        self.assertIn("GPT56_SOL_PRO_RESULT_20260726_TEST", result)
+        self.assertIn("WEBGPT_CONSULT_RESULT_20260726_TEST", result)
         self.assertIn("Analysis follows", result)
 
     def test_plain_marker_not_in_fence(self) -> None:

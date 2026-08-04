@@ -340,14 +340,14 @@ class TestExecutionRouting(unittest.TestCase):
     """Tests that ensure_best_available_model() drives the correct flow."""
 
     # A: Medium checked, Pro available → click Pro → verify → Pro
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_a_medium_upgrades_to_pro(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ensure_best_available_model
+        from run_webgpt_consult import ensure_best_available_model
 
         menu_picker = """\
 [20] <div role=menuitem>
@@ -376,14 +376,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertFalse(selection.downgraded)
 
     # B: Medium checked, High available → click High → verify → High
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_b_medium_upgrades_to_high(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ensure_best_available_model
+        from run_webgpt_consult import ensure_best_available_model
 
         menu_picker = """\
 [20] <div role=menuitem>
@@ -411,14 +411,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertTrue(selection.downgraded)
 
     # C: Medium only → fail
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_c_medium_only_fails(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ConsultError, ensure_best_available_model
+        from run_webgpt_consult import ConsultError, ensure_best_available_model
 
         menu = """\
 [20] <div role=menuitem>
@@ -434,14 +434,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertIn("No verified GPT-5.6 Sol Pro or High", str(ctx.exception))
 
     # D: Extra High only → fail
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_d_extra_high_only_fails(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ConsultError, ensure_best_available_model
+        from run_webgpt_consult import ConsultError, ensure_best_available_model
 
         menu = """\
 [20] <div role=menuitem>
@@ -457,14 +457,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertIn("No verified GPT-5.6 Sol Pro or High", str(ctx.exception))
 
     # E: High already checked, Pro absent → no click → verify → High
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_e_high_already_checked_no_click(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ensure_best_available_model
+        from run_webgpt_consult import ensure_best_available_model
 
         menu = """\
 [20] <div role=menuitem>
@@ -480,14 +480,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertEqual(mock_click.call_count, 1)
 
     # F: High checked, Pro present → upgrade Pro
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_f_upgrades_high_to_pro(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ensure_best_available_model
+        from run_webgpt_consult import ensure_best_available_model
 
         menu_picker = """\
 [20] <div role=menuitem>
@@ -515,14 +515,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertFalse(selection.downgraded)
 
     # G: click High succeeds but fresh DOM says Medium → verification failure
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_g_verification_failure(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ConsultError, ensure_best_available_model
+        from run_webgpt_consult import ConsultError, ensure_best_available_model
 
         menu_picker = """\
 [20] <div role=menuitem>
@@ -550,14 +550,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertIn("post-selection verification failed", str(ctx.exception))
 
     # H: bare High without family → fail
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_h_bare_high_fails(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ConsultError, ensure_best_available_model
+        from run_webgpt_consult import ConsultError, ensure_best_available_model
 
         menu = """\
 [42] <div role=menuitemradio aria-checked=true>High"""
@@ -570,14 +570,14 @@ class TestExecutionRouting(unittest.TestCase):
             ensure_best_available_model(MOCK_SESSION)
 
     # I: GPT-5.5 Pro → fail
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_i_gpt55_pro_fails(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ConsultError, ensure_best_available_model
+        from run_webgpt_consult import ConsultError, ensure_best_available_model
 
         menu = """\
 [12] <div role=menuitemradio data-testid=model-switcher-gpt-5-5-pro aria-checked=true>GPT 5.5 Pro"""
@@ -590,14 +590,14 @@ class TestExecutionRouting(unittest.TestCase):
             ensure_best_available_model(MOCK_SESSION)
 
     # J: Pro Extended → fail
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_j_pro_extended_fails(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ConsultError, ensure_best_available_model
+        from run_webgpt_consult import ConsultError, ensure_best_available_model
 
         menu = """\
 [13] <div role=menuitemradio aria-checked=true>Pro Extended"""
@@ -620,14 +620,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertFalse(result)
 
     # L: Mixed family – GPT-5.5 Pro checked, GPT-5.6 Sol High available
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_l_gpt55_pro_checked_gpt56_high_available(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ensure_best_available_model
+        from run_webgpt_consult import ensure_best_available_model
 
         menu = """\
 [10] <div role=menuitem>
@@ -660,14 +660,14 @@ class TestExecutionRouting(unittest.TestCase):
         self.assertTrue(selection.downgraded)
 
     # M: Mixed family – GPT-5.6 Sol Pro available, GPT-5.5 High checked
-    @patch("run_gpt56_sol_pro_consult.get_state")
-    @patch("run_gpt56_sol_pro_consult.click_ref")
-    @patch("run_gpt56_sol_pro_consult.find_model_button")
-    @patch("run_gpt56_sol_pro_consult.run_opencli")
+    @patch("run_webgpt_consult.get_state")
+    @patch("run_webgpt_consult.click_ref")
+    @patch("run_webgpt_consult.find_model_button")
+    @patch("run_webgpt_consult.run_opencli")
     def test_m_gpt56_pro_available_gpt55_high_checked(
         self, mock_opencli, mock_find_btn, mock_click, mock_get_state
     ):
-        from run_gpt56_sol_pro_consult import ensure_best_available_model
+        from run_webgpt_consult import ensure_best_available_model
 
         menu = """\
 [10] <div role=menuitem>

@@ -93,11 +93,11 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("Selected tier: pro | high", skill)
 
     def test_no_deprecated_wrapper_in_runner(self) -> None:
-        runner = (SKILL_DIR / "scripts" / "run_gpt56_sol_pro_consult.py").read_text(encoding="utf-8")
-        self.assertNotIn("def ensure_gpt56_sol_pro", runner)
+        runner = (SKILL_DIR / "scripts" / "run_webgpt_consult.py").read_text(encoding="utf-8")
+        self.assertNotIn("def ensure_best_available_model", runner)
 
     def test_no_pro_required_in_runner_errors(self) -> None:
-        runner = (SKILL_DIR / "scripts" / "run_gpt56_sol_pro_consult.py").read_text(encoding="utf-8")
+        runner = (SKILL_DIR / "scripts" / "run_webgpt_consult.py").read_text(encoding="utf-8")
         self.assertNotIn("Pro required", runner)
         self.assertNotIn("Pro was not visible", runner)
 
@@ -165,31 +165,31 @@ class TestNonceUniqueness(unittest.TestCase):
 
     def test_session_nonce_format(self) -> None:
         import re
-        runner = (SKILL_DIR / "scripts" / "run_gpt56_sol_pro_consult.py").read_text(encoding="utf-8")
+        runner = (SKILL_DIR / "scripts" / "run_webgpt_consult.py").read_text(encoding="utf-8")
         self.assertIn("uuid.uuid4().hex[:12]", runner)
         self.assertNotIn("uuid.uuid4().hex[:6]", runner)
         self.assertNotIn("uuid.uuid4().hex[:8]", runner)
 
     def test_sentinel_nonce_format(self) -> None:
         import re
-        runner = (SKILL_DIR / "scripts" / "run_gpt56_sol_pro_consult.py").read_text(encoding="utf-8")
+        runner = (SKILL_DIR / "scripts" / "run_webgpt_consult.py").read_text(encoding="utf-8")
         # _generate_sentinel should use hex[:12]
         self.assertIn("nonce = uuid.uuid4().hex[:12]", runner)
 
     def test_sentinel_prefix_preserved(self) -> None:
-        runner = (SKILL_DIR / "scripts" / "run_gpt56_sol_pro_consult.py").read_text(encoding="utf-8")
-        self.assertIn("GPT56_SOL_PRO_RESULT_", runner)
+        runner = (SKILL_DIR / "scripts" / "run_webgpt_consult.py").read_text(encoding="utf-8")
+        self.assertIn("WEBGPT_CONSULT_RESULT_", runner)
 
     def test_two_independent_sentinels_differ(self) -> None:
         import sys
         sys.path.insert(0, str(SKILL_DIR / "scripts"))
-        from run_gpt56_sol_pro_consult import _generate_sentinel
+        from run_webgpt_consult import _generate_sentinel
         a = _generate_sentinel()
         b = _generate_sentinel()
         self.assertEqual(len(a.split("_")[-1]), 12)
         self.assertEqual(len(b.split("_")[-1]), 12)
-        self.assertTrue(a.startswith("GPT56_SOL_PRO_RESULT_"))
-        self.assertTrue(b.startswith("GPT56_SOL_PRO_RESULT_"))
+        self.assertTrue(a.startswith("WEBGPT_CONSULT_RESULT_"))
+        self.assertTrue(b.startswith("WEBGPT_CONSULT_RESULT_"))
         # Random nonces should differ (extremely unlikely to collide with 12 hex chars)
         self.assertNotEqual(a, b)
 

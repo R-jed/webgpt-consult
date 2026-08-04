@@ -213,13 +213,13 @@ def extract_sentinel(packet: str, explicit: str | None) -> str:
 
     If --sentinel is provided, use it directly.
     Otherwise generate one from the packet's embedded sentinel.
-    The sentinel format is always: GPT56_SOL_PRO_RESULT_<timestamp>_<nonce>
+    The sentinel format is always: WEBGPT_CONSULT_RESULT_<timestamp>_<nonce>
     """
     if explicit:
         return explicit
-    match = re.search(r"GPT56_SOL_PRO_RESULT_[A-Za-z0-9_:-]+", packet)
+    match = re.search(r"WEBGPT_CONSULT_RESULT_[A-Za-z0-9_:-]+", packet)
     if not match:
-        raise ConsultError("Could not infer sentinel. Pass --sentinel or include GPT56_SOL_PRO_RESULT_... in the packet.")
+        raise ConsultError("Could not infer sentinel. Pass --sentinel or include WEBGPT_CONSULT_RESULT_... in the packet.")
     return match.group(0)
 
 
@@ -227,7 +227,7 @@ def _generate_sentinel() -> str:
     """Generate a collision-resistant sentinel for a new consultation."""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     nonce = uuid.uuid4().hex[:12]
-    return f"GPT56_SOL_PRO_RESULT_{ts}_{nonce}"
+    return f"WEBGPT_CONSULT_RESULT_{ts}_{nonce}"
 
 
 # ---------------------------------------------------------------------------

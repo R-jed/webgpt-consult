@@ -22,8 +22,8 @@ Continue only when the daemon, browser bridge, connected profile, and ChatGPT lo
 The bundled wrapper is text-only:
 
 ```bash
-SKILL_DIR="<path-to-installed-gpt56-sol-pro-consult>"
-python3 "$SKILL_DIR/scripts/run_gpt56_sol_pro_consult.py" \
+SKILL_DIR="<path-to-installed-webgpt-consult>"
+python3 "$SKILL_DIR/scripts/run_webgpt_consult.py" \
   --prompt-file /path/to/context-packet.md
 ```
 
@@ -42,10 +42,10 @@ It performs the packet safety check, opens ChatGPT, selects Pro or High via adap
 List or inspect the existing OpenCLI browser session, extract the complete `main` region, and pass the extract JSON to:
 
 ```bash
-SKILL_DIR="<path-to-installed-gpt56-sol-pro-consult>"
+SKILL_DIR="<path-to-installed-webgpt-consult>"
 python3 "$SKILL_DIR/scripts/extract_chatgpt_reply.py" \
   /path/to/extract.json \
-  --sentinel GPT56_SOL_PRO_RESULT_YYYYMMDD_HHMMSS
+  --sentinel WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
 ```
 
 A sentinel visible only in the user's prompt is not completion evidence.

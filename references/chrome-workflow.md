@@ -85,7 +85,7 @@ Do not stop, retry, refresh, or send "continue" while generation remains active.
 
 After generation stops, identify the latest assistant turn from a fresh snapshot. Read that turn only; do not treat the user's echoed sentinel as success.
 
-Normalize escaped underscores and verify `GPT56_SOL_PRO_RESULT_...` appears inside the assistant turn. If it is absent, re-read the complete latest assistant turn once. Mark the consultation incomplete when the final answer still lacks the sentinel or appears truncated.
+Normalize escaped underscores and verify `WEBGPT_CONSULT_RESULT_...` appears inside the assistant turn. If it is absent, re-read the complete latest assistant turn once. Mark the consultation incomplete when the final answer still lacks the sentinel or appears truncated.
 
 Record:
 
