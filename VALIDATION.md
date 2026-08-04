@@ -1,72 +1,55 @@
 # Validation
 
-## Deterministic policy validation
+## Canonical deterministic validation
 
-Canonical commands for a connected local checkout:
-
-```text
-python -m unittest discover -s tests -p 'test_*.py' -v
-python -m py_compile scripts/*.py
-```
-
-### Confirmed baseline before context-rollover iteration
-
-Local review run on 2026-08-04:
+Run on a connected checkout:
 
 ```text
-13 tests passed
-Python syntax compilation passed
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 -m py_compile scripts/*.py
 ```
 
-That baseline covered:
+The current v1.2 simplification defines 15 deterministic unit tests covering:
 
-- common credential blocking;
-- corrected absolute-path matching;
-- disabled/non-actionable Pro fallback to High;
-- rejection of generic GPT-5 Pro as GPT-5.6 evidence;
-- exact sentinel and task-ID binding;
+- credential blocking and path-warning correctness;
+- verified Pro -> High model routing boundaries;
+- rejection of generic GPT-5 Pro identity evidence;
+- exact sentinel and task-ID result binding;
 - direct text-attachment credential blocking;
-- binary manual-review gate;
-- multiple project workstreams in the conversation registry;
-- canonical git-root identity across project subdirectories;
-- conversation rollover history when a workstream moves to a new ChatGPT URL;
-- missing bundle input failure;
-- Markdown fence collision handling.
+- binary manual-review gating;
+- durable consultation-state save/load and Web URL replacement;
+- corrupt state isolation;
+- separate checkout identity isolation;
+- consultation-state schema validation;
+- strict attachment-bundle missing-input and fence handling.
 
-### Context-rollover delta validation
+## Evidence from this iteration
 
-The current deterministic test file defines 22 tests after the context-window rollover work.
+The review runtime could not perform a fresh GitHub clone because outbound DNS resolution for `github.com` was unavailable. A full current-HEAD suite is therefore not claimed as locally passed from this environment.
 
-A fresh GitHub clone could not be executed from the review runtime because outbound DNS resolution for `github.com` was unavailable. The final changed rollover policy was therefore executed directly from the final source definitions in the review runtime instead of claiming a fresh-clone full-suite pass.
-
-Confirmed on the final rollover delta:
+The new `consult_state.py` was read back from `main`, syntax-compiled, and exercised in a targeted local smoke test:
 
 ```text
-conversation_registry.py syntax: passed
-continuity_capsule.py syntax: passed
-8 targeted rollover assertions: passed
+consult_state.py syntax: passed
+5 targeted state assertions: passed
 ```
 
-The targeted assertions verified:
+Those assertions verified:
 
-- a complete continuity capsule validates and produces a SHA-256;
-- an empty required capsule section fails validation;
-- initial workstream creation sets both immutable `root_task_id` and active `branch_base_task_id`;
-- normal continuation preserves the active branch base;
-- `rollover_branch` preserves root and active branch base while incrementing lineage;
-- `rollover_fresh` preserves root but resets the active branch base to the first successful task in the fresh conversation;
-- the next rollover plan uses that new active branch base;
-- silently changing an active workstream to another ChatGPT URL without explicit rollover is rejected.
+- consultation state saves and loads;
+- replacing an expired/overfull Web conversation URL does not require lineage machinery;
+- `created_at` is preserved across state updates;
+- one corrupt consultation file is isolated and reported as a warning;
+- two checkouts of the same remote repository receive different project identities;
+- invalid non-ChatGPT conversation URLs are rejected.
 
-Additional tests now present in `tests/test_deterministic_closure.py` cover required rollover mode/hash, parent/new URL requirements, immutable direct branch-base semantics, and the existing deterministic safety/model/bundle contracts. Run the canonical commands above on a connected local checkout before declaring the current HEAD fully local-suite validated.
+The security, model-routing, result-verification, preflight, and bundle implementations were not changed by the v1.2 state simplification. They retain the earlier deterministic baseline, but the canonical full-suite commands above must still be run on a connected checkout before declaring the current HEAD fully local-suite validated.
 
-The registry uses atomic writes and a cross-process lock to avoid lost updates when multiple Codex sessions write local conversation state concurrently.
-
-GitHub Actions is configured to run the deterministic suite on Python 3.10 and 3.12. A visible successful status for the current push has not been observed from this review environment, so CI is not claimed as passed here.
+GitHub Actions remains configured to execute the deterministic suite and compile scripts on supported Python versions. Do not claim CI success until a visible successful status exists for the current HEAD.
 
 ## Real browser validation
 
-Repository tests cannot prove ChatGPT Web DOM compatibility or the live semantics of the Branch action. Before calling a release browser-validated, run a real Codex + Chrome pass and record:
+Repository tests cannot prove live ChatGPT Web DOM compatibility. Validate these paths with real Codex + Chrome before calling the release browser-validated:
 
 ```text
 Codex version:
@@ -75,21 +58,17 @@ macOS version:
 ChatGPT locale:
 Pro selection and confirmation: pending
 High fallback and confirmation: pending
-Fresh conversation creation: pending
-Same-workstream continuation: pending
-Different-workstream isolation: pending
+Independent review starts fresh: pending
+Independent review withholds local judgment by default: pending
+Explicit proposal-attack includes local proposal: pending
+Clear follow-up reuses stored conversation: pending
+Ambiguous follow-up starts fresh: pending
+Context-limited chat -> fresh restore from local snapshot: pending
+Corrupt/missing state -> fresh fail-soft path: pending
 Text attachment preflight/upload: pending
 Binary manual-review path: pending
 Exact result verification: pending
-Registry record/reopen after tab closure: pending
-Concurrent registry update smoke test: pending
-Context-length rejection detection: pending
-Branch from active branch-base task: pending
-Branch child URL/baseline verification: pending
-Validated continuity capsule transfer: pending
-Repeated branch rollover remains bounded: pending
-Branch unavailable -> rollover_fresh: pending
-Fresh rollover resets active branch base: pending
+Local adoption before state update: pending
 ```
 
-A Web UI change can require workflow adaptation even when all deterministic tests remain green.
+The browser contract is intentionally thin. A Web UI change may require locator adaptation, but it should not require changes to durable consultation-state semantics.
