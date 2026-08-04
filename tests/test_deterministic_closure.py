@@ -152,14 +152,13 @@ class RegistryTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(root), "init"], check=True, capture_output=True)
             self.assertEqual(project_identity(root)["fingerprint"], project_identity(child)["fingerprint"])
 
-    def test_thread_url_change_preserves_previous_url(self):
+    def test_active_url_change_requires_explicit_rollover(self):
         with tempfile.TemporaryDirectory() as tmp:
             identity = project_identity(Path(tmp))
             data = {"version": 1, "projects": {}}
             record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
-            updated = record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/two", scope="routing", task_id="t2", summary="two")
-            self.assertEqual(updated["previous_conversations"], ["https://chatgpt.com/c/one"])
-            self.assertEqual(updated["branch_base_task_id"], "t1")
+            with self.assertRaises(ValueError):
+                record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/two", scope="routing", task_id="t2", summary="two")
 
     def test_rollover_plan_keeps_stable_base(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -168,11 +167,12 @@ class RegistryTests(unittest.TestCase):
             record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
             record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t2", summary="two")
             plan = rollover_plan(data, identity, "architecture")
+            self.assertEqual(plan["root_task_id"], "t1")
             self.assertEqual(plan["branch_base_task_id"], "t1")
             self.assertEqual(plan["last_task_id"], "t2")
             self.assertEqual(plan["next_rollover_index"], 1)
 
-    def test_rollover_records_parent_and_capsule_hash(self):
+    def test_branch_rollover_preserves_base_and_records_lineage(self):
         with tempfile.TemporaryDirectory() as tmp:
             identity = project_identity(Path(tmp))
             data = {"version": 1, "projects": {}}
@@ -188,11 +188,40 @@ class RegistryTests(unittest.TestCase):
                 parent_conversation_url="https://chatgpt.com/c/one",
                 continuity_capsule_sha256="a" * 64,
                 rollover=True,
+                rollover_mode="branch",
             )
+            self.assertEqual(updated["root_task_id"], "t1")
             self.assertEqual(updated["branch_base_task_id"], "t1")
             self.assertEqual(updated["parent_conversation_url"], "https://chatgpt.com/c/one")
             self.assertEqual(updated["rollover_count"], 1)
+            self.assertEqual(updated["last_rollover_mode"], "branch")
             self.assertEqual(updated["continuity_capsule_sha256"], "a" * 64)
+            self.assertEqual(updated["previous_conversations"], ["https://chatgpt.com/c/one"])
+
+    def test_fresh_rollover_resets_active_base_but_preserves_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            updated = record_thread(
+                data,
+                identity,
+                thread_key="architecture",
+                conversation_url="https://chatgpt.com/c/fresh",
+                scope="routing",
+                task_id="t10",
+                summary="fresh rollover",
+                parent_conversation_url="https://chatgpt.com/c/one",
+                continuity_capsule_sha256="b" * 64,
+                rollover=True,
+                rollover_mode="fresh",
+            )
+            self.assertEqual(updated["root_task_id"], "t1")
+            self.assertEqual(updated["branch_base_task_id"], "t10")
+            self.assertEqual(updated["last_rollover_mode"], "fresh")
+            plan = rollover_plan(data, identity, "architecture")
+            self.assertEqual(plan["branch_base_task_id"], "t10")
+            self.assertEqual(plan["next_rollover_index"], 2)
 
     def test_rollover_requires_new_url(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -208,7 +237,46 @@ class RegistryTests(unittest.TestCase):
                     scope="routing",
                     task_id="t2",
                     summary="bad rollover",
+                    parent_conversation_url="https://chatgpt.com/c/one",
+                    continuity_capsule_sha256="c" * 64,
                     rollover=True,
+                    rollover_mode="branch",
+                )
+
+    def test_rollover_requires_capsule_hash_and_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            with self.assertRaises(ValueError):
+                record_thread(
+                    data,
+                    identity,
+                    thread_key="architecture",
+                    conversation_url="https://chatgpt.com/c/two",
+                    scope="routing",
+                    task_id="t2",
+                    summary="missing mode",
+                    parent_conversation_url="https://chatgpt.com/c/one",
+                    continuity_capsule_sha256="d" * 64,
+                    rollover=True,
+                )
+
+    def test_branch_base_cannot_be_repointed_directly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            identity = project_identity(Path(tmp))
+            data = {"version": 1, "projects": {}}
+            record_thread(data, identity, thread_key="architecture", conversation_url="https://chatgpt.com/c/one", scope="routing", task_id="t1", summary="one")
+            with self.assertRaises(ValueError):
+                record_thread(
+                    data,
+                    identity,
+                    thread_key="architecture",
+                    conversation_url="https://chatgpt.com/c/one",
+                    scope="routing",
+                    task_id="t2",
+                    summary="two",
+                    branch_base_task_id="other",
                 )
 
 
