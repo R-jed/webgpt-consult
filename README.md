@@ -57,22 +57,56 @@
 
 ### 环境要求
 
-- **Codex CLI** 已连接 Chrome 插件
-- **Chrome** 已登录 ChatGPT Web
-- **ChatGPT Plus/Pro** 账户，有 GPT-5.6 Sol Pro 或 High
-- **Python 3.x**
+| 依赖 | 用途 | 是否必需 |
+|------|------|----------|
+| Python 3.x | 安全扫描、文件打包 | 必需 |
+| Codex CLI | AI 编程助手 | 推荐 |
+| Chrome 插件 | 默认咨询路径 | 推荐 |
+| OpenCLI | 备选咨询路径 | 可选 |
+| ChatGPT Plus/Pro | GPT-5.6 Sol 访问 | 必需 |
 
 ### 安装
 
 ```bash
 git clone https://github.com/R-jed/webgpt-consult.git
+cd webgpt-consult
 ```
 
-### 验证
+### 配置
+
+**方式一：Chrome 插件（默认）**
+
+1. 安装 Codex CLI
+2. 连接 Chrome 插件
+3. 在 Chrome 中登录 ChatGPT Web
+4. 确认模型选择器有 GPT-5.6 Sol Pro 或 High
+
+**方式二：OpenCLI（备选）**
 
 ```bash
-python3 scripts/check_packet_safety.py --help
+# 检查 OpenCLI 是否可用
+opencli doctor
+
+# 检查浏览器桥接
+opencli profile list
 ```
+
+两个条件满足一个就行：Chrome 插件可用，或 OpenCLI 预检通过。
+
+### 验证安装
+
+```bash
+# 检查 Python
+python3 --version
+
+# 检查安全扫描器
+python3 scripts/check_packet_safety.py --help
+
+# 检查文件打包器
+python3 scripts/build_attachment_bundle.py --help
+```
+
+验证通过后，你就可以开始用了。遇到问题看 [SKILL.md](SKILL.md)。
 
 <p align="right">(<a href="#快速开始">返回顶部</a>)</p>
 
