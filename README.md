@@ -178,10 +178,8 @@ webgpt-consult/
 │   ├── chrome-workflow.md     # Chrome 工作流
 │   └── context-packet-template.md  # 上下文包模板
 ├── scripts/
-│   ├── run_webgpt_consult.py  # 主运行器
 │   ├── check_packet_safety.py # 凭证扫描
 │   ├── build_attachment_bundle.py  # 文件打包
-│   ├── extract_chatgpt_reply.py    # 回复提取
 │   └── model_router.py        # 模型选择
 └── tests/
     └── test_*.py

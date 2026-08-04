@@ -179,10 +179,8 @@ webgpt-consult/
 │   ├── chrome-workflow.md     # Chrome workflow
 │   └── context-packet-template.md  # Packet template
 ├── scripts/
-│   ├── run_webgpt_consult.py  # Main runner
 │   ├── check_packet_safety.py # Credential scan
 │   ├── build_attachment_bundle.py  # File bundler
-│   ├── extract_chatgpt_reply.py    # Reply extractor
 │   └── model_router.py        # Model selection
 └── tests/
     └── test_*.py

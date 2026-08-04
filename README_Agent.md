@@ -87,10 +87,8 @@ webgpt-consult/
 │   ├── chrome-workflow.md     # Chrome plugin workflow (must read)
 │   └── context-packet-template.md  # Context packet template (must read)
 ├── scripts/
-│   ├── run_webgpt_consult.py  # Main consultation runner
 │   ├── check_packet_safety.py # Credential scanner
 │   ├── build_attachment_bundle.py  # File bundler
-│   ├── extract_chatgpt_reply.py    # Reply extractor
 │   └── model_router.py        # Model selection logic
 └── tests/
     └── test_*.py              # Test suite
@@ -210,9 +208,7 @@ python3 scripts/build_attachment_bundle.py --help
 |--------|---------|
 | `check_packet_safety.py` | Credential scan, prevent sensitive data leakage |
 | `build_attachment_bundle.py` | Bundle multiple files into single Markdown |
-| `extract_chatgpt_reply.py` | Extract reply from Chrome |
 | `model_router.py` | Model selection logic |
-| `run_webgpt_consult.py` | Main consultation runner |
 
 ---
 
