@@ -132,6 +132,12 @@ class ContinuityCapsuleTests(unittest.TestCase):
         result = validate_capsule(text, base_task_id="t1", last_task_id="t9")
         self.assertFalse(result["ok"])
 
+    def test_capsule_rejects_empty_required_section(self):
+        text = self._capsule().replace("## CURRENT_ASK\nstate", "## CURRENT_ASK\n\n")
+        result = validate_capsule(text, base_task_id="t1", last_task_id="t9")
+        self.assertFalse(result["ok"])
+        self.assertIn("empty section: ## CURRENT_ASK", result["errors"])
+
 
 class RegistryTests(unittest.TestCase):
     def test_project_scoped_multiple_threads(self):
