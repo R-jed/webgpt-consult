@@ -1,99 +1,91 @@
 # Codex Chrome Workflow
 
-Use this as the default execution path for every GPT 5.6 Sol consultation.
+This is the browser adapter for WebGPT Consult. Deterministic policy lives in the scripts; Chrome handles navigation, observation, clicks, uploads, Send, waiting, and extraction.
 
-## 1. Connect to Chrome
+## 1. Resolve conversation continuity before opening ChatGPT
 
-1. Read the installed `chrome:control-chrome` Skill completely.
-2. Discover the `node_repl js` tool when it is not already callable.
-3. Initialize the browser runtime from the Chrome plugin's own absolute `scripts/browser-client.mjs` path.
-4. Select the Chrome extension binding with `agent.browsers.get("extension")` and read its complete documentation before interacting.
-5. Reuse an existing ChatGPT tab when available; otherwise create one and navigate directly to `https://chatgpt.com/`.
+Read `chrome:control-chrome` completely. Determine the current project root, then list registered consultation threads with `scripts/conversation_registry.py`.
 
-Do not inspect cookies, local storage, passwords, profiles, or session databases. Keep browser work in the background unless the user asks to see it.
+Choose one of two modes:
 
-## 2. Confirm authentication and model selection
+- `continue`: only when an existing thread clearly matches the same workstream or the user explicitly requests continuation;
+- `fresh`: for a different project, different workstream, independent review, ambiguous continuity, stale thread, or deliberate context reset.
 
-Take one fresh DOM snapshot. Confirm the account is signed in and the composer is available.
+For `continue`, navigate to the exact stored ChatGPT conversation URL. For `fresh`, create a new ChatGPT conversation. Never reuse an arbitrary existing ChatGPT tab merely because one is open.
 
-Open the model picker using locator ground truth from the snapshot. Before every click:
+If a stored URL fails to load or is not the intended conversation, retire it and open a fresh conversation. Carry forward only a short verified local continuity summary.
 
-1. Build a stable locator from the latest snapshot.
-2. Call `count()` unless uniqueness is self-evident.
-3. Click only when exactly one element matches.
-4. Take a targeted observation after the UI changes.
+## 2. Connect and confirm authentication
 
-Select the best available GPT-5.6 Sol tier:
+Initialize the Chrome plugin using its documented browser runtime. Use the extension binding. Confirm the account is signed in and the composer is available.
+
+Do not inspect cookies, local storage, passwords, browser profiles, or session databases.
+
+## 3. Verify the model with deterministic routing
+
+Open the model picker from a fresh DOM snapshot. Capture the picker state needed by `scripts/model_router.py`.
+
+Selection policy is:
 
 ```text
-Pro (preferred) → High → fail
+verified usable Pro -> verified usable High -> fail
 ```
 
-Confirm the selected tier using either a current GPT 5.6-specific test ID or both of these visible signals:
+A visible but disabled, ambiguous, legacy, generic, or non-actionable Pro entry must not block a valid High fallback.
 
-- model-family row: `GPT-5.6 Sol`
-- exact tier radio: `aria-checked=true`
+After any model click, capture fresh state and confirm the exact selected tier is checked under the GPT-5.6 Sol family. A DOM ref is a click locator only.
 
-If the selected tier is not checked, click its exact radio once and verify both signals again. Always capture fresh state after clicking and re-verify before proceeding.
+Extra High, Medium, Instant, GPT-5.5 Pro, generic GPT-5 Pro without GPT-5.6 evidence, and unknown variants are unsupported.
 
-Extra High, Medium, Instant, and unknown models are unsupported. Do not select them.
+## 4. Run submission preflight
 
-## 3. Fill the context packet
+Build the exact packet and exact attachment list before touching Send. Run `scripts/submission_preflight.py` on that set.
 
-Run `scripts/check_packet_safety.py` locally before touching the composer.
+Do not proceed unless it returns `ok=true`. If a non-text attachment requires manual review, inspect it locally and only then use the explicit confirmation flag. Detected credentials cannot be overridden.
 
-Locate the ChatGPT composer from the current DOM snapshot. Fill the complete packet and verify a distinctive prefix plus the unique sentinel are present. Do not send a local path as evidence.
+## 5. Fill the composer and upload files
 
-## 4. Upload required files
+Fill the complete packet. Verify a distinctive packet prefix, exact task ID, and sentinel in the composer.
 
-Read the Chrome plugin's file-upload documentation before uploading.
+For uploads, use the Chrome plugin's documented real file chooser. Prefer role/test-id locators over localized visible strings. If visible text is unavoidable, inspect the current UI and derive it from the fresh snapshot instead of hard-coding one language.
 
-Use the real file chooser:
+Verify every required attachment is visibly present and no upload shows an error or pending state.
 
-```js
-const chooserPromise = tab.playwright.waitForEvent("filechooser", { timeoutMs: 15000 });
-const addButton = tab.playwright.getByTestId("composer-plus-btn");
-if (await addButton.count() !== 1) throw new Error("Expected one composer add-files button");
-await addButton.click();
+## 6. Send exactly once
 
-// Build this locator from the fresh menu snapshot; localized text may differ.
-const fileMenuItem = tab.playwright.getByText("添加照片和文件", { exact: true });
-if (await fileMenuItem.count() !== 1) throw new Error("Expected one add-files menu item");
-await fileMenuItem.click();
+Immediately before Send, confirm:
 
-const chooser = await chooserPromise;
-await chooser.setFiles(["/path/to/file.md"]);
-```
+- intended conversation mode and URL;
+- selected GPT-5.6 Sol tier;
+- task ID and sentinel;
+- composer content;
+- required attachment chips;
+- preflight passed for this exact payload.
 
-Verify every required filename is visible in the composer. If multiple uploads are unstable, combine text sources with `scripts/build_attachment_bundle.py` and upload one Markdown file.
+Click Send once.
 
-## 5. Send and wait
+While generation is active, remain in the same conversation. Observe targeted generation signals such as the stop control or visible generating state. Do not refresh, retry, or send `continue` while the turn is still active.
 
-The user's consultation request authorizes sending the prepared packet and selected artifacts to ChatGPT. It does not authorize unrelated uploads or messages.
+## 7. Extract and verify
 
-Verify the composer text, sentinel, model, and attachment names immediately before clicking Send. Send once.
+When generation stops, read only the latest assistant turn from a fresh snapshot. Save that extracted assistant text locally and run `scripts/result_verifier.py`.
 
-GPT 5.6 Sol can take 10–20 minutes. Poll the same conversation with targeted DOM snapshots. Treat these as active-generation signals:
+The first two non-empty lines must exactly match the expected sentinel and task ID. A sentinel appearing later in prose, in quoted user content, or in an earlier turn does not count.
 
-- `data-testid=stop-button`
-- visible "正在思考" or equivalent generating status
-- an incomplete assistant preamble while the stop control remains
+If verification fails, re-read the complete latest assistant turn once. If it still fails, mark the consultation incomplete.
 
-Do not stop, retry, refresh, or send "continue" while generation remains active.
+## 8. Persist continuity after success
 
-## 6. Extract and verify
+Once verification passes, capture the current canonical ChatGPT conversation URL. Update the project registry with:
 
-After generation stops, identify the latest assistant turn from a fresh snapshot. Read that turn only; do not treat the user's echoed sentinel as success.
+- stable workstream key;
+- conversation URL;
+- short workstream scope;
+- latest task ID;
+- one-sentence decision/result summary.
 
-Normalize escaped underscores and verify `WEBGPT_CONSULT_RESULT_...` appears inside the assistant turn. If it is absent, re-read the complete latest assistant turn once. Mark the consultation incomplete when the final answer still lacks the sentinel or appears truncated.
+Do this for both fresh and continued consultations. The registry is local operational state and must never be uploaded to ChatGPT.
 
-Record:
+## 9. Browser cleanup
 
-- model selection evidence (selected tier, display name, downgraded status)
-- Chrome browser path
-- packet sentinel and timestamp
-- uploaded filenames
-- completion state
-- extracted answer
-
-Finalize browser tabs after extraction. Keep a tab only when the user needs to continue from it.
+Keep a registered consultation tab only when it is useful for immediate continuation. Closing a tab does not lose continuity because the registry stores the canonical conversation URL. Do not keep unrelated tabs solely as state storage.
