@@ -1,222 +1,147 @@
 <h1 align="center">webgpt consult</h1>
 
 <p align="center">
-  <strong>GPT-5.6 Sol Pro/High Second-Opinion Consultation</strong><br/>
-  <em>Ask GPT-5.6 Sol when you're not sure</em>
-</p>
-
-<p align="center">
-  <a href="https://github.com/R-jed/webgpt-consult/releases"><img src="https://img.shields.io/badge/release-v1.0.0-blue" alt="release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
+  <strong>A Codex Skill for verified GPT-5.6 Sol Pro/High second-opinion reviews</strong><br/>
+  Preserve project context while keeping final judgment local
 </p>
 
 <p align="center">
   <a href="README.md">中文</a> ·
-  <a href="#about">About</a> ·
-  <a href="#getting-started">Getting Started</a> ·
-  <a href="#usage">Usage</a> ·
-  <a href="#workflow">Workflow</a> ·
-  <a href="references/">References</a>
+  <a href="SKILL.md">Skill contract</a> ·
+  <a href="README_Agent.md">AI Agent guide</a>
 </p>
 
-<br/>
+## What it does
 
-<a id="about"></a>
+`webgpt-consult` lets Codex send a carefully prepared problem and its evidence to ChatGPT Web for a GPT-5.6 Sol second opinion. The external answer remains advisory. Local Codex verifies the evidence and owns the final adoption decision.
 
-## About
+The supported path is intentionally narrow:
 
-> **If you are an AI Agent, read [README_Agent.md](README_Agent.md) for bootstrap instructions.**
-
-When your local agent hits a complex problem, call this tool to ask GPT-5.6 Sol. It packs your context, sends the request, gets the reply, and you decide what to adopt.
-
-```
-Your judgment
-  → Pack context (8K-15K chars)
-  → Safety scan (credential check)
-  → Chrome plugin
-  → Select GPT-5.6 Sol Pro/High
-  → Send, wait, verify sentinel
-  → You decide: adopt, reject, or modify
+```text
+local judgment
+  -> project/workstream conversation routing
+  -> context packet + exact attachments
+  -> fail-closed preflight
+  -> Codex Chrome plugin
+  -> GPT-5.6 Sol Pro, then High
+  -> exact result verification
+  -> local adoption decision
 ```
 
-**Why it exists:**
-- Complex decisions need outside perspective, but don't blindly trust external models
-- Context packets preserve your judgment, evidence, and constraints
-- Sentinel marks confirm complete replies, preventing half-baked results
-- Safety scan prevents sensitive data leakage
+## Project-scoped conversation continuity
 
-<p align="right">(<a href="#about">back to top</a>)</p>
+The Skill no longer treats every consultation as a brand-new ChatGPT thread, and it does not force an entire repository into one permanent conversation either.
 
-<a id="getting-started"></a>
+A local registry is stored at:
 
-## Getting Started
+```text
+~/.codex/webgpt-consult/conversations.json
+```
 
-### Requirements
+One project may keep multiple workstreams:
 
-| Dependency | Purpose | Required |
-|------------|---------|----------|
-| Python 3.x | Safety scan, file bundling | Yes |
-| Codex CLI | AI coding assistant | Yes |
-| Chrome plugin | Consultation path | Yes |
-| ChatGPT Plus/Pro | GPT-5.6 Sol access | Yes |
+```text
+Project
+  architecture-routing  -> conversation A
+  performance-debugging -> conversation B
+  release-risk          -> conversation C
+```
 
-### Installation
+A direct follow-up to the same decision, bug, PR, branch, artifact, architecture question, or implementation plan should reuse the matching registered conversation. A materially different topic, an independent review, a context reset, an ambiguous match, or a different project should start a fresh conversation.
+
+Continuity survives tab or browser closure because the registry stores the canonical ChatGPT conversation URL rather than tab state.
+
+## Safety and evidence integrity
+
+Run one preflight over the exact payload before Send:
+
+```bash
+python3 scripts/submission_preflight.py packet.md \
+  --task-id webgpt-consult-20260804-220000 \
+  --sentinel WEBGPT_CONSULT_RESULT_20260804_220000 \
+  --attachment ./src/example.py
+```
+
+Text packets and text attachments are scanned for credential-like material. Known credentials fail closed.
+
+Non-text attachments are blocked as `manual_review_required` until the Agent confirms they are intended and have been locally reviewed. That confirmation never overrides a detected credential.
+
+The text bundle builder also fails by default on missing explicit inputs, empty bundles, silent truncation, silent size-limit omissions, and credential findings.
+
+## Model routing
+
+Only these tiers are supported:
+
+```text
+GPT-5.6 Sol Pro
+      ↓ unavailable / disabled / ambiguous / not actionable
+GPT-5.6 Sol High
+      ↓ unavailable
+fail closed
+```
+
+`model_router.py` is the deterministic model policy source. DOM references are click locators, not model identity evidence. A generic GPT-5 Pro selector does not establish GPT-5.6 Sol identity.
+
+## Result verification
+
+The assistant reply must begin with these two non-empty lines:
+
+```text
+WEBGPT_CONSULT_RESULT_<unique-id>
+Task-ID: <task-id>
+```
+
+Then verify the extracted assistant turn locally with `scripts/result_verifier.py`. A sentinel merely appearing later in prose does not count.
+
+## Requirements
+
+- Python >= 3.10
+- Codex
+- Codex Chrome plugin installed and connected
+- ChatGPT Web signed in in the selected Chrome profile
+- GPT-5.6 Sol Pro or High actually exposed by the account
+
+Plugin availability can depend on plan, workspace policy, role, and supported surface. There is no OpenCLI fallback.
+
+## Installation
+
+Install the complete Skill directory through the Skills / Plugin mechanism available in your Codex environment so `SKILL.md`, `scripts/`, `references/`, and `agents/` remain together.
+
+For source development:
 
 ```bash
 git clone https://github.com/R-jed/webgpt-consult.git
 cd webgpt-consult
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-### Setup
+Cloning the repository only downloads the source. It does not by itself register the Skill with Codex.
 
-1. Install Codex CLI
-2. Connect Chrome plugin
-3. Sign in to ChatGPT Web in Chrome
-4. Confirm GPT-5.6 Sol Pro or High is available in model picker
+## Repository layout
 
-### Verify
-
-```bash
-# Safety scanner works
-python3 scripts/check_packet_safety.py --help
-
-# Bundle builder works
-python3 scripts/build_attachment_bundle.py --help
-```
-
-Both pass and you're good. See [SKILL.md](SKILL.md) for issues.
-
-<p align="right">(<a href="#getting-started">back to top</a>)</p>
-
-<a id="usage"></a>
-
-## Usage
-
-| Scenario | Description |
-|----------|-------------|
-| Architecture review | System design, API design, database schema |
-| Business consultation | Strategy, pricing, market analysis |
-| Debugging | Complex bugs, performance issues, race conditions |
-| Risk review | Security audit, technical debt |
-| Planning | Project planning, sprint planning |
-| Content strategy | Documentation, marketing, technical writing |
-
-<p align="right">(<a href="#usage">back to top</a>)</p>
-
-<a id="workflow"></a>
-
-## Workflow
-
-### 1. Write your judgment first
-
-Before asking, think through:
-- What's the problem, what's success
-- What evidence and constraints you have
-- What options exist, what each costs
-- What you've tried, what's still unknown
-
-### 2. Pack context
-
-Use the [template](references/context-packet-template.md). For many files, bundle:
-
-```bash
-python3 scripts/build_attachment_bundle.py /path/to/artifacts -o /tmp/bundle.md
-```
-
-### 3. Safety scan
-
-```bash
-python3 scripts/check_packet_safety.py packet.md
-```
-
-Strip credentials, keep useful project context.
-
-### 4. Send request
-
-Follow the [Chrome workflow](references/chrome-workflow.md).
-
-### 5. Verify and decide
-
-- Confirm `WEBGPT_CONSULT_RESULT_...` sentinel appears
-- Compare with your judgment
-- Adopt, reject, or modify
-
-<p align="right">(<a href="#workflow">back to top</a>)</p>
-
-<a id="model-routing"></a>
-
-## Model Routing
-
-| Priority | Model | Description |
-|----------|-------|-------------|
-| 1 | GPT-5.6 Sol Pro | Preferred, strongest reasoning |
-| 2 | GPT-5.6 Sol High | Fallback when Pro unavailable |
-| - | Extra High/Medium/Instant | Unsupported, fail closed |
-
-After selection, verify:
-1. Selected tier appears in `menuitemradio`
-2. `aria-checked=true` present
-3. GPT-5.6 Sol family evidence in picker
-
-<p align="right">(<a href="#model-routing">back to top</a>)</p>
-
-<a id="repository-layout"></a>
-
-## Repository Layout
-
-```
+```text
 webgpt-consult/
-├── SKILL.md                    # Main docs
-├── README.md                   # Chinese README
-├── README_en.md                # This file
-├── agents/
-│   └── openai.yaml            # Agent config
+├── SKILL.md
+├── README.md
+├── README_en.md
+├── README_Agent.md
+├── agents/openai.yaml
 ├── references/
-│   ├── chrome-workflow.md     # Chrome workflow
-│   └── context-packet-template.md  # Packet template
+│   ├── chrome-workflow.md
+│   └── context-packet-template.md
 ├── scripts/
-│   ├── check_packet_safety.py # Credential scan
-│   ├── build_attachment_bundle.py  # File bundler
-│   └── model_router.py        # Model selection
-└── tests/
-    └── test_*.py
+│   ├── build_attachment_bundle.py
+│   ├── check_packet_safety.py
+│   ├── conversation_registry.py
+│   ├── model_router.py
+│   ├── result_verifier.py
+│   └── submission_preflight.py
+├── tests/
+└── VALIDATION.md
 ```
 
-<p align="right">(<a href="#repository-layout">back to top</a>)</p>
-
-<a id="examples"></a>
-
-## Examples
-
-### Pro available
-
-```
-Available: Pro, High
-Selected: Pro
-downgraded: no
-```
-
-### Pro unavailable
-
-```
-Available: High
-Selected: High
-downgraded: yes
-```
-
-### No supported tier
-
-```
-Available: Extra High, Medium, Instant
-Result: fail
-```
-
-<p align="right">(<a href="#examples">back to top</a>)</p>
-
-<a id="license"></a>
+AI agents should read [README_Agent.md](README_Agent.md) first and treat [SKILL.md](SKILL.md) as the authoritative execution contract.
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
-
-<p align="right">(<a href="#license">back to top</a>)</p>
+MIT
