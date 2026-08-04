@@ -96,17 +96,17 @@ opencli profile list
 ### 验证安装
 
 ```bash
-# 检查 Python
+# Python 可用
 python3 --version
 
-# 检查安全扫描器
+# 安全扫描器能跑
 python3 scripts/check_packet_safety.py --help
 
-# 检查文件打包器
+# 文件打包器能跑
 python3 scripts/build_attachment_bundle.py --help
 ```
 
-验证通过后，你就可以开始用了。遇到问题看 [SKILL.md](SKILL.md)。
+三个都没报错就能用了。遇到问题看 [SKILL.md](SKILL.md)。
 
 <p align="right">(<a href="#快速开始">返回顶部</a>)</p>
 
