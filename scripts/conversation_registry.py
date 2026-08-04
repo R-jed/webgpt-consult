@@ -9,22 +9,26 @@ import json
 import os
 import re
 import subprocess
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
 DEFAULT_STATE = Path.home() / ".codex" / "webgpt-consult" / "conversations.json"
 MAX_THREADS_PER_PROJECT = 20
+LOCK_TIMEOUT_SECONDS = 5.0
+STALE_LOCK_SECONDS = 30.0
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _git_origin(root: Path) -> str | None:
+def _run_git(root: Path, *args: str) -> str | None:
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), "remote", "get-url", "origin"],
+            ["git", "-C", str(root), *args],
             text=True,
             capture_output=True,
             timeout=5,
@@ -35,6 +39,15 @@ def _git_origin(root: Path) -> str | None:
     return value if result.returncode == 0 and value else None
 
 
+def _git_root(root: Path) -> Path | None:
+    value = _run_git(root, "rev-parse", "--show-toplevel")
+    return Path(value).resolve() if value else None
+
+
+def _git_origin(root: Path) -> str | None:
+    return _run_git(root, "remote", "get-url", "origin")
+
+
 def normalize_remote(remote: str) -> str:
     remote = remote.strip()
     ssh = re.match(r"git@([^:]+):(.+)$", remote)
@@ -43,20 +56,23 @@ def normalize_remote(remote: str) -> str:
         value = f"{host}/{path}"
     else:
         parsed = urlparse(remote)
-        if parsed.scheme and parsed.netloc:
-            value = f"{parsed.netloc}{parsed.path}"
+        if parsed.scheme and parsed.hostname:
+            value = f"{parsed.hostname}{parsed.path}"
         else:
             value = remote
     return value.removesuffix(".git").strip("/").lower()
 
 
 def project_identity(project_root: Path) -> dict:
-    root = project_root.expanduser().resolve()
-    remote = _git_origin(root)
-    source = f"git:{normalize_remote(remote)}" if remote else f"path:{root}"
+    supplied_root = project_root.expanduser().resolve()
+    git_root = _git_root(supplied_root)
+    canonical_root = git_root or supplied_root
+    remote = _git_origin(canonical_root) if git_root else None
+    source = f"git:{normalize_remote(remote)}" if remote else f"path:{canonical_root}"
     fingerprint = hashlib.sha256(source.encode("utf-8")).hexdigest()[:20]
-    label = normalize_remote(remote).split("/")[-1] if remote else root.name
-    return {"fingerprint": fingerprint, "label": label, "source_kind": "git" if remote else "path"}
+    label = normalize_remote(remote).split("/")[-1] if remote else canonical_root.name
+    source_kind = "git-remote" if remote else ("git-root" if git_root else "path")
+    return {"fingerprint": fingerprint, "label": label, "source_kind": source_kind}
 
 
 def state_path() -> Path:
@@ -79,13 +95,45 @@ def save_state(path: Path, data: dict) -> None:
         path.parent.chmod(0o700)
     except OSError:
         pass
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp = path.parent / f".{path.name}.{os.getpid()}.tmp"
     try:
-        tmp.chmod(0o600)
-    except OSError:
-        pass
-    tmp.replace(path)
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        try:
+            tmp.chmod(0o600)
+        except OSError:
+            pass
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+@contextmanager
+def registry_lock(path: Path, timeout: float = LOCK_TIMEOUT_SECONDS):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock = path.parent / f".{path.name}.lock"
+    deadline = time.monotonic() + timeout
+    fd: int | None = None
+    while fd is None:
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.write(fd, str(os.getpid()).encode("ascii"))
+        except FileExistsError:
+            try:
+                age = time.time() - lock.stat().st_mtime
+                if age > STALE_LOCK_SECONDS:
+                    lock.unlink(missing_ok=True)
+                    continue
+            except FileNotFoundError:
+                continue
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"registry lock timeout: {lock}")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        if fd is not None:
+            os.close(fd)
+        lock.unlink(missing_ok=True)
 
 
 def _project_bucket(data: dict, identity: dict) -> dict:
@@ -102,9 +150,16 @@ def list_threads(data: dict, identity: dict) -> list[dict]:
     return sorted(threads, key=lambda t: t.get("last_used_at", ""), reverse=True)
 
 
+def _valid_conversation_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme == "https" and parsed.hostname == "chatgpt.com" and parsed.path not in {"", "/"}
+
+
 def record_thread(data: dict, identity: dict, *, thread_key: str, conversation_url: str, scope: str, task_id: str, summary: str) -> dict:
-    if not conversation_url.startswith("https://chatgpt.com/"):
-        raise ValueError("conversation_url must be a chatgpt.com URL")
+    if not _valid_conversation_url(conversation_url):
+        raise ValueError("conversation_url must be a canonical chatgpt.com conversation URL")
+    if not thread_key.strip():
+        raise ValueError("thread_key must not be empty")
     bucket = _project_bucket(data, identity)
     now = utc_now()
     existing = next((t for t in bucket["threads"] if t.get("thread_key") == thread_key), None)
@@ -118,6 +173,12 @@ def record_thread(data: dict, identity: dict, *, thread_key: str, conversation_u
         "status": "active",
     }
     if existing:
+        previous_url = existing.get("conversation_url")
+        if previous_url and previous_url != conversation_url:
+            history = existing.setdefault("previous_conversations", [])
+            if previous_url not in history:
+                history.insert(0, previous_url)
+                del history[5:]
         existing.update(payload)
         result = existing
     else:
@@ -160,24 +221,26 @@ def main() -> int:
             out = identity
         else:
             path = state_path()
-            data = load_state(path)
             if args.command == "list":
-                out = {"project": identity, "threads": list_threads(data, identity)}
-            elif args.command == "record":
-                out = record_thread(
-                    data, identity,
-                    thread_key=args.thread_key,
-                    conversation_url=args.conversation_url,
-                    scope=args.scope,
-                    task_id=args.task_id,
-                    summary=args.summary,
-                )
-                save_state(path, data)
+                out = {"project": identity, "threads": list_threads(load_state(path), identity)}
             else:
-                changed = retire_thread(data, identity, args.thread_key)
-                if changed:
-                    save_state(path, data)
-                out = {"retired": changed, "thread_key": args.thread_key}
+                with registry_lock(path):
+                    data = load_state(path)
+                    if args.command == "record":
+                        out = record_thread(
+                            data, identity,
+                            thread_key=args.thread_key,
+                            conversation_url=args.conversation_url,
+                            scope=args.scope,
+                            task_id=args.task_id,
+                            summary=args.summary,
+                        )
+                        save_state(path, data)
+                    else:
+                        changed = retire_thread(data, identity, args.thread_key)
+                        if changed:
+                            save_state(path, data)
+                        out = {"retired": changed, "thread_key": args.thread_key}
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0
     except Exception as exc:
