@@ -5,264 +5,262 @@
 <h1 align="center">WebGPT Consult</h1>
 
 <p align="center">
-  <strong>GPT-5.6 Sol Pro/High Verified Second-Opinion Partner</strong><br/>
-  <em>For difficult planning, architecture, debugging, business, product, content-strategy, risk-review, and Skill-design work</em>
+  <strong>GPT-5.6 Sol Pro/High 专业第二意见伙伴</strong><br/>
+  <em>为复杂规划、架构设计、调试、商业、产品、内容策略、风险审查和技能设计提供深度咨询</em>
 </p>
 
 <p align="center">
   <a href="https://github.com/R-jed/webgpt-consult/releases"><img src="https://img.shields.io/badge/release-v1.0.0-blue" alt="release"></a>
-  <a href="https://github.com/R-jed/webgpt-consult/stargazers"><img src="https://img.shields.io/github/stars/R-jed/webgpt-consult?style=flat&logo=github" alt="stars"></a>
-  <a href="https://github.com/R-jed/webgpt-consult/forks"><img src="https://img.shields.io/github/forks/R-jed/webgpt-consult?style=flat&logo=github" alt="forks"></a>
-  <a href="https://github.com/R-jed/webgpt-consult/issues"><img src="https://img.shields.io/github/issues/R-jed/webgpt-consult?style=flat&logo=github" alt="issues"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
 </p>
 
 <p align="center">
-  <a href="README_zh.md">中文</a> ·
-  <a href="#about">About</a> ·
-  <a href="#getting-started">Getting Started</a> ·
-  <a href="#usage">Usage</a> ·
-  <a href="#workflow">Workflow</a> ·
-  <a href="references/">References</a> ·
-  <a href="#contributing">Contributing</a>
+  <a href="README_en.md">English</a> ·
+  <a href="#关于">关于</a> ·
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#使用场景">使用场景</a> ·
+  <a href="#工作流程">工作流程</a> ·
+  <a href="references/">参考文档</a> ·
+  <a href="#参与贡献">参与贡献</a>
 </p>
 
 <br/>
 
-<a id="about"></a>
+<a id="关于"></a>
 
-## About
+## 关于
 
-> **If you are an AI Agent, follow the [SKILL.md](SKILL.md) instructions strictly.**
+> **如果你是 AI Agent，请严格按照 [SKILL.md](SKILL.md) 的说明执行。**
 
-When your local AI agent (Claude Code, Codex CLI, Cursor, etc.) encounters a difficult problem that needs an outside perspective, WebGPT Consult routes it to the best available GPT-5.6 Sol tier, builds a structured context packet, executes the consultation, and brings back a verified result for local adoption.
+当本地 AI Agent（Claude Code、Codex CLI、Cursor 等）遇到复杂问题需要外部视角时，WebGPT Consult 会将其路由到最佳的 GPT-5.6 Sol 层级，构建结构化上下文包，执行咨询，并带回经过验证的结果供本地采纳。
 
 ```
-Local Agent judgment
-  → Build context packet (8K-15K chars)
-  → Safety scan (credentials check)
-  → Chrome plugin (default) or OpenCLI (fallback)
-  → Select GPT-5.6 Sol Pro/High
-  → Send, wait, extract with sentinel verification
-  → Local adoption decision
+本地 Agent 判断
+  → 构建上下文包（8K-15K 字符）
+  → 安全扫描（凭证检查）
+  → Chrome 插件（默认）或 OpenCLI（备选）
+  → 选择 GPT-5.6 Sol Pro/High
+  → 发送、等待、提取并验证哨兵标记
+  → 本地采纳决策
 ```
 
-**Why this exists:**
-- Local agents need a second opinion on complex decisions but shouldn't blindly trust external models
-- Context packets preserve local judgment, evidence, and constraints
-- Sentinel-based completion verification prevents incomplete or corrupted results
-- Credential hygiene protects sensitive data from leaking to external models
+**为什么需要这个工具：**
+- 本地 Agent 需要对复杂决策获得第二意见，但不应盲目信任外部模型
+- 上下文包保留了本地判断、证据和约束条件
+- 基于哨兵的完成验证防止了不完整或损坏的结果
+- 凭证卫生保护敏感数据不泄露给外部模型
 
-<p align="right">(<a href="#about">back to top</a>)</p>
+<p align="right">(<a href="#关于">返回顶部</a>)</p>
 
-<a id="getting-started"></a>
+<a id="快速开始"></a>
 
-## Getting Started
+## 快速开始
 
-### Prerequisites
+### 环境要求
 
-- **Codex CLI** with Chrome plugin connected (default path)
-- **Chrome profile** logged into ChatGPT Web
-- **ChatGPT Plus/Pro** account with GPT-5.6 Sol Pro or High available
-- **Python 3.x** (for safety scanner and bundle builder)
+- **Codex CLI** 已连接 Chrome 插件（默认路径）
+- **Chrome 配置文件** 已登录 ChatGPT Web
+- **ChatGPT Plus/Pro** 账户，可用 GPT-5.6 Sol Pro 或 High
+- **Python 3.x**（用于安全扫描和文件打包）
 
-### Installation
+### 安装
 
 ```bash
 git clone https://github.com/R-jed/webgpt-consult.git
 ```
 
-Add to your Codex skills directory or reference directly.
+添加到 Codex 技能目录或直接引用。
 
-### Verify setup
+### 验证设置
 
 ```bash
-# Check Chrome plugin connection
+# 检查 Chrome 插件连接
 opencli doctor
 
-# Test safety scanner
+# 测试安全扫描器
 python3 scripts/check_packet_safety.py --help
 ```
 
-<p align="right">(<a href="#getting-started">back to top</a>)</p>
+<p align="right">(<a href="#快速开始">返回顶部</a>)</p>
 
-<a id="usage"></a>
+<a id="使用场景"></a>
 
-## Usage
+## 使用场景
 
-### Supported consultation types
+### 支持的咨询类型
 
-| Type | Description |
-|------|-------------|
-| Architecture review | System design, API design, database schema, infrastructure |
-| Business consultation | Strategy, pricing, market analysis, competitive positioning |
-| Content strategy | Documentation, marketing, technical writing |
-| Skill design | AI agent skills, workflow automation, tool integration |
-| Risk review | Security audit, compliance, technical debt assessment |
-| Debugging | Complex bugs, performance issues, race conditions |
-| Planning | Project planning, sprint planning, resource allocation |
+| 类型 | 说明 |
+|------|------|
+| 架构审查 | 系统设计、API 设计、数据库 schema、基础设施 |
+| 商业咨询 | 战略、定价、市场分析、竞争定位 |
+| 内容策略 | 文档、营销、技术写作 |
+| 技能设计 | AI Agent 技能、工作流自动化、工具集成 |
+| 风险审查 | 安全审计、合规性、技术债务评估 |
+| 调试支持 | 复杂 Bug、性能问题、竞态条件 |
+| 规划建议 | 项目规划、Sprint 计划、资源分配 |
 
-### Routing contract
+### 路由策略
 
-| Condition | Path |
-|-----------|------|
-| Default | Codex Chrome plugin |
-| Chrome unavailable + OpenCLI ready | OpenCLI fallback |
-| Neither available | Stop and report missing connection |
+| 条件 | 路径 |
+|------|------|
+| 默认 | Codex Chrome 插件 |
+| Chrome 不可用 + OpenCLI 就绪 | OpenCLI 备选 |
+| 两者都不可用 | 停止并报告连接缺失 |
 
-<p align="right">(<a href="#usage">back to top</a>)</p>
+<p align="right">(<a href="#使用场景">返回顶部</a>)</p>
 
-<a id="workflow"></a>
+<a id="工作流程"></a>
 
-## Workflow
+## 工作流程
 
-### 1. Local judgment first
+### 1. 本地判断优先
 
-Before consulting, write your best local assessment:
+咨询前，先写出本地的最佳评估：
 
-- Decision or problem statement
-- Success criteria and user intent
-- Evidence and constraints
-- Options and tradeoffs
-- Attempts and unknowns
+- 决策或问题陈述
+- 成功标准和用户意图
+- 证据和约束条件
+- 选项和权衡
+- 已尝试的方案和未知因素
 
-### 2. Build context packet
+### 2. 构建上下文包
 
-Use the [template](references/context-packet-template.md) to structure your consultation:
+使用[模板](references/context-packet-template.md)组织咨询内容：
 
 ```bash
-# For many files, build a bundle
+# 多文件时，构建打包文件
 python3 scripts/build_attachment_bundle.py /path/to/artifacts -o /tmp/bundle.md
 ```
 
-### 3. Safety check
+### 3. 安全检查
 
 ```bash
 python3 scripts/check_packet_safety.py packet.md
 ```
 
-Removes credential-like material while preserving useful project context.
+移除类凭证材料，保留有用的项目上下文。
 
-### 4. Execute consultation
+### 4. 执行咨询
 
-- **Chrome path**: Follow [Chrome workflow](references/chrome-workflow.md)
-- **OpenCLI path**: Follow [OpenCLI fallback](references/opencli-fallback.md) (only when eligible)
+- **Chrome 路径**：遵循 [Chrome 工作流](references/chrome-workflow.md)
+- **OpenCLI 路径**：遵循 [OpenCLI 备选](references/opencli-fallback.md)（仅在符合条件时）
 
-### 5. Verify and adopt
+### 5. 验证并采纳
 
-- Confirm `WEBGPT_CONSULT_RESULT_...` sentinel appears
-- Compare with local evidence
-- Decide: adopt, reject, or modify
+- 确认 `WEBGPT_CONSULT_RESULT_...` 哨兵标记出现
+- 与本地证据对比
+- 决策：采纳、拒绝或修改
 
-<p align="right">(<a href="#workflow">back to top</a>)</p>
+<p align="right">(<a href="#工作流程">返回顶部</a>)</p>
 
-<a id="model-routing"></a>
+<a id="模型路由"></a>
 
-## Model Routing
+## 模型路由
 
-### Selection hierarchy
+### 选择优先级
 
-| Priority | Model | Status |
-|----------|-------|--------|
-| 1 | GPT-5.6 Sol Pro | Preferred |
-| 2 | GPT-5.6 Sol High | Fallback |
-| - | Extra High/Medium/Instant | Unsupported (fail closed) |
+| 优先级 | 模型 | 状态 |
+|--------|------|------|
+| 1 | GPT-5.6 Sol Pro | 首选 |
+| 2 | GPT-5.6 Sol High | 备选 |
+| - | Extra High/Medium/Instant | 不支持（失败关闭） |
 
-### Verification
+### 验证流程
 
-After selecting a tier, verify:
-1. Tier name appears in checked `menuitemradio`
-2. `aria-checked=true` attribute present
-3. GPT-5.6 Sol family evidence in picker
+选择层级后，验证：
+1. 层级名称出现在已选中的 `menuitemradio`
+2. `aria-checked=true` 属性存在
+3. 选择器中有 GPT-5.6 Sol 系列证据
 
-<p align="right">(<a href="#model-routing">back to top</a>)</p>
+<p align="right">(<a href="#模型路由">返回顶部</a>)</p>
 
-<a id="repository-layout"></a>
+<a id="项目结构"></a>
 
-## Repository Layout
+## 项目结构
 
 ```
 webgpt-consult/
-├── SKILL.md                    # Main skill documentation
-├── README.md                   # This file
+├── SKILL.md                    # 主技能文档
+├── README.md                   # 英文说明
+├── README_zh.md                # 中文说明
 ├── agents/
-│   └── openai.yaml            # Agent configuration
+│   └── openai.yaml            # Agent 配置
 ├── evals/
-│   └── evals.json             # Evaluation prompts
+│   └── evals.json             # 评估提示词
 ├── references/
-│   ├── chrome-workflow.md     # Chrome plugin workflow
-│   ├── opencli-fallback.md    # OpenCLI fallback guide
-│   └── context-packet-template.md  # Packet template
+│   ├── chrome-workflow.md     # Chrome 插件工作流
+│   ├── opencli-fallback.md    # OpenCLI 备选指南
+│   └── context-packet-template.md  # 上下文包模板
 ├── scripts/
-│   ├── run_webgpt_consult.py  # Main consultation runner
-│   ├── check_packet_safety.py # Credential scanner
-│   ├── build_attachment_bundle.py  # File bundler
-│   ├── extract_chatgpt_reply.py    # Reply extractor
-│   └── model_router.py        # Model selection logic
+│   ├── run_webgpt_consult.py  # 主咨询运行器
+│   ├── check_packet_safety.py # 凭证扫描器
+│   ├── build_attachment_bundle.py  # 文件打包器
+│   ├── extract_chatgpt_reply.py    # 回复提取器
+│   └── model_router.py        # 模型选择逻辑
 └── tests/
-    └── test_*.py              # Test suite
+    └── test_*.py              # 测试套件
 ```
 
-<p align="right">(<a href="#repository-layout">back to top</a>)</p>
+<p align="right">(<a href="#项目结构">返回顶部</a>)</p>
 
-<a id="examples"></a>
+<a id="执行示例"></a>
 
-## Examples
+## 执行示例
 
-### Pro available (preferred)
-
-```
-Available: Pro, High
-Selected: Pro
-downgraded=false
-```
-
-### Pro unavailable (fallback)
+### Pro 可用（首选）
 
 ```
-Available: High
-Selected: High
-downgraded=true
+可用：Pro, High
+选择：Pro
+降级：否
 ```
 
-### No supported tier
+### Pro 不可用（备选）
 
 ```
-Available: Extra High, Medium, Instant
-Result: fail closed
+可用：High
+选择：High
+降级：是
 ```
 
-<p align="right">(<a href="#examples">back to top</a>)</p>
+### 无支持层级
 
-<a id="contributing"></a>
+```
+可用：Extra High, Medium, Instant
+结果：失败关闭
+```
 
-## Contributing
+<p align="right">(<a href="#执行示例">返回顶部</a>)</p>
 
-Contributions welcome! Please:
+<a id="参与贡献"></a>
 
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 参与贡献
 
-<p align="right">(<a href="#contributing">back to top</a>)</p>
+欢迎贡献！请：
 
-<a id="license"></a>
+1. Fork 本仓库
+2. 创建功能分支（`git checkout -b feature/amazing-feature`）
+3. 提交更改（`git commit -m 'Add amazing feature'`）
+4. 推送分支（`git push origin feature/amazing-feature`）
+5. 提交 Pull Request
 
-## License
+<p align="right">(<a href="#参与贡献">返回顶部</a>)</p>
 
-MIT License - see [LICENSE](LICENSE) for details.
+<a id="许可证"></a>
 
-<p align="right">(<a href="#license">back to top</a>)</p>
+## 许可证
 
-<a id="acknowledgments"></a>
+MIT 许可证 - 详见 [LICENSE](LICENSE)。
 
-## Acknowledgments
+<p align="right">(<a href="#许可证">返回顶部</a>)</p>
 
-Built on top of:
-- [Codex CLI](https://github.com/openai/codex) - AI coding assistant
-- ChatGPT Web - GPT-5.6 Sol Pro/High model access
-- OpenCLI - Optional browser automation
+<a id="致谢"></a>
 
-<p align="right">(<a href="#acknowledgments">back to top</a>)</p>
+## 致谢
+
+基于以下项目构建：
+- [Codex CLI](https://github.com/openai/codex) - AI 编程助手
+- ChatGPT Web - GPT-5.6 Sol Pro/High 模型访问
+- OpenCLI - 可选的浏览器自动化
+
+<p align="right">(<a href="#致谢">返回顶部</a>)</p>
