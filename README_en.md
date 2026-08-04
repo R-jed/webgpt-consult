@@ -51,6 +51,39 @@ A direct follow-up to the same decision, bug, PR, branch, artifact, architecture
 
 Continuity survives tab or browser closure because the registry stores the canonical ChatGPT conversation URL rather than tab state.
 
+## Context-window rollover
+
+When a workstream reaches clear conversation/context-length pressure, the Skill does not keep retrying in the same overfull parent and does not branch from the latest message.
+
+`Branch in new chat` inherits history up to the selected message. Branching from the latest message therefore keeps the long tail and provides little real compaction.
+
+The first verified consultation in a workstream becomes its stable `branch_base_task_id`. On rollover, Codex branches from that older compact baseline and sends a cumulative `CONTINUITY_CAPSULE_V1` containing the reusable state accumulated since the base:
+
+```text
+current long conversation
+        ↓
+stable branch-base assistant result
+        ↓
+Branch in new chat
+        ↓
+CONTINUITY_CAPSULE_V1
+  accepted decisions
+  rejected paths
+  standing constraints
+  open questions
+  evidence index
+  current state
+  current ask
+        ↓
+continue the same workstream with bounded history
+```
+
+The capsule is a state-transfer artifact, not a casual transcript summary. It is locally validated before Send and explicitly attests that no material reusable context was intentionally omitted.
+
+If the Web UI cannot create a reliable branch, the Skill falls back to `rollover_fresh`: a completely fresh ChatGPT conversation receives the same standalone capsule plus any current evidence that still needs to be transmitted. The overfull parent is not reused.
+
+The registry preserves the current URL, parent URLs, stable branch base, rollover count, and capsule hash so the workstream lineage remains auditable.
+
 ## Safety and evidence integrity
 
 Run one preflight over the exact payload before Send:
@@ -128,10 +161,12 @@ webgpt-consult/
 ├── agents/openai.yaml
 ├── references/
 │   ├── chrome-workflow.md
+│   ├── continuity-capsule-template.md
 │   └── context-packet-template.md
 ├── scripts/
 │   ├── build_attachment_bundle.py
 │   ├── check_packet_safety.py
+│   ├── continuity_capsule.py
 │   ├── conversation_registry.py
 │   ├── model_router.py
 │   ├── result_verifier.py
