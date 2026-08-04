@@ -1,19 +1,22 @@
 # WebGPT Consult Context Packet Template
 
-Use the full packet for a new consultation workstream. For a continuation in an existing registered ChatGPT conversation, keep the same structure but focus on changed evidence and add the `CONTINUITY` section.
+Use the full packet for a new consultation workstream. For a continuation in an existing registered ChatGPT conversation, focus on changed evidence. For context-window rollover, embed a validated `CONTINUITY_CAPSULE_V1` and use `rollover_branch` or `rollover_fresh`.
 
 ````markdown
-CONTEXT_PACKET_V2
+CONTEXT_PACKET_V3
 
 ```json
 {
   "task_id": "webgpt-consult-YYYYMMDD-HHMMSS",
   "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS",
   "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|other",
-  "context_strategy": "problem_first_full_context|continuation_delta",
-  "continuity_mode": "fresh|continue",
+  "context_strategy": "problem_first_full_context|continuation_delta|rollover_capsule",
+  "continuity_mode": "fresh|continue|rollover_branch|rollover_fresh",
   "workstream_key": "<local workstream key>",
   "previous_task_id": null,
+  "branch_base_task_id": null,
+  "rollover_index": 0,
+  "continuity_capsule_sha256": null,
   "credential_status": "preflight_required",
   "context_hash": "calculated-by-submission-preflight",
   "required_output": [
@@ -30,9 +33,15 @@ CONTEXT_PACKET_V2
 
 ## CONTINUITY
 
-For fresh conversations: state `fresh` and why a new thread is appropriate.
+For `fresh`: state why a new workstream is appropriate.
 
-For continuations: state the previous task ID, what changed, and which prior decision/recommendation this request continues. Do not assume unrelated earlier chat content is relevant.
+For `continue`: state the previous task ID, what changed, and which prior decision or recommendation this request continues.
+
+For `rollover_branch` or `rollover_fresh`: state the parent task ID, stable branch-base task ID, rollover index, why rollover was triggered, and the validated capsule SHA-256. Then embed the complete continuity capsule below.
+
+### CONTINUITY_CAPSULE
+
+<embed validated CONTINUITY_CAPSULE_V1 here for rollover modes; otherwise omit>
 
 ## BACKGROUND
 
