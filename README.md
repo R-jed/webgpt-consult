@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="logo.svg" alt="webgpt consult" width="128" />
-</p>
-
 <h1 align="center">webgpt consult</h1>
 
 <p align="center">
