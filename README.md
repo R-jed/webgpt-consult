@@ -5,8 +5,8 @@
 <h1 align="center">webgpt consult</h1>
 
 <p align="center">
-  <strong>GPT-5.6 Sol Pro/High 专业第二意见伙伴</strong><br/>
-  <em>为复杂规划、架构设计、调试、商业、产品、内容策略、风险审查和技能设计提供深度咨询</em>
+  <strong>GPT-5.6 Sol Pro/High 第二意见咨询</strong><br/>
+  <em>拿不准的时候，问问 GPT-5.6 Sol</em>
 </p>
 
 <p align="center">
@@ -31,23 +31,23 @@
 
 > **如果你是 AI Agent，请阅读 [README_Agent.md](README_Agent.md) 获取引导指令。**
 
-当本地 AI Agent（Claude Code、Codex CLI、Cursor 等）遇到复杂问题需要外部视角时，WebGPT Consult 会将其路由到最佳的 GPT-5.6 Sol 层级，构建结构化上下文包，执行咨询，并带回经过验证的结果供本地采纳。
+本地 Agent 遇到复杂问题时，可以调用这个工具去问 GPT-5.6 Sol。它会帮你打包上下文、发请求、拿回复，然后你自己决定采不采纳。
 
 ```
-本地 Agent 判断
-  → 构建上下文包（8K-15K 字符）
-  → 安全扫描（凭证检查）
+你的判断
+  → 打包上下文（8K-15K 字符）
+  → 安全扫描（防止泄露凭证）
   → Chrome 插件（默认）或 OpenCLI（备选）
-  → 选择 GPT-5.6 Sol Pro/High
-  → 发送、等待、提取并验证哨兵标记
-  → 本地采纳决策
+  → 选 GPT-5.6 Sol Pro/High
+  → 发送、等回复、验证哨兵标记
+  → 你来决定采纳、拒绝还是修改
 ```
 
-**为什么需要这个工具：**
-- 本地 Agent 需要对复杂决策获得第二意见，但不应盲目信任外部模型
-- 上下文包保留了本地判断、证据和约束条件
-- 基于哨兵的完成验证防止了不完整或损坏的结果
-- 凭证卫生保护敏感数据不泄露给外部模型
+**为什么需要它：**
+- 复杂决策需要外部视角，但不能盲目信外模型
+- 上下文包保留你的判断、证据和约束
+- 哨兵标记确认回复完整，防止半截结果
+- 安全扫描防泄露敏感信息
 
 <p align="right">(<a href="#关于">返回顶部</a>)</p>
 
@@ -57,10 +57,10 @@
 
 ### 环境要求
 
-- **Codex CLI** 已连接 Chrome 插件（默认路径）
-- **Chrome 配置文件** 已登录 ChatGPT Web
-- **ChatGPT Plus/Pro** 账户，可用 GPT-5.6 Sol Pro 或 High
-- **Python 3.x**（用于安全扫描和文件打包）
+- **Codex CLI** 已连接 Chrome 插件
+- **Chrome** 已登录 ChatGPT Web
+- **ChatGPT Plus/Pro** 账户，有 GPT-5.6 Sol Pro 或 High
+- **Python 3.x**
 
 ### 安装
 
@@ -68,15 +68,9 @@
 git clone https://github.com/R-jed/webgpt-consult.git
 ```
 
-添加到 Codex 技能目录或直接引用。
-
-### 验证设置
+### 验证
 
 ```bash
-# 检查 Chrome 插件连接
-opencli doctor
-
-# 测试安全扫描器
 python3 scripts/check_packet_safety.py --help
 ```
 
@@ -86,25 +80,22 @@ python3 scripts/check_packet_safety.py --help
 
 ## 使用场景
 
-### 支持的咨询类型
-
-| 类型 | 说明 |
+| 场景 | 说明 |
 |------|------|
-| 架构审查 | 系统设计、API 设计、数据库 schema、基础设施 |
-| 商业咨询 | 战略、定价、市场分析、竞争定位 |
+| 架构审查 | 系统设计、API 设计、数据库 schema |
+| 商业咨询 | 战略、定价、市场分析 |
+| 调试 | 复杂 Bug、性能问题、竞态条件 |
+| 风险审查 | 安全审计、技术债务 |
+| 规划 | 项目规划、Sprint 计划 |
 | 内容策略 | 文档、营销、技术写作 |
-| 技能设计 | AI Agent 技能、工作流自动化、工具集成 |
-| 风险审查 | 安全审计、合规性、技术债务评估 |
-| 调试支持 | 复杂 Bug、性能问题、竞态条件 |
-| 规划建议 | 项目规划、Sprint 计划、资源分配 |
 
-### 路由策略
+### 路由
 
 | 条件 | 路径 |
 |------|------|
-| 默认 | Codex Chrome 插件 |
-| Chrome 不可用 + OpenCLI 就绪 | OpenCLI 备选 |
-| 两者都不可用 | 停止并报告连接缺失 |
+| 默认 | Chrome 插件 |
+| Chrome 不可用 + OpenCLI 就绪 | OpenCLI |
+| 都不可用 | 停止，报告连接缺失 |
 
 <p align="right">(<a href="#使用场景">返回顶部</a>)</p>
 
@@ -112,43 +103,40 @@ python3 scripts/check_packet_safety.py --help
 
 ## 工作流程
 
-### 1. 本地判断优先
+### 1. 先写你的判断
 
-咨询前，先写出本地的最佳评估：
+别急着问，先想清楚：
+- 问题是什么，成功标准是什么
+- 你有什么证据和约束
+- 有哪些选项，各自代价是什么
+- 你试过什么，还有哪些不确定
 
-- 决策或问题陈述
-- 成功标准和用户意图
-- 证据和约束条件
-- 选项和权衡
-- 已尝试的方案和未知因素
+### 2. 打包上下文
 
-### 2. 构建上下文包
-
-使用[模板](references/context-packet-template.md)组织咨询内容：
+用[模板](references/context-packet-template.md)组织内容。文件多的话打包：
 
 ```bash
-# 多文件时，构建打包文件
 python3 scripts/build_attachment_bundle.py /path/to/artifacts -o /tmp/bundle.md
 ```
 
-### 3. 安全检查
+### 3. 安全扫描
 
 ```bash
 python3 scripts/check_packet_safety.py packet.md
 ```
 
-移除类凭证材料，保留有用的项目上下文。
+去掉凭证，保留有用的项目上下文。
 
-### 4. 执行咨询
+### 4. 发请求
 
-- **Chrome 路径**：遵循 [Chrome 工作流](references/chrome-workflow.md)
-- **OpenCLI 路径**：遵循 [OpenCLI 备选](references/opencli-fallback.md)（仅在符合条件时）
+- **Chrome**：走 [Chrome 工作流](references/chrome-workflow.md)
+- **OpenCLI**：走 [OpenCLI 备选](references/opencli-fallback.md)（符合条件时）
 
-### 5. 验证并采纳
+### 5. 验证并决策
 
-- 确认 `WEBGPT_CONSULT_RESULT_...` 哨兵标记出现
-- 与本地证据对比
-- 决策：采纳、拒绝或修改
+- 确认 `WEBGPT_CONSULT_RESULT_...` 哨兵出现
+- 和你的判断对比
+- 采纳、拒绝或修改
 
 <p align="right">(<a href="#工作流程">返回顶部</a>)</p>
 
@@ -156,20 +144,16 @@ python3 scripts/check_packet_safety.py packet.md
 
 ## 模型路由
 
-### 选择优先级
-
-| 优先级 | 模型 | 状态 |
+| 优先级 | 模型 | 说明 |
 |--------|------|------|
-| 1 | GPT-5.6 Sol Pro | 首选 |
-| 2 | GPT-5.6 Sol High | 备选 |
-| - | Extra High/Medium/Instant | 不支持（失败关闭） |
+| 1 | GPT-5.6 Sol Pro | 首选，推理最强 |
+| 2 | GPT-5.6 Sol High | Pro 不可用时降级 |
+| - | Extra High/Medium/Instant | 不支持，直接失败 |
 
-### 验证流程
-
-选择层级后，验证：
-1. 层级名称出现在已选中的 `menuitemradio`
-2. `aria-checked=true` 属性存在
-3. 选择器中有 GPT-5.6 Sol 系列证据
+选完之后验证：
+1. 选中的层级名出现在 `menuitemradio`
+2. `aria-checked=true` 存在
+3. 选择器里有 GPT-5.6 Sol 系列证据
 
 <p align="right">(<a href="#模型路由">返回顶部</a>)</p>
 
@@ -179,25 +163,22 @@ python3 scripts/check_packet_safety.py packet.md
 
 ```
 webgpt-consult/
-├── SKILL.md                    # 主技能文档
-├── README.md                   # 英文说明
-├── README_zh.md                # 中文说明
+├── SKILL.md                    # 主文档
+├── README.md                   # 本文件
 ├── agents/
 │   └── openai.yaml            # Agent 配置
-├── evals/
-│   └── evals.json             # 评估提示词
 ├── references/
-│   ├── chrome-workflow.md     # Chrome 插件工作流
-│   ├── opencli-fallback.md    # OpenCLI 备选指南
+│   ├── chrome-workflow.md     # Chrome 工作流
+│   ├── opencli-fallback.md    # OpenCLI 备选
 │   └── context-packet-template.md  # 上下文包模板
 ├── scripts/
-│   ├── run_webgpt_consult.py  # 主咨询运行器
-│   ├── check_packet_safety.py # 凭证扫描器
-│   ├── build_attachment_bundle.py  # 文件打包器
-│   ├── extract_chatgpt_reply.py    # 回复提取器
-│   └── model_router.py        # 模型选择逻辑
+│   ├── run_webgpt_consult.py  # 主运行器
+│   ├── check_packet_safety.py # 凭证扫描
+│   ├── build_attachment_bundle.py  # 文件打包
+│   ├── extract_chatgpt_reply.py    # 回复提取
+│   └── model_router.py        # 模型选择
 └── tests/
-    └── test_*.py              # 测试套件
+    └── test_*.py
 ```
 
 <p align="right">(<a href="#项目结构">返回顶部</a>)</p>
@@ -206,7 +187,7 @@ webgpt-consult/
 
 ## 执行示例
 
-### Pro 可用（首选）
+### Pro 可用
 
 ```
 可用：Pro, High
@@ -214,7 +195,7 @@ webgpt-consult/
 降级：否
 ```
 
-### Pro 不可用（备选）
+### Pro 不可用
 
 ```
 可用：High
@@ -226,7 +207,7 @@ webgpt-consult/
 
 ```
 可用：Extra High, Medium, Instant
-结果：失败关闭
+结果：失败
 ```
 
 <p align="right">(<a href="#执行示例">返回顶部</a>)</p>
@@ -235,6 +216,6 @@ webgpt-consult/
 
 ## 许可证
 
-MIT 许可证 - 详见 [LICENSE](LICENSE)。
+MIT - 详见 [LICENSE](LICENSE)。
 
 <p align="right">(<a href="#许可证">返回顶部</a>)</p>
