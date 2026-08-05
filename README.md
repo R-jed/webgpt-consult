@@ -27,7 +27,7 @@
 
 ## 关于项目
 
-> **如果你是 AI Agent，请先阅读 [README_Agent.md](README_Agent.md)，再以 [SKILL.md](SKILL.md) 为执行规范。**
+> **如果你是 AI Agent，请先阅读 [README_Agent.md](README_Agent.md)，真正执行时以 [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) 为规范。**
 
 `webgpt-consult` 让 Codex 通过 ChatGPT Web 调用 GPT-5.6 Sol Pro 或 High，获得一个经过验证的独立第二意见。
 
@@ -64,23 +64,23 @@
 - Chrome 中已经登录 ChatGPT Web
 - 当前账号实际提供 GPT-5.6 Sol Pro 或 High
 
-### 推荐安装
+### 一行安装
 
 直接在 Codex 中运行：
 
 ```text
-/skill-installer install https://github.com/R-jed/webgpt-consult
+/skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-默认 `CODEX_HOME` 下通常安装到：
+仓库中的 canonical Skill package 位于 `skills/webgpt-consult/`。使用明确的 GitHub skill path 可以让 Codex installer 直接识别 Skill 目录，并安装为：
 
 ```text
 ~/.codex/skills/webgpt-consult/
 ```
 
-安装完成后重启 Codex，再新建一个任务，让新的 Skill 被重新加载。
+安装成功后，先在下一轮直接调用 `/webgpt-consult`。如果当前 Codex 客户端仍未刷新 Skill 列表，再重启 Codex或新建任务。
 
-如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 依赖 Codex Chrome plugin，因此不维护旧版 Codex 的独立安装器。
+如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 依赖 Codex Chrome plugin，因此不维护另一套 legacy installer。
 
 > `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
@@ -116,7 +116,7 @@
 
 `continuation` 只用于当前 Codex 会话能够确定并验证的上一条 Web review。绑定丢失、身份验证失败或出现多个候选时直接切换到 `independent`。
 
-`branch` 只解决上下文压力。它不会创建项目记忆。成功分支并完成结果验证后，当前 Codex 会话的临时绑定会切换到新 branch。
+`branch` 只解决上下文压力。成功分支并完成结果验证后，当前 Codex 会话的临时绑定会切换到新 branch。
 
 ### 会话绑定机制
 
@@ -165,11 +165,11 @@ Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏�
 - 当前会话上下文过长时使用 `branch`
 - 当前 Codex 会话失去 Web binding、当前 Web 会话无法确认或不再可靠时使用 `independent`
 
-`Branch in new chat` 会继承所选消息之前的历史。因此不要机械地从已经接近上下文上限的最后一条消息分支。应选择一个更早、仍然包含必要共享背景的节点，再重新发送当前问题所需的最小证据。
+`Branch in new chat` 会继承所选消息之前的历史。应选择一个较早、仍然包含必要共享背景的节点，再重新发送当前问题所需的最小证据。
 
 如果没有合适的分支点，直接新建 conversation。
 
-这个设计让 WebGPT 始终保持独立 reviewer。Codex 每次基于当前问题重新决定要发送什么，同时只在当前 Codex 会话内部维持足够稳定的短期 Web continuity。
+这个设计让 WebGPT 始终保持独立 reviewer，同时只在当前 Codex 会话内部维持稳定的短期 Web continuity。
 
 <a id="安全与验证"></a>
 
@@ -186,7 +186,7 @@ Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏�
 发送前运行统一 preflight：
 
 ```bash
-python3 scripts/submission_preflight.py packet.md \
+python3 ~/.codex/skills/webgpt-consult/scripts/submission_preflight.py packet.md \
   --task-id webgpt-consult-... \
   --sentinel WEBGPT_CONSULT_RESULT_... \
   --attachment ./src/example.py
@@ -211,7 +211,7 @@ WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
 ```
 
-`scripts/result_verifier.py` 会验证最新 assistant turn。sentinel 只在正文里出现不算完成。
+`result_verifier.py` 会验证最新 assistant turn。sentinel 只在正文里出现不算完成。
 
 <a id="关键文件"></a>
 
@@ -219,14 +219,14 @@ Task-ID: <task-id>
 
 | 文件 | 用途 |
 |---|---|
-| [SKILL.md](SKILL.md) | Skill 的唯一执行规范 |
+| [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) | Skill 的唯一执行规范 |
 | [README_Agent.md](README_Agent.md) | AI Agent 发现、安装和支持入口 |
-| [agents/openai.yaml](agents/openai.yaml) | Skill 展示信息与 invocation policy |
-| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定与分支流程 |
-| [references/context-packet-template.md](references/context-packet-template.md) | Web 审查上下文模板 |
-| [scripts/model_router.py](scripts/model_router.py) | Pro → High 模型身份与路由策略 |
-| [scripts/submission_preflight.py](scripts/submission_preflight.py) | 发送前安全和附件检查 |
-| [scripts/result_verifier.py](scripts/result_verifier.py) | 外部结果精确绑定验证 |
+| [skills/webgpt-consult/agents/openai.yaml](skills/webgpt-consult/agents/openai.yaml) | Skill 展示信息与 invocation policy |
+| [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定与分支流程 |
+| [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web 审查上下文模板 |
+| [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High 模型身份与路由策略 |
+| [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | 发送前安全和附件检查 |
+| [skills/webgpt-consult/scripts/result_verifier.py](skills/webgpt-consult/scripts/result_verifier.py) | 外部结果精确绑定验证 |
 
 ### 仓库结构
 
@@ -235,21 +235,23 @@ webgpt-consult/
 ├── README.md
 ├── README_en.md
 ├── README_Agent.md
-├── SKILL.md
 ├── LICENSE
 ├── assets/
 │   └── logo.svg
-├── agents/
-│   └── openai.yaml
-├── references/
-│   ├── chrome-workflow.md
-│   └── context-packet-template.md
-└── scripts/
-    ├── build_attachment_bundle.py
-    ├── check_packet_safety.py
-    ├── model_router.py
-    ├── result_verifier.py
-    └── submission_preflight.py
+└── skills/
+    └── webgpt-consult/
+        ├── SKILL.md
+        ├── agents/
+        │   └── openai.yaml
+        ├── references/
+        │   ├── chrome-workflow.md
+        │   └── context-packet-template.md
+        └── scripts/
+            ├── build_attachment_bundle.py
+            ├── check_packet_safety.py
+            ├── model_router.py
+            ├── result_verifier.py
+            └── submission_preflight.py
 ```
 
 ## License
