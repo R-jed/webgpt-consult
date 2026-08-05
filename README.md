@@ -5,7 +5,7 @@
 <h1 align="center">webgpt-consult</h1>
 <h3 align="center">GPT-5.6 Sol Pro / High second-opinion Skill for Codex</h3>
 
-<p align="center">本地先判断 · Web 再审查 · 结果要验证 · 最终本地采纳</p>
+<p align="center">本地先判断 · Web 独立审查 · 结果验证 · 本地采纳</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Codex-Skill-111827" alt="Codex Skill" />
@@ -29,7 +29,7 @@
 
 > **如果你是 AI Agent，请先阅读 [README_Agent.md](README_Agent.md)，再以 [SKILL.md](SKILL.md) 为执行规范。**
 
-`webgpt-consult` 让 Codex 在处理复杂问题时，通过 ChatGPT Web 调用 GPT-5.6 Sol Pro 或 High 获取一个经过验证的第二意见。
+`webgpt-consult` 让 Codex 在处理复杂问题时，通过 ChatGPT Web 调用 GPT-5.6 Sol Pro 或 High 获取一个经过验证的独立第二意见。
 
 本地 Codex 负责理解任务、筛选证据和形成初始判断。WebGPT 负责独立审查。外部结果返回后，Codex 再结合本地事实决定采纳、拒绝或修改。
 
@@ -37,20 +37,20 @@
 用户任务
   → 本地 Codex 先判断
   → 选择 independent / follow-up
-  → 整理真实上下文和证据
+  → 整理当前问题真正需要的证据
   → credential / attachment preflight
   → ChatGPT Web
   → GPT-5.6 Sol Pro，失败则 High
   → sentinel + task ID 验证
   → 本地 adoption decision
-  → 可选：更新本地 consultation state
 ```
 
 为什么需要这个项目：
 
 - 复杂架构、调试、产品和风险决策通常值得一次独立强模型复核
-- 直接把整个本地上下文扔进 Web 会带来隐私、证据完整性和模型身份误判问题
-- Web conversation 会变长、失效或丢失上下文，因此长期可复用状态保存在本地
+- WebGPT 保持第二意见角色，避免变成项目长期记忆或第二个项目管理器
+- 发送内容按当前问题重新整理，减少历史结论持续累积造成的锚定和理解漂移
+- 模型身份、凭证安全、附件完整性和结果绑定都需要明确验证
 
 <a id="快速开始"></a>
 
@@ -108,39 +108,29 @@
 
 | 模式 | 适用场景 | Web 会话 |
 |---|---|---|
-| `independent` | deep review、里程碑 review、对抗性审查、架构重审、明显不同的问题 | 新建 conversation |
-| `follow-up` | 明确继续同一 consultation，且存在唯一明确 anchor | 可复用原 conversation |
+| `independent` | deep review、里程碑 review、对抗性审查、架构重审、不同项目或明显不同的问题 | 新建 conversation |
+| `follow-up` | 明确继续当前同一条咨询 | 复用当前 conversation |
 
 `independent` 模式下，本地 Codex 会先形成自己的判断，但默认不把结论告诉 Sol，从而降低锚定。
 
-`follow-up` 只有在 continuation 足够明确时才复用旧会话。匹配存在歧义时直接 fresh。
+`follow-up` 只在连续性非常明确、当前 Web conversation 仍然可用时复用。存在歧义时直接新建 conversation。
 
-### 会话连续性
+### Web 会话连续性
 
-长期 consultation state 保存在本地：
+`webgpt-consult` 不在本地保存 consultation history、conversation URL、项目摘要或长期咨询状态。
 
-```text
-~/.codex/webgpt-consult/state/<project-id>/<consult-id>.json
-```
+会话连续性只存在于当前 ChatGPT Web conversation：
 
-snapshot 只保存本地已经采纳、仍值得复用的内容，例如：
+- 同一问题的明确 follow-up 可以继续当前会话
+- 不同项目默认新建会话
+- 同一项目但明显不同的独立问题默认新建会话
+- 当前 Web 会话丢失、无法确认或不再可靠时直接 fresh
 
-- 用户目标和长期约束
-- 已接受决策
-- 已否决或延期路线
-- 未决问题
-- 证据引用
-- 当前项目状态
+如果频繁咨询导致当前 Web conversation 出现明显上下文压力，优先使用 ChatGPT Web 的 `Branch in new chat`，从一个较早且仍然相关的消息节点创建分支，然后针对当前问题重新发送最小必要证据。
 
-它不会保存完整聊天记录，也不会把 Sol 原始回复当作项目事实。
+分支会继承所选节点之前的历史，因此不要机械地从已经接近上下文上限的最后一条消息分支。如果没有合适的分支点，直接新建 conversation。
 
-如果旧 Web conversation 无法访问、上下文过长或明显不可靠，Codex 会创建 fresh conversation，并通过本地 snapshot + 当前增量 + 当前证据恢复同一个 consultation。
-
-查看当前 checkout 的 consultation：
-
-```bash
-python3 scripts/consult_state.py --project-root . list
-```
+这个设计让 WebGPT 保持独立 reviewer。Codex 每次只发送当前审查真正需要的信息，不依赖本地长期咨询记忆恢复 WebGPT 的项目认知。
 
 <a id="安全与验证"></a>
 
@@ -191,11 +181,10 @@ Task-ID: <task-id>
 | 文件 | 用途 |
 |---|---|
 | [SKILL.md](SKILL.md) | Skill 的唯一执行规范 |
-| [README_Agent.md](README_Agent.md) | AI Agent 发现和读取入口 |
+| [README_Agent.md](README_Agent.md) | AI Agent 发现、安装和支持入口 |
 | [agents/openai.yaml](agents/openai.yaml) | Skill 展示信息与 invocation policy |
-| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web 浏览器执行流程 |
+| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web 浏览器执行与分支流程 |
 | [references/context-packet-template.md](references/context-packet-template.md) | Web 咨询上下文模板 |
-| [scripts/consult_state.py](scripts/consult_state.py) | 本地 consultation state 管理 |
 | [scripts/model_router.py](scripts/model_router.py) | Pro → High 模型身份与路由策略 |
 | [scripts/submission_preflight.py](scripts/submission_preflight.py) | 发送前安全和附件检查 |
 | [scripts/result_verifier.py](scripts/result_verifier.py) | 外部结果精确绑定验证 |
@@ -219,7 +208,6 @@ webgpt-consult/
 └── scripts/
     ├── build_attachment_bundle.py
     ├── check_packet_safety.py
-    ├── consult_state.py
     ├── model_router.py
     ├── result_verifier.py
     └── submission_preflight.py
