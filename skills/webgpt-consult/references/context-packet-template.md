@@ -1,19 +1,20 @@
 # GPT-5.6 Sol Context Packet Template
 
-Use this template when preparing a substantial ChatGPT Web consultation. Simple questions and short follow-ups in an already verified conversation may use a smaller delta prompt instead of repeating the whole packet.
+Use this template for substantial ChatGPT Web consultations. Simple questions and short follow-ups in an already verified conversation may use a smaller delta prompt instead of repeating the whole packet.
 
 ````markdown
+Request-ID: wgpt-<random>
+
 CONTEXT_PACKET_V1
 
 ```json
 {
   "task_id": "webgpt-consult-YYYYMMDD-HHMMSS",
-  "request_id": "wgpt-<random>",
   "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS",
-  "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|debugging|code_review|other",
+  "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|other",
   "context_strategy": "problem_first_full_context",
   "credential_status": "no_executable_credentials",
-  "context_hash": "<sha256 of markdown body when useful>",
+  "context_hash": "<sha256 of markdown body>",
   "required_output": [
     "reasoning_brief",
     "direct_judgment",
@@ -63,7 +64,7 @@ Then use:
 
 ## Follow-up in the same verified conversation
 
-Do not resend the full packet when the existing ChatGPT Web conversation already contains the relevant background. Use the same conversation and send only the new delta, with a fresh request ID and sentinel when useful.
+Do not resend the full packet when the existing ChatGPT Web conversation already contains the relevant background. Use the same conversation and send only the new delta with a fresh Request-ID. Include a fresh sentinel when the follow-up is substantial enough to benefit from the full completion contract.
 
 Example:
 
