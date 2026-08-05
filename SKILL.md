@@ -15,7 +15,7 @@ The Skill has five responsibilities:
 4. verify that the returned answer belongs to the exact task;
 5. compare the external review with local facts and decide locally what to adopt.
 
-Keep WebGPT as a reviewer. Do not turn it into durable project memory, a second project manager, or a synchronization system.
+Keep WebGPT as a reviewer. Do not turn it into long-lived project memory, a second project manager, or a synchronization system.
 
 ## Hard invariants
 
@@ -69,7 +69,7 @@ Typical cases:
 - new implementation evidence directly follows the immediately preceding review;
 - the same artifact or decision is being examined one step further.
 
-If continuity is ambiguous, browser state was lost, the project changed, or the question changed materially, use `independent` instead.
+If continuity is ambiguous, browser context was lost, the project changed, or the question changed materially, use `independent` instead.
 
 ### `branch`
 
@@ -86,11 +86,11 @@ After branching:
 
 If no suitable branch point exists, branching is unavailable, or the branch is unreliable, fall back to `independent` with a fresh conversation.
 
-`branch` preserves useful short-term Web context. It does not create or restore project memory.
+`branch` preserves useful short-term Web context only.
 
 ## No local reviewer memory
 
-Do not persist WebGPT review history, conversation URLs, project summaries, accepted decisions, reviewer snapshots, or review identifiers for future restoration.
+Do not persist WebGPT review history, conversation URLs, project summaries, accepted decisions, historical decision caches, or review identifiers for future reuse.
 
 Each invocation is grounded in the user's current task and the evidence that currently matters.
 
@@ -143,7 +143,7 @@ verified usable GPT-5.6 Sol Pro
     -> otherwise fail closed
 ```
 
-A DOM ref is only a click locator. Generic GPT-5 Pro evidence does not establish GPT-5.6 Sol identity. Capture fresh picker state after selection and verify the checked tier.
+A DOM ref is only a click locator. Generic GPT-5 Pro evidence does not establish GPT-5.6 Sol identity. Capture fresh picker context after selection and verify the checked tier.
 
 Re-verify model identity after opening a fresh conversation or branch.
 
@@ -151,7 +151,7 @@ Re-verify model identity after opening a fresh conversation or branch.
 
 Read `references/chrome-workflow.md` before browser work.
 
-Use fresh DOM snapshots and stable semantic locators. Confirm authentication, selected model, composer contents, sentinel, and required attachment chips immediately before Send.
+Use fresh DOM views and stable semantic locators. Confirm authentication, selected model, composer contents, sentinel, and required attachment chips immediately before Send.
 
 Conversation choice follows the review mode:
 
@@ -161,7 +161,7 @@ continuation -> current usable conversation
 branch       -> Branch in new chat from an earlier useful point
 ```
 
-If the chosen conversation path is unreliable, move toward a fresh `independent` review rather than inventing recovery state.
+If the chosen conversation path is unreliable, move toward a fresh `independent` review rather than inventing recovery data.
 
 ## Completion contract
 
