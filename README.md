@@ -109,32 +109,34 @@
 | 模式 | 适用场景 | Web 行为 |
 |---|---|---|
 | `independent` | deep review、里程碑 review、对抗性审查、架构重审、不同项目或明显不同的问题 | 新建 conversation |
-| `continuation` | 明确继续当前同一条审查 | 继续当前 conversation |
+| `continuation` | 明确继续当前同一条审查，并且当前 Codex 会话仍能验证对应 Web conversation | 继续已绑定 conversation |
 | `branch` | 同一条审查需要继续，但当前 conversation 上下文已经过长 | 从较早相关消息 `Branch in new chat` |
 
 `independent` 下，本地 Codex 会先形成自己的判断，但默认不把结论告诉 Sol，从而降低锚定。
 
-`continuation` 只在当前 Web conversation 与新请求的关系非常明确，并且会话仍然可靠时使用。存在歧义时直接 `independent`。
+`continuation` 不会通过 ChatGPT 历史记录去猜上一条会话。第一次成功审查后，当前 Codex 会话只临时保留 Chrome tab/page handle、精确 ChatGPT conversation URL，以及上一条已验证的 Task-ID 和 sentinel。再次继续时，先定位原 Web conversation，再用上一条 Task-ID + sentinel 验证身份，匹配成功后才允许续聊。绑定丢失或验证失败时直接 `independent`。
 
-`branch` 只解决上下文压力。它不会创建项目记忆，也不会恢复本地保存的咨询状态。
+`branch` 只解决上下文压力。它不会创建项目记忆，也不会恢复本地保存的咨询状态。成功分支并完成结果验证后，当前 Codex 会话的临时绑定会切换到新 branch。
 
 ### Web 会话连续性
 
 `webgpt-consult` 不在本地保存 review history、conversation URL、项目摘要、accepted decisions 或 reviewer memory。
 
-会话连续性只存在于当前 ChatGPT Web conversation：
+会话连续性只存在于当前 Codex 会话和当前 ChatGPT Web conversation 的临时绑定中：
 
 - 同一审查的直接继续使用 `continuation`
 - 不同项目默认使用 `independent`
 - 同一项目但明显不同的问题默认使用 `independent`
 - 当前会话上下文过长时使用 `branch`
-- 当前 Web 会话丢失、无法确认或不再可靠时使用 `independent`
+- 当前 Codex 会话失去 Web binding、当前 Web 会话无法确认或不再可靠时使用 `independent`
+
+Skill 不会根据 ChatGPT sidebar title、最近会话顺序、项目名、浏览器历史或大致时间去猜上一条咨询窗口。
 
 `Branch in new chat` 会继承所选消息之前的历史。因此不要机械地从已经接近上下文上限的最后一条消息分支。应选择一个更早、仍然包含必要共享背景的节点，再重新发送当前问题所需的最小证据。
 
 如果没有合适的分支点，直接新建 conversation。
 
-这个设计让 WebGPT 始终保持独立 reviewer。Codex 每次基于当前问题重新决定要发送什么，不依赖长期咨询记忆去维持 WebGPT 对项目的持续理解。
+这个设计让 WebGPT 始终保持独立 reviewer。Codex 每次基于当前问题重新决定要发送什么，同时只在当前 Codex 会话内部维持足够稳定的短期 Web continuation。
 
 <a id="安全与验证"></a>
 
@@ -187,7 +189,7 @@ Task-ID: <task-id>
 | [SKILL.md](SKILL.md) | Skill 的唯一执行规范 |
 | [README_Agent.md](README_Agent.md) | AI Agent 发现、安装和支持入口 |
 | [agents/openai.yaml](agents/openai.yaml) | Skill 展示信息与 invocation policy |
-| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web 浏览器执行与分支流程 |
+| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定与分支流程 |
 | [references/context-packet-template.md](references/context-packet-template.md) | Web 审查上下文模板 |
 | [scripts/model_router.py](scripts/model_router.py) | Pro → High 模型身份与路由策略 |
 | [scripts/submission_preflight.py](scripts/submission_preflight.py) | 发送前安全和附件检查 |
