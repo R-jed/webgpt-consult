@@ -1,29 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
   <title id="title">webgpt-consult logo</title>
-  <desc id="desc">Two review frames connected through a verified bridge, representing local Codex and an independent WebGPT second opinion.</desc>
+  <desc id="desc">Two interlocking paths form a clean bridge between Codex and ChatGPT Web.</desc>
 
   <defs>
-    <linearGradient id="bg" x1="34" y1="26" x2="220" y2="230" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
       <stop stop-color="#111827"/>
-      <stop offset="1" stop-color="#070A12"/>
+      <stop offset="1" stop-color="#050814"/>
     </linearGradient>
-    <linearGradient id="bridge" x1="69" y1="87" x2="188" y2="170" gradientUnits="userSpaceOnUse">
+    <linearGradient id="cyan" x1="54" y1="79" x2="145" y2="173" gradientUnits="userSpaceOnUse">
       <stop stop-color="#67E8F9"/>
-      <stop offset="0.52" stop-color="#A5B4FC"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="111" y1="83" x2="204" y2="177" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#818CF8"/>
       <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="core" x1="101" y1="103" x2="156" y2="158" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#EDE9FE"/>
     </linearGradient>
   </defs>
 
-  <rect x="12" y="12" width="232" height="232" rx="58" fill="url(#bg)"/>
-  <rect x="13" y="13" width="230" height="230" rx="57" fill="none" stroke="#334155" stroke-opacity=".72" stroke-width="2"/>
+  <rect x="12" y="12" width="232" height="232" rx="60" fill="url(#bg)"/>
+  <rect x="13" y="13" width="230" height="230" rx="59" fill="none" stroke="#253047" stroke-width="2"/>
 
-  <path d="M99 61H69C54.64 61 43 72.64 43 87V119C43 133.36 54.64 145 69 145H85L99 158V145H103"
-        fill="none" stroke="#67E8F9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M153 111H187C201.36 111 213 122.64 213 137V169C213 183.36 201.36 195 187 195H171L157 208V195H153"
-        fill="none" stroke="#A78BFA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M88 123H108M148 133H168" fill="none" stroke="url(#bridge)" stroke-width="7" stroke-linecap="round"/>
-  <path d="M128 98L154 113V143L128 158L102 143V113L128 98Z"
-        fill="#F8FAFC" stroke="url(#bridge)" stroke-width="5" stroke-linejoin="round"/>
-  <path d="M117 128L125 136L140 119"
-        fill="none" stroke="#0F172A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M119 82H89C66.91 82 49 99.91 49 122V134C49 156.09 66.91 174 89 174H119C135.57 174 149 160.57 149 144V142"
+        fill="none" stroke="url(#cyan)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M137 174H167C189.09 174 207 156.09 207 134V122C207 99.91 189.09 82 167 82H137C120.43 82 107 95.43 107 112V114"
+        fill="none" stroke="url(#violet)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="109" y="109" width="38" height="38" rx="12" fill="#0B1020" stroke="url(#core)" stroke-width="6" transform="rotate(45 128 128)"/>
+  <circle cx="128" cy="128" r="7" fill="#F8FAFC"/>
 </svg>
