@@ -6,7 +6,7 @@ This file is the discovery, installation-support, and bootstrap guide for AI age
 
 It must stay consistent with the public README while being more operational. A user should be able to give an Agent this repository URL and receive an accurate explanation, installation path, activation steps, invocation example, troubleshooting path, and runtime handoff.
 
-Reading this file alone does not authorize installation, environment changes, or an external Web consultation.
+Reading this file alone does not authorize installation, environment changes, or an external Web review.
 
 `<SKILL_ROOT>` means the actual installed `webgpt-consult` directory when the Skill is present locally.
 
@@ -18,7 +18,7 @@ After reading this file, classify the user's intent and follow exactly one path.
 
 ### A. The user is asking what this project is
 
-Explain the project from this file. Do not install anything and do not start a Web consultation.
+Explain the project from this file. Do not install anything and do not start a Web review.
 
 Minimum explanation:
 
@@ -76,7 +76,7 @@ Enter the runtime workflow. Read, in this order:
 2. `<SKILL_ROOT>/references/chrome-workflow.md`
 3. `<SKILL_ROOT>/references/context-packet-template.md`
 
-Then execute the consultation contract defined there.
+Then execute the review contract defined there.
 
 ### E. The user is troubleshooting installation or invocation
 
@@ -108,14 +108,14 @@ Local Codex remains authoritative. It owns:
 - result verification;
 - adoption, rejection, or modification of the external advice.
 
-WebGPT is an external reviewer. It is not durable project memory and is not responsible for maintaining a long-lived model of the user's project.
+WebGPT is an external reviewer. It does not maintain durable project memory and is not a second project manager.
 
 The intended chain is:
 
 ```text
 user task
   -> local Codex judgment
-  -> independent or follow-up review
+  -> choose independent / continuation / branch
   -> current truthful context + evidence
   -> credential / attachment preflight
   -> ChatGPT Web
@@ -140,7 +140,7 @@ This project is useful for difficult architecture, debugging, product, business,
 
 There is no OpenCLI fallback.
 
-If the Chrome plugin is unavailable, the Skill cannot perform the Web consultation.
+If the Chrome plugin is unavailable, the Skill cannot perform the Web review.
 
 ---
 
@@ -232,16 +232,18 @@ Representative requests:
 ```
 
 ```text
-/webgpt-consult Continue the current consultation using the new implementation evidence.
+/webgpt-consult Continue the current Web review using the new implementation evidence.
 ```
 
 Preserve the user's actual task rather than replacing it with a generic review prompt.
 
 ---
 
-## 5. Review intent and Web conversation choice
+## 5. Review modes
 
-### Independent review
+The Skill uses one mode field with three possible values.
+
+### `independent`
 
 Start a fresh ChatGPT Web conversation for:
 
@@ -251,37 +253,60 @@ Start a fresh ChatGPT Web conversation for:
 - architecture reset;
 - a different project;
 - a materially different question;
-- a request for an independent second opinion.
+- any request that benefits from an unanchored second opinion.
 
 Local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
 Share the local proposal only when the user explicitly wants Sol to attack, compare, or revise it.
 
-### Follow-up review
+### `continuation`
 
-Reuse the current Web conversation only when the new request clearly continues the same consultation and that conversation is still active, identifiable, and useful.
+Continue the current Web conversation only when the new request clearly continues the same review and the conversation is still active, identifiable, useful, and not context-limited.
 
-If the match is ambiguous, the browser state is lost, the user moved to a different project, or the question changed materially, start fresh.
+Useful signals include:
 
-No local consultation registry is used to recover previous chats.
+- the user explicitly asks to continue the current review;
+- new evidence directly follows the immediately preceding review;
+- the same artifact or decision is being examined one step further.
+
+If the relationship is ambiguous, browser state is lost, the project changed, or the question changed materially, use `independent`.
+
+### `branch`
+
+Use `Branch in new chat` when the same review should continue but the active Web conversation has accumulated enough history to create context pressure.
+
+Choose an earlier still-relevant message as the branch point. The new branch inherits all conversation history before that message, so branching from a near-limit final message may preserve most of the unwanted context.
+
+After branching:
+
+```text
+confirm branch
+  -> re-verify GPT-5.6 Sol tier
+  -> send current task + minimum evidence
+  -> continue review
+```
+
+If no useful branch point exists or the branch is unreliable, use `independent`.
 
 ---
 
-## 6. No durable consultation memory
+## 6. No local reviewer memory
 
-Do not create or maintain local consultation-history files, conversation registries, project summaries, reviewer snapshots, accepted-decision caches, or stored ChatGPT conversation URLs for future restoration.
+Do not create or maintain local review-history files, conversation registries, project summaries, reviewer snapshots, accepted-decision caches, stored ChatGPT conversation URLs, or review IDs for future restoration.
 
-The Web model should receive what is needed for the current review. Historical conclusions should be reintroduced only when they are factual inputs required by the current question.
+The Web model should receive what is needed for the current review. Historical conclusions should be reintroduced only when they remain factual inputs required by the current question.
 
 This keeps WebGPT closer to an independent second opinion and reduces long-term anchoring or understanding drift.
+
+An open Web tab may provide temporary continuity. It is not durable project state.
 
 ---
 
 ## 7. Context pressure and branching
 
-A ChatGPT Web conversation may be reused for a clear follow-up while it remains useful.
+Use `continuation` while the current Web review remains compact and useful.
 
-If frequent consultation creates obvious context pressure, use ChatGPT Web's `Branch in new chat` from an earlier still-relevant message when possible.
+Move to `branch` when the same review should continue but the active conversation has accumulated too much history.
 
 Branching procedure:
 
@@ -294,11 +319,11 @@ identify an earlier useful branch point
   -> continue there
 ```
 
-Important: a branch inherits all history before the selected message. Branching from a near-limit final message may carry most of the context pressure into the new chat. Prefer an earlier useful point that preserves enough shared context without carrying an unnecessary long tail.
+A branch inherits all history before the selected message. Prefer an earlier useful point that preserves enough shared context without carrying an unnecessary long tail.
 
-If no suitable branch point exists, branching is unavailable, or the branch is unreliable, create a completely fresh ChatGPT conversation.
+If no suitable branch point exists, start fresh with `independent`.
 
-Do not create a local summary database to compensate for a lost Web conversation. Rebuild the current consultation from the current task and evidence.
+Do not create a local summary database to compensate for a lost Web conversation. Rebuild the current review from the current task and evidence.
 
 ---
 
@@ -416,8 +441,8 @@ webgpt-consult/
 | "How do I use it?" | Show `/webgpt-consult <review request>`. |
 | "Does it run automatically?" | No. Implicit invocation is disabled. |
 | "Does Sol replace Codex?" | No. Sol is an external reviewer; local Codex makes the adoption decision. |
-| "What if the Web chat is full?" | Branch from an earlier useful point and resend the current minimum evidence. If no useful branch point exists, start fresh. |
-| "Does it store consultation memory locally?" | No. The current design deliberately avoids durable local consultation memory. |
+| "What if the Web chat is full?" | Use `branch` from an earlier useful point and resend the current minimum evidence. If no useful branch point exists, use `independent`. |
+| "Does it store reviewer memory locally?" | No. The design deliberately avoids durable local reviewer memory. |
 | "Can it use another browser or OpenCLI?" | The supported browser transport is the Codex Chrome plugin; there is no OpenCLI fallback. |
 | "Is git clone enough?" | No. Cloning downloads source but does not register the Skill. |
 
@@ -435,9 +460,9 @@ During an actual `/webgpt-consult` execution:
 - no verified Pro or High -> fail closed;
 - preflight failure -> do not Send;
 - attachment upload failure -> do not claim the artifact was reviewed;
-- result verification failure -> mark the consultation incomplete;
-- ambiguous follow-up continuity -> start fresh;
-- unavailable Web conversation -> start fresh;
-- context-limited Web conversation -> branch from an earlier useful point or start fresh.
+- result verification failure -> mark the review incomplete;
+- ambiguous `continuation` -> use `independent`;
+- unavailable Web conversation -> use `independent`;
+- context-limited Web conversation -> use `branch`, or `independent` if no good branch point exists.
 
-Do not claim success for any installation, model selection, upload, consultation, or verification step that was not actually observed.
+Do not claim success for any installation, model selection, upload, review, or verification step that was not actually observed.
