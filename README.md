@@ -55,7 +55,7 @@ npx skills update webgpt-consult
 /webgpt-consult 请让 GPT-5.6 Sol 看一下这个登录 bug，需要的话读取相关源码和日志。
 ```
 
-简单问题可以直接问。遇到架构、代码审查、复杂排错或需要很多背景的任务时，Codex 可以用内置的 context packet 把关键背景、约束、证据、已经尝试过的方法和具体问题整理清楚，再发给 Web 端。代码问题可以上传相关文件，也可以只放关键代码片段。
+简单问题可以直接问。遇到架构、代码审查、复杂排错或需要很多背景的任务时，Codex 会使用内置的标准 `CONTEXT_PACKET_V1`，把任务、背景、用户意图、本地判断、证据、已经尝试过的方法、选项、风险和具体问题整理清楚，再发给 Web 端。代码问题可以上传相关文件，也可以只放关键代码片段。
 
 ## 一个实际例子
 
@@ -65,7 +65,7 @@ npx skills update webgpt-consult
 /webgpt-consult 这个登录问题我已经查了很久，请让 GPT-5.6 Sol 帮我找根因。
 ```
 
-Codex 会先看当前项目，挑出真正相关的源码和日志，比如 `auth.py`、`session.py` 和报错信息。如果问题比较复杂，它会把这些内容整理成一份清晰的 context packet。发送前先在本地检查敏感内容，然后通过 Chrome 打开 ChatGPT Web，优先使用 GPT-5.6 Sol Pro，Pro 不可用时使用 High。
+Codex 会先看当前项目，挑出真正相关的源码和日志，比如 `auth.py`、`session.py` 和报错信息。如果问题比较复杂，它会按标准 context packet 整理这些内容。发送前先在本地检查敏感内容，然后通过 Chrome 打开 ChatGPT Web，优先使用 GPT-5.6 Sol Pro，Pro 不可用时使用 High。
 
 GPT-5.6 Sol 看完这些材料后给出分析，Codex 会确认这确实是本轮咨询的回复，再把结果带回当前任务。如果你继续追问同一个问题，Skill 会复用已经验证过的 Web 会话和模型，不会每一轮都重新打开模型菜单。只有新开会话、Branch、会话身份发生变化，或者页面明确显示模型状态变了，才会重新检查模型。
 
