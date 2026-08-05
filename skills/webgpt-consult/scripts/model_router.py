@@ -80,10 +80,25 @@ def _find_section_family(lines: list[str], candidate_index: int) -> str | None:
     return None
 
 
+def _visible_label(line: str) -> str:
+    return line.rsplit(">", 1)[-1].strip() if ">" in line else line.strip()
+
+
 def _extract_tier_label(line: str) -> tuple[str, str] | None:
-    label = line.rsplit(">", 1)[-1].strip() if ">" in line else line.strip()
+    label = _visible_label(line)
     canonical = TIER_LABEL_ALIASES.get(label)
-    return (canonical, label) if canonical else None
+    if canonical:
+        return canonical, label
+
+    if _has_gpt56_family(label):
+        for family_hint in sorted(GPT56_FAMILY_HINTS, key=len, reverse=True):
+            if family_hint not in label:
+                continue
+            suffix = label.split(family_hint, 1)[1].strip(" :-–—·")
+            canonical = TIER_LABEL_ALIASES.get(suffix)
+            if canonical:
+                return canonical, label
+    return None
 
 
 def _is_enabled(line: str) -> bool:
@@ -101,7 +116,7 @@ def _parse_candidate(line: str, lines: list[str], index: int) -> ModelCandidate 
     if _is_legacy_pro(line):
         return None
 
-    family = _find_section_family(lines, index)
+    family = "GPT-5.6 Sol" if _has_gpt56_family(line) else _find_section_family(lines, index)
     checked = "aria-checked=true" in line or 'aria-checked="true"' in line
     enabled = _is_enabled(line)
     ref = _extract_ref(line)
