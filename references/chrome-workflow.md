@@ -62,7 +62,7 @@ If the previous Web review is lost and cannot be identified confidently, start f
 
 ## 4. Verify the model
 
-Open the model picker from a fresh DOM snapshot and apply `scripts/model_router.py` semantics.
+Open the model picker from a fresh DOM view and apply `scripts/model_router.py` semantics.
 
 Selection policy:
 
@@ -72,7 +72,7 @@ verified usable Pro -> verified usable High -> fail
 
 A disabled, ambiguous, generic, legacy, or non-actionable Pro entry must not block a valid High fallback.
 
-After a model click, capture fresh picker state and confirm the selected tier is checked under the GPT-5.6 Sol family. DOM refs are click locators only.
+After a model click, capture fresh picker context and confirm the selected tier is checked under the GPT-5.6 Sol family. DOM refs are click locators only.
 
 Re-verify model identity whenever a fresh conversation or branch is opened.
 
@@ -114,7 +114,7 @@ If ChatGPT rejects the request because the conversation is too long, do not retr
 
 ## 8. Extract and verify
 
-When generation stops, read only the latest assistant turn from a fresh snapshot. Save the extracted text locally only as part of the current task workflow when needed and run `scripts/result_verifier.py`.
+When generation stops, read only the latest assistant turn from a fresh DOM view. Save the extracted text locally only as part of the current task workflow when needed and run `scripts/result_verifier.py`.
 
 The first two non-empty lines must exactly match the expected sentinel and task ID. A sentinel appearing later in prose or in quoted content does not count.
 
