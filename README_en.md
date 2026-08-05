@@ -109,32 +109,34 @@ There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavaila
 | Mode | Best for | Web behavior |
 |---|---|---|
 | `independent` | deep review, milestone review, adversarial review, architecture reset, a different project, or a materially different question | fresh conversation |
-| `continuation` | a clear continuation of the current review | continue the current conversation |
+| `continuation` | a clear continuation of the current review when the current Codex session can still verify the bound Web conversation | continue the bound conversation |
 | `branch` | the same review should continue, but the active conversation has accumulated too much context | `Branch in new chat` from an earlier relevant message |
 
 In `independent` mode, local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
-Use `continuation` only when the relationship to the active Web review is unambiguous and the conversation remains reliable. If there is doubt, use `independent`.
+`continuation` never guesses from ChatGPT history. After a successful review, the current Codex conversation temporarily retains the available Chrome tab/page handle, exact ChatGPT conversation URL, and the previous verified Task-ID and sentinel. Before continuing, it resolves the candidate Web conversation and verifies it against that prior Task-ID + sentinel. If the binding is missing or verification fails, use `independent`.
 
-Use `branch` only to relieve context pressure. It does not create project memory or restore locally saved review state.
+Use `branch` only to relieve context pressure. It does not create project memory or restore locally saved review state. After a successful branch review is verified, the temporary binding moves to the new branch.
 
 ### Web conversation continuity
 
 `webgpt-consult` does not persist review history, conversation URLs, project summaries, accepted decisions, or reviewer memory locally.
 
-Continuity exists only in the active ChatGPT Web conversation:
+Continuity exists only through the temporary binding between the current Codex conversation and the active ChatGPT Web review:
 
 - a direct continuation of the same review uses `continuation`
 - a different project normally uses `independent`
 - a materially different question in the same project normally uses `independent`
 - a context-heavy active conversation uses `branch`
-- a lost, ambiguous, or unreliable Web conversation uses `independent`
+- a lost or unverifiable session binding uses `independent`
 
-`Branch in new chat` inherits all history before the selected message. Do not mechanically branch from a near-limit final message. Choose an earlier point that still contains the useful shared context, then send the minimum evidence required for the current question again.
+The Skill never selects a prior review based only on ChatGPT sidebar titles, recent-chat ordering, browser history, project name, approximate time, or semantic similarity.
+
+`Branch in new chat` inherits all history before the selected message. Do not mechanically branch from a near-limit final message. Choose an earlier point that still contains useful shared context, then send the minimum evidence required for the current question again.
 
 If no useful branch point exists, start a fresh conversation.
 
-This keeps WebGPT independent. Codex decides what to send for the current review instead of maintaining a long-lived reviewer model of the project.
+This keeps WebGPT independent while still giving the current Codex conversation deterministic short-term continuity when the immediately relevant review thread is available and verifiable.
 
 <a id="safety-and-verification"></a>
 
@@ -187,7 +189,7 @@ Task-ID: <task-id>
 | [SKILL.md](SKILL.md) | authoritative Skill execution contract |
 | [README_Agent.md](README_Agent.md) | AI-agent discovery, installation, and support entry point |
 | [agents/openai.yaml](agents/openai.yaml) | display metadata and invocation policy |
-| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser and branching workflow |
+| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, and branching workflow |
 | [references/context-packet-template.md](references/context-packet-template.md) | Web review context template |
 | [scripts/model_router.py](scripts/model_router.py) | Pro → High identity and routing policy |
 | [scripts/submission_preflight.py](scripts/submission_preflight.py) | pre-send safety and attachment checks |
