@@ -91,7 +91,9 @@ class SkillContractTests(unittest.TestCase):
 
     def test_evals_cover_real_failure_modes(self) -> None:
         payload = json.loads((SKILL_DIR / "evals/evals.json").read_text(encoding="utf-8"))
-        expected = "\n".join(case["expected_output"] for case in payload["evals"])
+        scenarios = "\n".join(
+            f"{case['prompt']}\n{case['expected_output']}" for case in payload["evals"]
+        )
         for concept in (
             "CONTEXT_PACKET_V1",
             "build_attachment_bundle.py",
@@ -100,7 +102,7 @@ class SkillContractTests(unittest.TestCase):
             "Show in text field",
             "already visible",
         ):
-            self.assertIn(concept, expected)
+            self.assertIn(concept, scenarios)
 
 
 if __name__ == "__main__":
