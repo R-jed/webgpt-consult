@@ -29,6 +29,11 @@ class ModelCandidate:
     def actionable(self) -> bool:
         return self.enabled and self.ref is not None
 
+    @property
+    def usable(self) -> bool:
+        """A selected tier may lack a click ref; an unselected tier needs one."""
+        return self.enabled and (self.checked or self.ref is not None)
+
 
 @dataclass(frozen=True)
 class ModelSelection:
@@ -111,8 +116,11 @@ def discover_model_candidates(menu_state: str) -> list[ModelCandidate]:
 
 def select_best_model(candidates: list[ModelCandidate]) -> ModelSelection:
     for tier in SUPPORTED_TIERS:
-        same_tier = [c for c in candidates if c.tier == tier and c.family == "GPT-5.6 Sol"]
-        candidate = next((c for c in same_tier if c.checked), None)
+        same_tier = [
+            c for c in candidates
+            if c.tier == tier and c.family == "GPT-5.6 Sol" and c.usable
+        ]
+        candidate = next((c for c in same_tier if c.checked and c.enabled), None)
         if candidate is None:
             candidate = next((c for c in same_tier if c.actionable), None)
         if candidate is not None:
@@ -138,5 +146,6 @@ def selection_is_confirmed(state: str, selection: ModelSelection) -> bool:
         c.tier == selection.selected_tier
         and c.family == "GPT-5.6 Sol"
         and c.checked
+        and c.enabled
         for c in discover_model_candidates(state)
     )
