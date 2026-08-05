@@ -14,7 +14,7 @@ CONTEXT_PACKET_V1
   "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|debugging|code_review|other",
   "context_strategy": "problem_first_full_context",
   "credential_status": "no_executable_credentials",
-  "context_hash": "<sha256 of markdown body>",
+  "context_hash": "<sha256 of exact UTF-8 packet body after this metadata block>",
   "required_output": [
     "reasoning_brief",
     "direct_judgment",
@@ -47,7 +47,7 @@ Please act as a strict reviewer and deep reasoning partner. Find the biggest fla
 
 ## RETURN_FORMAT
 
-First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD-HHMMSS_<same-nonce>
+First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>
 
 Then use:
 1. Reasoning brief: assumptions, frame, evidence, counterargument, tradeoffs
@@ -69,7 +69,7 @@ The user's request remains authoritative.
 - Separate facts, local judgment, and unknowns. Do not present assumptions as evidence.
 - Sections with no useful information may be omitted instead of filled with boilerplate.
 - `credential_status` must reflect the actual local safety check.
-- `context_hash`, when present, must be a real SHA-256 of the final Markdown body used for the consultation. It is an integrity/audit marker; result completion still depends on the sentinel and Chrome verification.
+- If `context_hash` is populated, compute SHA-256 over the exact UTF-8 packet body that follows the closing metadata code fence. This avoids self-referential hashing. It is an integrity/audit marker; completion still depends on Chrome verification and the sentinel.
 - Generate a fresh `task_id` and sentinel for every Web submission.
 - Treat the Web answer as advisory. Codex verifies important claims against local evidence before final delivery.
 
@@ -83,7 +83,7 @@ CONTEXT_PACKET_V1
 ```json
 {
   "task_id": "webgpt-consult-YYYYMMDD-HHMMSS-<nonce>",
-  "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD-HHMMSS_<same-nonce>",
+  "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>",
   "task_type": "follow_up",
   "context_strategy": "same_conversation_delta",
   "credential_status": "no_executable_credentials"
@@ -98,7 +98,7 @@ CONTEXT_PACKET_V1
 
 ## RETURN_FORMAT
 
-First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD-HHMMSS_<same-nonce>
+First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>
 ````
 
 Reuse prior context already present in the verified conversation. Restate older material only when it is stale, ambiguous, contradicted by new evidence, or essential to the new question.
