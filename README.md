@@ -114,13 +114,48 @@
 
 `independent` 下，本地 Codex 会先形成自己的判断，但默认不把结论告诉 Sol，从而降低锚定。
 
-`continuation` 不会通过 ChatGPT 历史记录去猜上一条会话。第一次成功审查后，当前 Codex 会话只临时保留 Chrome tab/page handle、精确 ChatGPT conversation URL，以及上一条已验证的 Task-ID 和 sentinel。再次继续时，先定位原 Web conversation，再用上一条 Task-ID + sentinel 验证身份，匹配成功后才允许续聊。绑定丢失或验证失败时直接 `independent`。
+`continuation` 只用于当前 Codex 会话能够确定并验证的上一条 Web review。绑定丢失、身份验证失败或出现多个候选时直接切换到 `independent`。
 
-`branch` 只解决上下文压力。它不会创建项目记忆，也不会恢复本地保存的咨询状态。成功分支并完成结果验证后，当前 Codex 会话的临时绑定会切换到新 branch。
+`branch` 只解决上下文压力。它不会创建项目记忆。成功分支并完成结果验证后，当前 Codex 会话的临时绑定会切换到新 branch。
+
+### 会话绑定机制
+
+Skill 不通过 ChatGPT 历史列表去猜“上一次咨询窗口”。第一次成功完成并验证 Web review 后，当前 Codex 会话只临时保留最小的 conversation binding：
+
+```text
+Chrome tab/page handle（如果可用）
++ 精确 chatgpt.com conversation URL（如果可用）
++ 上一条已验证 Task-ID
++ 上一条已验证 sentinel
+```
+
+其中 tab handle 和 conversation URL 只是定位器，上一条 `Task-ID + sentinel` 才是会话身份校验。
+
+再次使用 `continuation` 时固定按下面的顺序执行：
+
+```text
+优先复用上次绑定的 Chrome tab/page handle
+  ↓ handle 不可用
+打开当前 Codex 会话中临时保留的精确 conversation URL
+  ↓
+fresh DOM 检查上一条相关 assistant result
+  ↓
+核对 previous Task-ID + previous sentinel
+  ↓ 完全匹配
+允许 continuation
+```
+
+任何一步无法确认，就使用 `independent` 新建 conversation。
+
+Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏览器历史、大致时间或语义相似度寻找上一条咨询窗口。
+
+这个 binding 只活在当前 Codex conversation 中，不写入文件、仓库、数据库或长期缓存。新开一个 Codex conversation 时默认没有 Web binding，因此默认从 `independent` 开始。
+
+`branch` 必须从当前已验证的 binding 出发。新 branch 的结果验证通过后，binding 才从旧 conversation 切换到新 branch。
 
 ### Web 会话连续性
 
-`webgpt-consult` 不在本地保存 review history、conversation URL、项目摘要、accepted decisions 或 reviewer memory。
+`webgpt-consult` 不在本地持久化 review history、conversation URL、项目摘要、accepted decisions 或 reviewer memory。
 
 会话连续性只存在于当前 Codex 会话和当前 ChatGPT Web conversation 的临时绑定中：
 
@@ -130,13 +165,11 @@
 - 当前会话上下文过长时使用 `branch`
 - 当前 Codex 会话失去 Web binding、当前 Web 会话无法确认或不再可靠时使用 `independent`
 
-Skill 不会根据 ChatGPT sidebar title、最近会话顺序、项目名、浏览器历史或大致时间去猜上一条咨询窗口。
-
 `Branch in new chat` 会继承所选消息之前的历史。因此不要机械地从已经接近上下文上限的最后一条消息分支。应选择一个更早、仍然包含必要共享背景的节点，再重新发送当前问题所需的最小证据。
 
 如果没有合适的分支点，直接新建 conversation。
 
-这个设计让 WebGPT 始终保持独立 reviewer。Codex 每次基于当前问题重新决定要发送什么，同时只在当前 Codex 会话内部维持足够稳定的短期 Web continuation。
+这个设计让 WebGPT 始终保持独立 reviewer。Codex 每次基于当前问题重新决定要发送什么，同时只在当前 Codex 会话内部维持足够稳定的短期 Web continuity。
 
 <a id="安全与验证"></a>
 
