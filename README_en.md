@@ -1,13 +1,21 @@
 <p align="center">
-  <img src="./skills/webgpt-consult/assets/webgpt-consult.svg" alt="webgpt-consult" width="136" />
+  <img src="./skills/webgpt-consult/assets/mobius.svg" alt="webgpt-consult" width="136" />
 </p>
 
 <h1 align="center">webgpt-consult</h1>
 <p align="center">Codex → Chrome → ChatGPT Web</p>
 
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#use">Use</a> ·
+  <a href="#example">Example</a> ·
+  <a href="#privacy-and-safety">Privacy &amp; Safety</a> ·
+  <a href="README.md">中文</a>
+</p>
+
 `webgpt-consult` lets Codex use GPT-5.6 Sol Pro or High through ChatGPT Web in Chrome.
 
-You tell Codex what you want a second pair of eyes on. Codex works out what context is useful, attaches relevant source files, logs, or documents when needed, and brings the Web answer back into the current task. The Skill keeps the browser flow reliable, preserves useful conversation continuity, verifies the Web model, and performs a basic local safety check before sending text.
+Tell Codex what you want help with. Codex works out what context matters, attaches relevant source files, logs, or documents when useful, and brings the Web answer back into the current task. The Skill keeps that connection reliable, including conversation continuity, Web model checks, and a basic local safety check before anything is sent.
 
 > **AI agents should read [README_Agent.md](README_Agent.md) first. Runtime behavior is defined by [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md).**
 
@@ -65,7 +73,7 @@ After GPT-5.6 Sol reviews the material, Codex verifies that the reply belongs to
 
 Before text is sent to the Web, the Skill locally blocks common API keys, passwords, access tokens, cookies or session data, private keys, one-time codes, and payment-card details. If something sensitive is found, sending stops until that value is removed or redacted.
 
-Names, email addresses, physical addresses, and other private details that are unrelated to the question should also be left out. The safety check is deliberately small and practical rather than a full privacy-auditing system.
+Names, email addresses, physical addresses, and other private details that are unrelated to the question should also be left out. The safety check stays deliberately small and practical.
 
 ## Model
 
@@ -90,7 +98,7 @@ skills/webgpt-consult/
 ├── agents/
 │   └── openai.yaml
 ├── assets/
-│   └── webgpt-consult.svg
+│   └── mobius.svg
 ├── references/
 │   └── chrome-workflow.md
 └── scripts/
@@ -98,8 +106,6 @@ skills/webgpt-consult/
 ```
 
 See [SKILL.md](skills/webgpt-consult/SKILL.md) for the detailed runtime rules.
-
-中文: [README.md](README.md)
 
 ## License
 
