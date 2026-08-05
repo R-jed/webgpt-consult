@@ -186,7 +186,7 @@ def scan(text: str) -> list[dict]:
                     "type": "payment_card_number",
                     "start": match.start(),
                     "end": match.end(),
-                    "excerpt": f"<CARD_REDACTED_LAST4_{digits[-4:]}",
+                    "excerpt": f"<CARD_REDACTED_LAST4_{digits[-4:]}>",
                 }
             )
 
