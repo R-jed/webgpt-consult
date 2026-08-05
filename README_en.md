@@ -21,7 +21,7 @@ Tell Codex what you want help with. Codex works out what context matters, attach
 
 ## Install
 
-You need Codex, the Codex Chrome plugin connected, ChatGPT Web signed in, and GPT-5.6 Sol Pro or High available on the Web side.
+You need Codex, the Codex Chrome plugin connected, ChatGPT Web signed in, and a Pro or Plus account with GPT-5.6 Sol Pro or High available on the Web side.
 
 Install for the current project:
 
@@ -55,7 +55,7 @@ For example:
 /webgpt-consult Ask GPT-5.6 Sol to investigate this login bug and inspect the relevant source and logs if needed.
 ```
 
-There is no fixed consultation template. For code work, Codex can upload the relevant files or send only the important excerpts. It decides how much context the current question actually needs.
+Simple questions can be sent directly. For architecture work, code review, difficult debugging, or anything with a lot of background, Codex can use the built-in context-packet guide to organize the important background, constraints, evidence, prior attempts, and current question before sending it to the Web model.
 
 ## Example
 
@@ -65,9 +65,9 @@ Suppose you have been stuck on a login bug:
 /webgpt-consult I have been chasing this login issue for a while. Ask GPT-5.6 Sol to help find the root cause.
 ```
 
-Codex first looks at the current project and picks the material that matters, such as `auth.py`, `session.py`, and the error log. It checks outgoing text locally for obvious secrets, then opens ChatGPT Web through Chrome and uses GPT-5.6 Sol Pro when available, with High as the fallback.
+Codex first looks at the current project and picks the material that matters, such as `auth.py`, `session.py`, and the error log. If the problem needs more structure, it builds a concise context packet. It checks outgoing text locally for obvious secrets, then opens ChatGPT Web through Chrome and uses GPT-5.6 Sol Pro when available, with High as the fallback.
 
-After GPT-5.6 Sol reviews the material, Codex verifies that the reply belongs to this consultation and brings the answer back into the task. If you keep discussing the same issue, the Skill will reuse the current Web conversation when it can verify it safely. Otherwise it starts a fresh one.
+After GPT-5.6 Sol reviews the material, Codex verifies that the reply belongs to this consultation and brings the answer back into the task. If you keep discussing the same issue, the Skill reuses the verified Web conversation and its already-confirmed model instead of reopening the model picker on every turn. It checks the picker again only for a new conversation, a branch, a conversation-identity change, or clear evidence that the Web model state changed.
 
 ## Privacy and safety
 
@@ -77,7 +77,7 @@ Names, email addresses, physical addresses, and other private details that are u
 
 ## Model
 
-The Web side uses only:
+For a new Web conversation:
 
 ```text
 GPT-5.6 Sol Pro
@@ -87,7 +87,7 @@ GPT-5.6 Sol High
 stop
 ```
 
-The model or reasoning level currently selected in Codex does not affect Web model selection.
+A verified multi-turn Web conversation reuses its confirmed model without repeatedly opening the picker. The model or reasoning level currently selected in Codex does not affect Web model selection.
 
 ## Package layout
 
@@ -100,7 +100,8 @@ skills/webgpt-consult/
 ├── assets/
 │   └── mobius-white.svg
 ├── references/
-│   └── chrome-workflow.md
+│   ├── chrome-workflow.md
+│   └── context-packet-template.md
 └── scripts/
     └── safety_guard.py
 ```
