@@ -51,6 +51,7 @@ Why this project exists:
 - WebGPT stays a second-opinion reviewer instead of becoming long-lived project memory
 - each review sends only what the current question requires, reducing anchoring and understanding drift from accumulated historical conclusions
 - model identity, credential hygiene, attachment integrity, and result binding are explicitly verified
+- browser resources have explicit ownership and cleanup boundaries so Skill-created review tabs do not accumulate indefinitely
 
 <a id="quick-start"></a>
 
@@ -67,10 +68,8 @@ Why this project exists:
 
 ### Recommended install
 
-Use the open Agent Skills ecosystem CLI and install globally for Codex:
-
 ```bash
-npx skills add R-jed/webgpt-consult -g -a codex
+npx skills add R-jed/webgpt-consult
 ```
 
 This repository uses the standard layout:
@@ -79,27 +78,21 @@ This repository uses the standard layout:
 skills/webgpt-consult/SKILL.md
 ```
 
-`npx skills` discovers the Skill automatically and configures it for Codex. The project does not require a custom `setup.sh`, repository symlink installer, or separate package manager.
+`npx skills` discovers `webgpt-consult` automatically. Normal users do not need to specify global scope or the Codex agent manually.
 
-To skip confirmation prompts:
+For an explicit non-interactive global Codex install:
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex -y
 ```
 
-Check the global Codex installation:
+After installation, invoke:
 
-```bash
-npx skills list -g -a codex
+```text
+/webgpt-consult <review request>
 ```
 
-Update the installed Skill:
-
-```bash
-npx skills update webgpt-consult -g
-```
-
-After installation, try `/webgpt-consult` on the next turn. If the current Codex session has not refreshed its Skill list, start a new Codex session or restart the client.
+If the current Codex session has not refreshed its Skill list, start a new Codex session or restart the client.
 
 ### Codex-native alternative
 
@@ -109,7 +102,7 @@ You can also install from inside Codex with its built-in `/skill-installer`:
 /skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-That URL points directly to the canonical Skill package. It remains a valid Codex-native path, while `npx skills` is the recommended public installation method because it also covers discovery, inspection, updates, and broader Agent Skills tooling.
+The README still recommends `npx skills` as the primary public installation path.
 
 > `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
 
@@ -153,12 +146,13 @@ The Skill never guesses the "previous review" from ChatGPT history. After a Web 
 
 ```text
 Chrome tab/page handle, when available
++ whether the tab was explicitly created by the Skill
 + exact chatgpt.com conversation URL, when available
 + previous verified Task-ID
 + previous verified sentinel
 ```
 
-The tab handle and conversation URL are locators only. The previous `Task-ID + sentinel` are the identity check.
+The tab handle and conversation URL are locators only. The previous `Task-ID + sentinel` are the identity check. Ownership is used only to decide whether that tab may later be closed automatically.
 
 A `continuation` follows this fixed resolution order:
 
@@ -198,7 +192,17 @@ Continuity exists only through the temporary binding between the current Codex c
 
 If no useful branch point exists, start a fresh conversation.
 
-This keeps WebGPT independent while still giving the current Codex conversation deterministic short-term continuity when the immediately relevant review thread is available and verifiable.
+### Browser resource lifecycle
+
+The Skill distinguishes `skill-owned` browser tabs from user-owned or unknown tabs.
+
+A tab may be closed automatically only when the Skill explicitly created it and still has the exact browser handle. User-opened ChatGPT tabs, ordinary Chrome tabs, and tabs with uncertain ownership are never closed automatically.
+
+When a newly verified review becomes the current binding, a superseded tab may be closed only if it is a different tab and was explicitly Skill-owned. Temporary candidate tabs from failed flows are cleaned up only after the Skill can confirm that no request is still generating there.
+
+The Skill does not use `pkill`, `killall`, browser process scanning, or a background cleanup daemon. When safe ownership or generation state cannot be established, the tab is left alone.
+
+This keeps WebGPT independent, preserves deterministic short-term continuity, and prevents Skill-created review tabs from growing without bound.
 
 <a id="safety-and-verification"></a>
 
@@ -251,7 +255,7 @@ Task-ID: <task-id>
 | [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) | authoritative Skill execution contract |
 | [README_Agent.md](README_Agent.md) | AI-agent discovery, installation, and support entry point |
 | [skills/webgpt-consult/agents/openai.yaml](skills/webgpt-consult/agents/openai.yaml) | display metadata and invocation policy |
-| [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, and branching workflow |
+| [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, branching, and tab cleanup workflow |
 | [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web review context template |
 | [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High identity and routing policy |
 | [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | pre-send safety and attachment checks |
