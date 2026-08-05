@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">webgpt-consult logo</title>
+  <desc id="desc">Two conversation windows connected by a verified review node, representing local Codex and WebGPT consultation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#070B14"/>
+    </linearGradient>
+    <linearGradient id="web" x1="133" y1="78" x2="219" y2="179" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+
+  <rect x="12" y="12" width="232" height="232" rx="58" fill="url(#bg)"/>
+  <rect x="13" y="13" width="230" height="230" rx="57" fill="none" stroke="#334155" stroke-opacity=".7" stroke-width="2"/>
+
+  <path d="M45 68C45 57.507 53.507 49 64 49H123C133.493 49 142 57.507 142 68V111C142 121.493 133.493 130 123 130H90L68 149V130H64C53.507 130 45 121.493 45 111V68Z"
+        fill="#0F172A" stroke="#7DD3FC" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M114 101C114 90.507 122.507 82 133 82H192C202.493 82 211 90.507 211 101V144C211 154.493 202.493 163 192 163H188V182L166 163H133C122.507 163 114 154.493 114 144V101Z"
+        fill="#0B1020" stroke="url(#web)" stroke-width="5" stroke-linejoin="round"/>
+
+  <circle cx="128" cy="124" r="28" fill="#38BDF8" opacity=".16" filter="url(#glow)"/>
+  <circle cx="128" cy="124" r="22" fill="#F8FAFC" stroke="#C4B5FD" stroke-width="4"/>
+  <path d="M118 124.5L125 131.5L139 116.5" fill="none" stroke="#111827" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="76" cy="88" r="5" fill="#7DD3FC"/>
+  <circle cx="94" cy="88" r="5" fill="#7DD3FC" opacity=".72"/>
+  <circle cx="176" cy="122" r="5" fill="#A78BFA"/>
+  <circle cx="194" cy="122" r="5" fill="#38BDF8" opacity=".85"/>
+</svg>
