@@ -1,7 +1,7 @@
 <h1 align="center">webgpt-consult-skill</h1>
 
 <p align="center">
-  <strong>让 Codex 用 WEB GPT-5.6 Sol Pro/High 获得一个可验证的第二意见</strong><br/>
+  <strong>让 Codex 用 WEB GPT-5.6 Sol Pro/High 拿个第二意见</strong><br/>
   
 </p>
 
@@ -11,44 +11,44 @@
   <a href="README_Agent.md">AI Agent 指引</a>
 </p>
 
-## 核心作用
+## 这东西干什么
 
-`webgpt-consult` 是一个 Codex Skill。它让本地 Codex 在遇到复杂架构、调试、产品、商业、风险或文件审查问题时，把经过整理的真实证据交给 ChatGPT Web 的 GPT-5.6 Sol 做第二意见，再由本地 Codex 决定采纳、拒绝或修改。
+`webgpt-consult` 是个 Codex Skill。本地 Codex 碰到架构、调试、产品、商业、风险或文件审查这类复杂问题时，把整理好的证据发给 ChatGPT Web 的 GPT-5.6 Sol 看看，拿个第二意见回来。最后本地 Codex 决定采不采纳。
 
-核心流程保持很窄：
+流程很窄：
 
 ```text
-local Codex judgment
-  -> independent or follow-up review
-  -> truthful context + evidence
-  -> fail-closed preflight
-  -> verified GPT-5.6 Sol Pro, then High
-  -> exact result verification
-  -> local adoption decision
-  -> optional durable local state update
+本地判断
+  → 独立或跟进审查
+  → 真实上下文 + 证据
+  → 发送前检查
+  → GPT-5.6 Sol Pro，不行就 High
+  → 结果验证
+  → 本地决定采不采纳
+  → 可选：更新本地状态
 ```
 
-外部模型始终是 reviewer，本地 Codex 始终拥有最终判断权。
+外部模型始终是 reviewer，本地 Codex 说了算。
 
 ## 独立审查和跟进审查
 
-`independent` 用于完整 deep review、里程碑 review、对抗性审查、架构重审或明显不同的问题。它会创建新的 ChatGPT 会话。Codex 仍然会先在本地形成判断，但默认不把这个结论告诉 Sol，减少锚定。
+`independent` 用于完整 deep review、里程碑 review、对抗性审查、架构重审，或者明显不同的问题。会创建新的 ChatGPT 会话。Codex 会先在本地形成判断，但默认不告诉 Sol，减少锚定。
 
-`follow-up` 只用于明确接着同一条咨询链继续工作。用户明确说“继续上次咨询”，或者存在唯一明确 anchor，例如某个 PR、issue、branch 或命名 artifact 时，可以复用旧 Web 会话。
+`follow-up` 只用于明确接着同一条咨询链继续的情况。用户说"继续上次咨询"，或者有唯一明确的 anchor（PR、issue、branch 等），可以复用旧会话。
 
-匹配有歧义时直接 fresh。重复少量上下文的代价小于串错 consultation 的代价。
+有歧义就 fresh。重复少量上下文的代价比串错 consultation 小。
 
 ## 会话连续性
 
-长期状态保存在本地，而不是依赖 ChatGPT conversation 记住一切：
+长期状态保存在本地，不依赖 ChatGPT conversation：
 
 ```text
 ~/.codex/webgpt-consult/state/<project-id>/<consult-id>.json
 ```
 
-每个 consultation snapshot 只保存已经由本地 Codex 采纳、仍然有复用价值的状态，例如用户目标、长期约束、已接受决策、已否决路径、未决问题、证据引用和当前真实状态。
+每个 snapshot 只保存本地 Codex 已采纳、还有复用价值的状态：用户目标、长期约束、已接受决策、已否决路径、未决问题、证据引用。
 
-它不是聊天记录，也不是 Sol 回复的备份。
+不是聊天记录，也不是 Sol 回复的备份。
 
 查看当前项目的 consultation：
 
@@ -56,39 +56,37 @@ local Codex judgment
 python3 scripts/consult_state.py --project-root . list
 ```
 
-单个 state 文件损坏只会被跳过并产生 warning，不会阻断整个 Skill。
+单个 state 文件损坏只会跳过并 warning，不会阻断整个 Skill。
 
-项目 identity 包含当前 checkout 路径，因此同一远端仓库的两个 clone/worktree 默认不会静默共享咨询状态。
+项目 identity 包含当前 checkout 路径，所以同一仓库的两个 clone/worktree 不会静默共享状态。
 
-## Web ChatGPT 上下文满时
+## Web ChatGPT 上下文满了怎么办
 
 Web ChatGPT 会话只是可复用的执行容器。
 
-如果旧会话打不开、上下文过长、明显忘记关键决策，或继续使用会降低可靠性：
+旧会话打不开、上下文过长、明显忘了关键决策，或者继续用会降低可靠性时：
 
 ```text
-old Web chat
-   ↓ stop using it
-fresh Web chat
+旧会话
+   ↓ 别用了
+新会话
    ↓
-durable local snapshot
-+ current delta
-+ current evidence
+本地快照 + 当前增量 + 当前证据
    ↓
-continue same local consult-id
+继续同一个本地 consult-id
 ```
 
-不再依赖 `Branch in new chat`、历史 message ID、rollover counter、root task、branch base 或 continuity capsule。
+不再依赖 `Branch in new chat`、历史 message ID、rollover counter 这些东西。
 
-恢复能力来自本地 adopted state，因此浏览器 UI 改版或旧 ChatGPT 会话丢失不会破坏核心 correctness。
+恢复能力来自本地 adopted state，浏览器改版或旧会话丢了不影响正确性。
 
 ## 安全和真实性
 
-以下边界继续 fail closed：
+以下情况直接 fail closed：
 
 - GPT-5.6 Sol 模型身份无法验证
 - Pro 和 High 都不可用
-- packet 或文本附件发现 executable credential
+- packet 或附件发现 executable credential
 - 必需附件没有真实上传
 - 结果 sentinel / task ID 无法精确绑定
 
@@ -101,19 +99,19 @@ python3 scripts/submission_preflight.py packet.md \
   --attachment ./src/example.py
 ```
 
-二进制附件需要本地人工确认后才能通过 `--confirm-unscanned-binary`。这个确认不会覆盖已经检测到的凭证。
+二进制附件需要本地人工确认后才能通过 `--confirm-unscanned-binary`。这个确认不会覆盖已检测到的凭证。
 
 ## 模型路由
 
 ```text
-verified usable GPT-5.6 Sol Pro
-      ↓ unavailable / disabled / ambiguous / not actionable
-verified usable GPT-5.6 Sol High
-      ↓ unavailable
+GPT-5.6 Sol Pro 可用
+      ↓ 不可用 / 禁用 / 模糊 / 无法操作
+GPT-5.6 Sol High 可用
+      ↓ 不可用
 fail closed
 ```
 
-`model_router.py` 是 deterministic policy source。DOM ref 只用于点击，普通 GPT-5 Pro selector 不能证明它属于 GPT-5.6 Sol。
+`model_router.py` 是策略源。DOM ref 只用于点击，普通 GPT-5 Pro selector 不能证明它属于 GPT-5.6 Sol。
 
 ## 结果验证
 
@@ -124,7 +122,7 @@ WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
 ```
 
-然后由 `scripts/result_verifier.py` 做本地验证。sentinel 只是在正文中出现不算完成。
+然后由 `scripts/result_verifier.py` 做本地验证。sentinel 只在正文出现不算完成。
 
 ## 环境要求
 
@@ -134,7 +132,7 @@ Task-ID: <task-id>
 - Chrome 中已登录 ChatGPT Web
 - 账号实际暴露 GPT-5.6 Sol Pro 或 High
 
-当前没有 OpenCLI fallback。
+没有 OpenCLI fallback。
 
 ## 开发验证
 
@@ -145,7 +143,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 -m py_compile scripts/*.py
 ```
 
-`git clone` 只是获取源码，不等于已经在 Codex 环境中完成 Skill 安装。
+`git clone` 只是获取源码，不等于在 Codex 环境中完成了 Skill 安装。
 
 ## 项目结构
 
@@ -170,7 +168,7 @@ webgpt-consult/
 └── VALIDATION.md
 ```
 
-如果你是 AI Agent，请从 [README_Agent.md](README_Agent.md) 开始，并以 [SKILL.md](SKILL.md) 为唯一执行规范。
+AI Agent 请从 [README_Agent.md](README_Agent.md) 开始，以 [SKILL.md](SKILL.md) 为执行规范。
 
 ## License
 
