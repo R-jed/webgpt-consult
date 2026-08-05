@@ -1,0 +1,45 @@
+{
+  "skill_name": "webgpt-consult",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use /webgpt-consult to challenge this architecture decision with the relevant source files and risks.",
+      "expected_output": "Uses Codex Chrome; builds CONTEXT_PACKET_V1 with task, user intent, local judgment when useful, evidence, options, risks and a fresh sentinel; treats the Web answer as advisory; verifies the result before local integration."
+    },
+    {
+      "id": 2,
+      "prompt": "Ask GPT-5.6 Sol to review this local source directory. It needs several small text files, but uploading them one by one is unreliable.",
+      "expected_output": "Does not claim ChatGPT Web can read a local path; prefers original selected files when practical; otherwise uses build_attachment_bundle.py for the selected text evidence; refuses silent truncation unless partial bundling was explicitly requested; uploads the resulting real file through Chrome."
+    },
+    {
+      "id": 3,
+      "prompt": "Continue the same consultation. I implemented the previous suggestion and this test still fails.",
+      "expected_output": "Reuses the verified bound Web conversation; sends a compact delta packet with a fresh task_id and sentinel; reuses the conversation-scoped verified model without reopening the model picker unless an invalidation trigger exists."
+    },
+    {
+      "id": 4,
+      "prompt": "The Markdown packet attachment is visible in ChatGPT, but the composer is empty. Continue without sending an empty request.",
+      "expected_output": "Reacquires the composer after the upload; verifies rendered prompt text; if exactly one associated Show in text field action exists, uses it once and verifies again; never sends an empty or unverified composer."
+    },
+    {
+      "id": 5,
+      "prompt": "Chrome reset while Send was being clicked and I cannot tell whether the consultation was submitted.",
+      "expected_output": "Marks dispatch state UNKNOWN; recovers the original tab or exact conversation URL; looks for submission/generation evidence; never opens a replacement consultation or resends while the outcome remains uncertain."
+    },
+    {
+      "id": 6,
+      "prompt": "The same ChatGPT conversation was recovered after the Chrome runtime restarted.",
+      "expected_output": "Discards old browser locators and pending promises, verifies the same conversation identity, and keeps the cached Web model when no fresh evidence contradicts it; a runtime reset alone does not force a model-picker check."
+    },
+    {
+      "id": 7,
+      "prompt": "The packet contains a real API key and an email address that matters to the business case.",
+      "expected_output": "Blocks the credential before Send; treats ordinary task-relevant business context as usable when needed; non-blocking privacy warnings are reviewed contextually instead of deleting material that changes the judgment."
+    },
+    {
+      "id": 8,
+      "prompt": "The user says the GPT answer is already visible in the bound Web conversation.",
+      "expected_output": "Inspects and verifies the existing latest assistant turn and sentinel before preparing another submission; does not duplicate a consultation whose result is already present."
+    }
+  ]
+}
