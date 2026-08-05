@@ -4,7 +4,7 @@ This file is for AI agents that discover or support the project. Human users sho
 
 `webgpt-consult` is a lightweight Codex Skill for consulting ChatGPT Web through Chrome with GPT-5.6 Sol Pro or High.
 
-The Skill handles browser transport, verified Web conversation continuity, browser-resource ownership, efficient Web-model reuse, request/result association, context handoff, and a small local secret/payment safety guard. Prompt design and evidence selection still belong to the current Codex model and the user's request.
+The Skill handles browser transport, verified Web conversation continuity, browser-resource ownership, efficient Web-model reuse, request/result association, structured context handoff, and a small local secret/payment safety guard. Prompt design and evidence selection still belong to the current Codex model and the user's request.
 
 ## Install
 
@@ -47,7 +47,7 @@ When actually executing the Skill, resolve the installed Skill root and read:
 <SKILL_ROOT>/references/chrome-workflow.md
 ```
 
-For complex/context-heavy consultations, also read:
+For substantial/context-heavy consultations, also read:
 
 ```text
 <SKILL_ROOT>/references/context-packet-template.md
@@ -57,12 +57,12 @@ For complex/context-heavy consultations, also read:
 
 ## Runtime boundary
 
-The Skill does not impose one fixed review methodology. It does provide an adaptive context-packet guide for consultations that need a structured handoff.
+The Skill does not impose one workflow on every request. It does provide the standard `CONTEXT_PACKET_V1` format for substantial consultations.
 
 Codex decides from the current user request:
 
 - what to ask ChatGPT Web;
-- whether a simple prompt or context packet is useful;
+- whether a simple prompt or full context packet is appropriate;
 - how to phrase the prompt;
 - whether files or source excerpts are useful;
 - which evidence is necessary;
@@ -108,7 +108,7 @@ Never transmit known secrets, authentication material, or payment credentials. T
 
 Run it on the exact outgoing prompt text and every UTF-8 text attachment before Send. If it blocks, redact/remove the value locally and scan again. Review warnings for obvious private identifiers when relevant to the task.
 
-The guard is intentionally narrow. Do not expand project behavior into a general DLP/PII system. Codex should minimize unrelated private information contextually before transmission.
+The guard is intentionally narrow. Codex should minimize unrelated private information contextually before transmission.
 
 ## Do not invent behavior
 
@@ -117,7 +117,6 @@ Do not claim that the Skill:
 - stores durable reviewer memory;
 - maintains a project consultation database;
 - requires every request to use a full context packet;
-- has a fixed architecture-review or adversarial-review persona;
 - automatically packages an entire repository;
 - re-checks the model picker on every message in a verified conversation;
 - owns or closes user browser tabs;
