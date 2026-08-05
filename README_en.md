@@ -31,12 +31,12 @@
 
 `webgpt-consult` lets Codex obtain a verified independent second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web.
 
-Local Codex owns task understanding, evidence selection, and the initial judgment. WebGPT reviews the problem independently. After the external result is verified, Codex decides locally what to adopt, reject, or modify.
+Local Codex owns task understanding, the initial judgment, evidence selection, and the final decision. WebGPT reviews the problem independently. After the external result is verified, Codex decides locally what to adopt, reject, or modify.
 
 ```text
 user task
   → local Codex judgment
-  → choose independent / follow-up
+  → choose independent / continuation / branch
   → assemble only the evidence needed for the current question
   → credential / attachment preflight
   → ChatGPT Web
@@ -49,7 +49,7 @@ Why this project exists:
 
 - difficult architecture, debugging, product, and risk decisions often benefit from an independent strong-model review
 - WebGPT stays a second-opinion reviewer instead of becoming long-lived project memory
-- each review sends the evidence required for the current question, reducing anchoring and understanding drift from accumulated historical summaries
+- each review sends only what the current question requires, reducing anchoring and understanding drift from accumulated historical summaries
 - model identity, credential hygiene, attachment integrity, and result binding are explicitly verified
 
 <a id="quick-start"></a>
@@ -66,13 +66,13 @@ Why this project exists:
 
 ### Recommended install
 
-Current Codex versions include the built-in `/skill-installer`. Run this inside Codex:
+Run this inside Codex:
 
 ```text
 /skill-installer install https://github.com/R-jed/webgpt-consult
 ```
 
-The installer places the complete Skill in the Codex skills directory. With the default `CODEX_HOME`, this is typically:
+With the default `CODEX_HOME`, the Skill is typically installed at:
 
 ```text
 ~/.codex/skills/webgpt-consult/
@@ -80,7 +80,7 @@ The installer places the complete Skill in the Codex skills directory. With the 
 
 After installation, restart Codex and open a new task so the Skill is reloaded.
 
-If `/skill-installer` is missing, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin, so this project does not maintain a separate installer for older Codex versions.
+If `/skill-installer` is unavailable, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin and does not maintain a separate installer for older Codex versions.
 
 > `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
 
@@ -92,7 +92,7 @@ Implicit invocation is disabled. Invoke the Skill explicitly with `/webgpt-consu
 /webgpt-consult Perform an independent GPT-5.6 Sol architecture review of this project.
 ```
 
-You can put the exact review goal directly after the Skill name:
+Or:
 
 ```text
 /webgpt-consult Check this fix for overlooked architectural risks and return a second opinion.
@@ -104,33 +104,37 @@ There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavaila
 
 ## Usage
 
-### Review modes
+### Three review modes
 
-| Mode | Best for | Web conversation |
+| Mode | Best for | Web behavior |
 |---|---|---|
 | `independent` | deep review, milestone review, adversarial review, architecture reset, a different project, or a materially different question | fresh conversation |
-| `follow-up` | a clear continuation of the current consultation | reuse the current conversation |
+| `continuation` | a clear continuation of the current review | continue the current conversation |
+| `branch` | the same review should continue, but the active conversation has accumulated too much context | `Branch in new chat` from an earlier relevant message |
 
 In `independent` mode, local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
-`follow-up` reuses the current Web conversation only when continuity is unambiguous and the conversation remains useful. If the match is uncertain, start fresh.
+Use `continuation` only when the relationship to the active Web review is unambiguous and the conversation remains reliable. If there is doubt, use `independent`.
+
+Use `branch` only to relieve context pressure. It does not create project memory or restore locally saved review state.
 
 ### Web conversation continuity
 
-`webgpt-consult` does not persist consultation history, conversation URLs, project summaries, or long-lived consultation state locally.
+`webgpt-consult` does not persist review history, conversation URLs, project summaries, accepted decisions, or reviewer memory locally.
 
 Continuity exists only in the active ChatGPT Web conversation:
 
-- a clear follow-up to the same question may continue in the current conversation
-- a different project starts a fresh conversation by default
-- a materially different independent question in the same project starts fresh by default
-- if the active Web conversation is lost, ambiguous, or unreliable, start fresh
+- a direct continuation of the same review uses `continuation`
+- a different project normally uses `independent`
+- a materially different question in the same project normally uses `independent`
+- a context-heavy active conversation uses `branch`
+- a lost, ambiguous, or unreliable Web conversation uses `independent`
 
-If frequent consultation creates clear context pressure, prefer ChatGPT Web's `Branch in new chat` from an earlier still-relevant message, then send the minimum evidence required for the current question again.
+`Branch in new chat` inherits all history before the selected message. Do not mechanically branch from a near-limit final message. Choose an earlier point that still contains the useful shared context, then send the minimum evidence required for the current question again.
 
-A branch inherits the history before the selected message, so mechanically branching from a near-limit final message may carry most of the context pressure forward. If there is no useful earlier branch point, start a fresh conversation.
+If no useful branch point exists, start a fresh conversation.
 
-This keeps WebGPT independent. Codex sends what the current review needs instead of rebuilding WebGPT's project understanding from durable local consultation memory.
+This keeps WebGPT independent. Codex decides what to send for the current review instead of maintaining a long-lived reviewer model of the project.
 
 <a id="safety-and-verification"></a>
 
@@ -184,7 +188,7 @@ Task-ID: <task-id>
 | [README_Agent.md](README_Agent.md) | AI-agent discovery, installation, and support entry point |
 | [agents/openai.yaml](agents/openai.yaml) | display metadata and invocation policy |
 | [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser and branching workflow |
-| [references/context-packet-template.md](references/context-packet-template.md) | consultation context template |
+| [references/context-packet-template.md](references/context-packet-template.md) | Web review context template |
 | [scripts/model_router.py](scripts/model_router.py) | Pro → High identity and routing policy |
 | [scripts/submission_preflight.py](scripts/submission_preflight.py) | pre-send safety and attachment checks |
 | [scripts/result_verifier.py](scripts/result_verifier.py) | exact external-result binding |
