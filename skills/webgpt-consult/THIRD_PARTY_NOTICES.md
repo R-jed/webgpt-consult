@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-`webgpt-consult` incorporates and adapts parts of the design and documentation from `gpt56-sol-pro-consult` in the [`zjp1997720/zhijian-skills`](https://github.com/zjp1997720/zhijian-skills) repository, including the `CONTEXT_PACKET_V1` structure and Chrome consultation workflow patterns.
+`webgpt-consult` incorporates and adapts design and documentation ideas from `gpt56-sol-pro-consult` in the [`zjp1997720/zhijian-skills`](https://github.com/zjp1997720/zhijian-skills) repository. This includes the `CONTEXT_PACKET_V1` structure, Chrome consultation/recovery workflow patterns, multi-file text evidence bundling, and reliability scenarios used to validate attachment and Send recovery behavior.
 
 The upstream project is licensed under the MIT License:
 
@@ -28,4 +28,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-`webgpt-consult` does not include the upstream OpenCLI fallback implementation.
+`webgpt-consult` does not include the upstream OpenCLI fallback implementation or its OpenCLI-specific DOM/state parser.
