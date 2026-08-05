@@ -8,20 +8,20 @@
 <p align="center">
   <a href="#install">Install</a> ·
   <a href="#use">Use</a> ·
-  <a href="#example">Example</a> ·
+  <a href="#how-it-works">How it works</a> ·
   <a href="#privacy-and-safety">Privacy &amp; Safety</a> ·
   <a href="README.md">中文</a>
 </p>
 
-`webgpt-consult` lets Codex use GPT-5.6 Sol Pro or High through ChatGPT Web in Chrome.
+`webgpt-consult` lets Codex send a problem, the relevant source, and selected files to GPT-5.6 Sol in ChatGPT Web through Chrome, then bring the answer back into the current task.
 
-Tell Codex what you want help with. Codex works out what context matters, attaches relevant source files, logs, or documents when useful, and brings the Web answer back into the current task. The Skill keeps that connection reliable, including conversation continuity, Web model checks, and a basic local safety check before anything is sent.
+You only need to say what you want reviewed. Simple questions stay simple. Larger tasks use the standard `CONTEXT_PACKET_V1` to carry the background, evidence, prior attempts, risks, and exact question. Follow-up consultations reuse the same verified Web conversation and model whenever possible, so Codex does not keep rebuilding the same context or reopening the model picker.
 
 > **AI agents should read [README_Agent.md](README_Agent.md) first. Runtime behavior is defined by [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md).**
 
 ## Install
 
-You need Codex, the Codex Chrome plugin connected, ChatGPT Web signed in, and a Pro or Plus account with GPT-5.6 Sol Pro or High available on the Web side.
+You need Codex, the Codex Chrome plugin connected, and a signed-in ChatGPT Web account where GPT-5.6 Sol Pro or High is available.
 
 Install for the current project:
 
@@ -55,25 +55,45 @@ For example:
 /webgpt-consult Ask GPT-5.6 Sol to investigate this login bug and inspect the relevant source and logs if needed.
 ```
 
-Simple questions can be sent directly. For architecture work, code review, difficult debugging, or anything with substantial context, Codex uses the built-in standard `CONTEXT_PACKET_V1` to organize the task, background, user intent, local judgment, evidence, prior attempts, options, risks, and the exact ask before sending it to the Web model.
+Codex decides what context is actually useful. For code work it can upload selected files or send only the important excerpts. If an attachment was not successfully uploaded, the Skill does not treat it as evidence that ChatGPT Web has seen.
 
-## Example
+## How it works
 
-Suppose you have been stuck on a login bug:
+The first time a new ChatGPT Web conversation is used, the Skill verifies GPT-5.6 Sol Pro, with High as the fallback. Follow-up requests in that same verified conversation reuse the confirmed model. The picker is checked again only for a new conversation, a branch, a conversation-identity change, or clear evidence that the Web model state has changed.
+
+Substantial consultations use the standard `CONTEXT_PACKET_V1`. Later turns in the same conversation send only the new evidence, current state, and next question instead of repeating the full packet.
+
+```text
+Your request
+  ↓
+Codex selects the relevant context and files
+  ↓
+Local safety check
+  ↓
+Reuse the verified conversation, or open a new ChatGPT Web conversation
+  ↓
+GPT-5.6 Sol Pro / High
+  ↓
+Send once and wait for the complete reply
+  ↓
+Verify the result and return it to the current task
+```
+
+For example, suppose you are debugging a login issue:
 
 ```text
 /webgpt-consult I have been chasing this login issue for a while. Ask GPT-5.6 Sol to help find the root cause.
 ```
 
-Codex first looks at the current project and picks the material that matters, such as `auth.py`, `session.py`, and the error log. If the problem needs more structure, it uses the standard context packet. It checks outgoing text locally for obvious secrets, then opens ChatGPT Web through Chrome and uses GPT-5.6 Sol Pro when available, with High as the fallback.
+Codex might select `auth.py`, `session.py`, and the actual error as evidence. The first consultation can carry the full context. If you then say, “I implemented the suggestion, but this test still fails,” the next Web turn only needs the new code, the test result, and the new question.
 
-After GPT-5.6 Sol reviews the material, Codex verifies that the reply belongs to this consultation and brings the answer back into the task. If you keep discussing the same issue, the Skill reuses the verified Web conversation and its already-confirmed model instead of reopening the model picker on every turn. It checks the picker again only for a new conversation, a branch, a conversation-identity change, or clear evidence that the Web model state changed.
+If Chrome disconnects or the Send outcome becomes uncertain, the Skill first tries to recover the original conversation so the same request is not submitted twice.
 
 ## Privacy and safety
 
-Before text is sent to the Web, the Skill locally blocks common API keys, passwords, access tokens, cookies or session data, private keys, one-time codes, and payment-card details. If something sensitive is found, sending stops until that value is removed or redacted.
+Before text is sent to the Web, the Skill locally blocks common API keys, passwords, access tokens, cookies or session data, private keys, one-time codes, and payment-card details. Names, email addresses, physical addresses, and other private details that do not matter to the question should also be left out.
 
-Names, email addresses, physical addresses, and other private details that are unrelated to the question should also be left out. The safety check stays deliberately small and practical.
+This is a basic safety layer. Codex still chooses the smallest useful evidence set for the task.
 
 ## Model
 
@@ -87,7 +107,7 @@ GPT-5.6 Sol High
 stop
 ```
 
-A verified multi-turn Web conversation reuses its confirmed model without repeatedly opening the picker. The model or reasoning level currently selected in Codex does not affect Web model selection.
+A verified multi-turn Web conversation reuses its confirmed model. The model or reasoning level currently selected in Codex does not affect Web model selection.
 
 ## Package layout
 
@@ -95,6 +115,7 @@ A verified multi-turn Web conversation reuses its confirmed model without repeat
 skills/webgpt-consult/
 ├── SKILL.md
 ├── LICENSE
+├── THIRD_PARTY_NOTICES.md
 ├── agents/
 │   └── openai.yaml
 ├── assets/
@@ -110,4 +131,4 @@ See [SKILL.md](skills/webgpt-consult/SKILL.md) for the detailed runtime rules.
 
 ## License
 
-[MIT](LICENSE)
+This project is released under the [MIT License](LICENSE). The `CONTEXT_PACKET_V1` structure and parts of the Chrome consultation workflow are adapted from `gpt56-sol-pro-consult` in `zjp1997720/zhijian-skills`; see [THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md).
