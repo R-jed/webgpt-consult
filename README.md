@@ -59,9 +59,7 @@
 
 ### 前置条件
 
-- Node.js / `npx`，用于安装和管理 Skill
-- Python 3.10+
-- 当前版本 Codex
+- Codex
 - Codex Chrome plugin 已安装并连接
 - Chrome 中已经登录 ChatGPT Web
 - 当前账号实际提供 GPT-5.6 Sol Pro 或 High
