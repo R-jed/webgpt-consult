@@ -1,81 +1,136 @@
 ---
 name: webgpt-consult
-description: Use Codex Chrome to consult ChatGPT Web with GPT-5.6 Sol Pro or High while preserving verified conversation continuity, browser ownership, safe send recovery, efficient model reuse, structured context handoff, and basic local secret safety.
+description: Use Codex Chrome to consult ChatGPT Web with GPT-5.6 Sol Pro or High while preserving verified multi-turn continuity, structured context handoff, real evidence, safe send recovery, efficient model reuse, and local secret safety.
 ---
 
 # webgpt-consult
 
-`webgpt-consult` is a bridge from Codex to ChatGPT Web. It provides reliable browser transport, context handoff, and conversation continuity without forcing every request into the same workflow.
+`webgpt-consult` is a verified ChatGPT Web consultation layer for Codex. It combines structured handoff for difficult work with reliable multi-turn Chrome transport.
+
+Codex owns task understanding, evidence selection, local verification, and final delivery. ChatGPT Web is an external reasoning partner whose answer remains advisory until checked against the local evidence and the user's request.
+
+## Runtime sources
+
+Read `references/chrome-workflow.md` before browser work.
+
+For substantial consultations, also read `references/context-packet-template.md`.
+
+Use `scripts/build_attachment_bundle.py` only when several selected text files are genuinely needed and individual upload is impractical or an archive is rejected.
 
 ## Product boundary
 
-Codex remains responsible for understanding the user's request and deciding:
+Codex decides:
 
 - what to ask ChatGPT Web;
-- whether a short prompt or the standard context packet is more useful;
-- whether to include context, code, logs, screenshots, or files;
-- how much evidence is necessary;
-- how to use the returned answer.
+- whether the request needs a compact prompt or `CONTEXT_PACKET_V1`;
+- which facts, code, logs, screenshots, documents, or files materially affect the answer;
+- whether an existing local judgment should be challenged or an independent first view is more useful;
+- how to verify and use the returned advice.
 
-The Skill is responsible for:
+The Skill owns:
 
 1. Chrome transport to ChatGPT Web;
-2. GPT-5.6 Sol model verification and efficient reuse inside the same verified Web conversation;
-3. temporary conversation binding and continuity;
-4. browser-resource ownership and cleanup;
-5. exact submission/result association and duplicate-send prevention;
-6. reliable attachment/composer handling;
-7. the `CONTEXT_PACKET_V1` format for substantial consultations;
-8. a small local safety guard for secrets, authentication material, payment credentials, and obvious privacy warnings.
+2. GPT-5.6 Sol model verification and conversation-scoped model reuse;
+3. temporary Web conversation binding and continuity;
+4. exact submission/result association and duplicate-send prevention;
+5. real attachment/composer verification;
+6. `CONTEXT_PACKET_V1` for substantial consultations;
+7. safe multi-file text bundling when needed;
+8. browser-resource ownership and cleanup;
+9. local blocking of secrets, authentication material, and payment credentials.
 
 ## Hard boundaries
 
-- Use the Codex Chrome capability only.
-- For a new Web conversation, use verified GPT-5.6 Sol `Pro` when available; otherwise verified GPT-5.6 Sol `High`; otherwise stop.
-- Once a Web conversation has a verified model binding, do not reopen the model picker on every follow-up. Reuse the cached verified tier while the same conversation identity remains valid.
-- Re-verify the model when starting a fresh conversation or branch, when the conversation identity changes, when no valid model cache exists, or when fresh UI/error evidence contradicts the cached tier.
-- A Chrome runtime reset alone does not invalidate the model cache when the same bound conversation is recovered and verified.
-- Codex UI model/reasoning labels are unrelated to Web model verification.
-- Reject legacy GPT-5.5 Pro, `Pro Extended`, base-Sol `Extra High`, and ambiguous model labels.
-- Do not transmit API keys, passwords, access/refresh tokens, cookies, session material, private keys, OTP/recovery codes, card numbers, CVV/CVC, or payment PINs.
-- Remove unrelated personal or private information before transmission. Keep task-relevant context only.
-- Never claim a file or source was reviewed unless it was actually present in the Web prompt or uploaded successfully.
-- Never click Send with an empty or unverified composer.
-- Send a submission once. If the Send outcome becomes uncertain, recover the existing conversation instead of sending a replacement.
-- Treat browser resets as invalidating old locators, element references, and pending browser promises.
-- Never guess a previous Web conversation from sidebar titles, history order, project name, timestamps, or semantic similarity.
-- Automatically close only browser tabs/pages proven to have been created by this Skill in the current Codex conversation.
-- Do not persist Web conversation bindings, reviewer history, project summaries, or decision memory.
+- Use the Codex Chrome capability only. This project does not include the upstream OpenCLI fallback.
+- For a new Web conversation, use verified GPT-5.6 Sol `Pro`; otherwise verified GPT-5.6 Sol `High`; otherwise stop.
+- Reuse the verified model tier on normal follow-ups in the same verified Web conversation. Do not reopen the model picker per message.
+- Re-verify after a fresh conversation or branch, an identity change, a missing/invalid model cache, visible contradictory model state, a model error, or an explicit tier-change request.
+- A Chrome runtime reset invalidates browser locators and pending promises. It does not by itself invalidate a model cache when the same conversation is recovered and verified.
+- Codex model names and reasoning levels are not evidence of the Web model.
+- Reject GPT-5.5 Pro, `Pro Extended`, base-Sol `Extra High`, ambiguous bare `Pro`, and unrelated model labels.
+- Never send known API keys, passwords, access/refresh tokens, cookies, session material, private keys, OTP/recovery codes, card numbers, CVV/CVC, or payment PINs.
+- Do not over-sanitize context that materially affects the judgment. Task-relevant user-owned project or business facts may be included after credential checks; unrelated private information should be removed or generalized.
+- A local filename or path is never evidence by itself. Upload the actual file, paste the content, or provide a faithful excerpt/bundle.
+- Never claim ChatGPT Web reviewed a file unless the actual file or faithful content was successfully delivered.
+- Never Send an empty or unverified composer.
+- Submit once. If Send outcome becomes uncertain, recover the original conversation rather than issuing a replacement.
+- Never infer a prior conversation from sidebar titles, recent order, approximate timestamps, project names, or semantic similarity.
+- Only automatically close browser resources proven to have been created by this Skill during the current Codex conversation.
+- Do not persist conversation bindings, model caches, reviewer history, project summaries, or consultation memory to disk.
 
-## Execution
-
-Read `references/chrome-workflow.md` before browser work. Use `references/context-packet-template.md` for substantial consultations.
+## Consultation flow
 
 For each Web submission:
 
-1. Decide whether the user's request clearly continues the currently bound Web conversation. Reuse it only when the binding can be verified. Otherwise use a fresh ChatGPT conversation.
-2. If the expected answer may already be visible, inspect the existing conversation before preparing another submission.
-3. If the bound Web conversation is context-heavy and continuation still matters, use `Branch in new chat` when useful; otherwise start fresh.
-4. Generate a fresh `task_id` and sentinel such as `webgpt-consult-YYYYMMDD-HHMMSS-<nonce>` and `WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>`.
-5. For a substantial consultation, use the standard `CONTEXT_PACKET_V1` format from `references/context-packet-template.md`. For a simple question, keep the prompt compact but still include the fresh sentinel and require ChatGPT Web to begin its response with it. In an established conversation, use the template's compact delta form instead of resending old context.
-6. Include only the context and evidence Codex judges useful. For code tasks, selected source files or relevant excerpts may be uploaded directly when helpful. Do not upload a broad repository merely for convenience.
-7. Run `scripts/safety_guard.py` on the exact outgoing prompt/packet text and every UTF-8 text attachment. Remove or redact blocking findings before continuing. Review non-blocking privacy warnings when relevant.
-8. For binary or non-text attachments, inspect them locally before upload and avoid sending material that may expose secrets or unrelated private data.
-9. Resolve the Web model efficiently:
-   - fresh conversation or branch: open the picker, verify GPT-5.6 Sol `Pro`, otherwise `High`, and remember that verified tier for this conversation;
-   - verified continuation in the same conversation: reuse the cached tier without reopening the picker;
-   - if conversation identity or model state is uncertain or contradicted by fresh evidence: re-open the picker and verify again.
-10. Upload files through the real file chooser. Keep any pending chooser lifecycle inside one browser-tool invocation, then reacquire the composer from fresh state.
-11. Verify required attachment chips and the actual rendered composer text, including the current sentinel and enough distinctive packet/prompt text to prove the intended submission is present. If the composer is empty or unverified, do not Send.
-12. Track dispatch state as `NOT_SENT`, `SENT`, or `UNKNOWN`. Send once. If the click outcome is ambiguous, recover the same conversation and never duplicate the submission.
-13. While generation is active, stay in the same conversation and do not resend, refresh, close the tab, or send `continue`.
-14. After generation completes, inspect only the latest assistant turn. Its first non-empty line must exactly equal the current sentinel, and the response must contain substantive content after it.
-15. Only after verification may the current Codex conversation establish or refresh its temporary Web binding, including the verified model tier and latest task identity for that conversation.
-16. Return the consultation result to the user's task and use it according to the user's request.
+1. Resolve continuity first. Reuse the current verified Web conversation when the request clearly continues it. If the expected answer may already be visible, inspect that conversation before preparing anything new.
+2. If the same consultation still matters but the Web thread is too context-heavy, use `Branch in new chat` from a useful point when available. A branch is a new conversation and gets a new model verification.
+3. Generate a fresh `task_id` and sentinel, for example `webgpt-consult-YYYYMMDD-HHMMSS-<nonce>` and `WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>`.
+4. Choose the handoff form:
+   - simple question: compact prompt plus the fresh sentinel;
+   - substantial first consultation: full `CONTEXT_PACKET_V1`;
+   - same-conversation follow-up: compact delta packet unless prior context is stale or ambiguous.
+5. For review, architecture, risk, product, business, or other second-opinion work, record the local judgment before consulting when one already exists. Keep it separate from facts and unknowns. Omit `LOCAL_JUDGMENT` when the user explicitly wants an independent first view.
+6. Select the smallest evidence set that still preserves the truth. Prefer original human-readable files when reliable upload is practical. Use `scripts/build_attachment_bundle.py` when many selected UTF-8 text files would otherwise be awkward to deliver.
+7. Run `scripts/safety_guard.py` on the exact outgoing prompt/packet and every UTF-8 text attachment. The bundle helper performs an additional blocking scan on its generated output. Remove or redact blocking findings before Send.
+8. Inspect binary/non-text attachments locally before upload. Avoid unrelated private material and known secrets.
+9. Follow `references/chrome-workflow.md` for model resolution, file chooser handling, composer verification, dispatch state, waiting, recovery, result verification, binding replacement, and cleanup.
+10. After the verified Web result returns, compare it with local evidence. For review/decision work, explicitly decide what to adopt, reject, or modify when that helps the user's task. For other work, integrate the answer in the form the user requested.
+
+## Context handoff
+
+`references/context-packet-template.md` is the canonical substantial-consultation format. It retains the upstream `CONTEXT_PACKET_V1` structure:
+
+```text
+task_id
+sentinel
+task_type
+context_strategy
+credential_status
+context_hash
+required_output
+
+TASK
+BACKGROUND
+USER_INTENT
+LOCAL_JUDGMENT
+EVIDENCE
+ATTEMPTS_SO_FAR
+OPTIONS
+RISKS
+ASK
+RETURN_FORMAT
+```
+
+The structure is there to preserve causal detail and make facts, judgment, evidence, risks, and unknowns distinguishable. It is not permission to fill empty sections with boilerplate.
+
+For genuinely difficult work, a detailed packet in roughly the 8,000 to 15,000 character range can be appropriate when shortening it would remove causal details. This is guidance, not a length target or gate. A smaller packet is better when it carries the complete truth.
+
+For second and later turns in the same verified Web conversation, use the delta form with a fresh identity and only the changed evidence/current ask unless older context must be corrected or restated.
+
+## Attachment bundle
+
+Prefer original selected files first. Use a bundle when ChatGPT Web rejects an archive or when many relevant small text files make individual uploads unreliable.
+
+```bash
+python3 "<SKILL_ROOT>/scripts/build_attachment_bundle.py" \
+  /path/to/selected/source \
+  -o /tmp/webgpt-consult-bundle.md
+```
+
+The helper:
+
+- skips common dependency/cache/build directories;
+- accepts selected text extensions and strict UTF-8 only;
+- records relative provenance labels, source byte counts, and SHA-256 hashes;
+- fails closed when a selected text file exceeds the configured file/total limit;
+- permits truncation/omission only with explicit `--allow-partial`, and marks partial evidence in the bundle;
+- runs the local blocking safety scan before writing the bundle.
+
+A partial bundle changes the evidence set. Use `--allow-partial` only when the omission is understood and acceptable for the user's question. If completeness matters, select fewer files, provide targeted excerpts, or upload originals separately.
 
 ## Temporary conversation binding
 
-Keep only this information in the current Codex conversation:
+A verified Web conversation may retain only session-scoped state in the current Codex conversation:
 
 ```text
 review_tab_handle: <exact browser handle when available>
@@ -87,80 +142,65 @@ verified_web_model: GPT-5.6 Sol Pro | GPT-5.6 Sol High
 model_verified_conversation_url: <canonical URL when available>
 ```
 
-The handle and URL are locators. `last_sentinel` verifies the immediately relevant prior consultation. `verified_web_model` is a conversation-scoped cache that prevents unnecessary model-picker checks during normal multi-turn use.
+`last_sentinel` verifies the immediately relevant completed consultation. `verified_web_model` belongs to the verified conversation identity, not to the browser runtime or individual request.
 
-A continuation binding is valid only when the bound page can be recovered and the immediately relevant prior assistant result can be verified against `last_sentinel`.
+Invalidate the model cache when the conversation changes, cannot be proven to be the same, visibly shows another tier, reports a model error, or the user requests a tier change/check. Do not invalidate it merely because browser tooling restarted if the exact conversation can be recovered and verified.
 
-The cached Web model may be reused when the continuation resolves to the same verified conversation by exact handle or exact canonical URL and no fresh evidence contradicts the cached tier.
+## Transient submission record
 
-Invalidate the model cache when:
+While one submission is in progress, keep enough state in the current Codex conversation to recover safely:
 
-- a fresh conversation is created;
-- `Branch in new chat` creates a new conversation;
-- the canonical conversation identity changes;
-- the binding is recovered without enough evidence to prove it is the same conversation;
-- the current UI explicitly shows a different model/tier;
-- ChatGPT reports a model availability or model-switch error;
-- the user explicitly asks to re-check or change the Web tier.
+```text
+current_task_id
+current_sentinel
+current_context_strategy
+current_attachment_names
+current_dispatch_state: NOT_SENT | SENT | UNKNOWN
+current_conversation_url
+```
 
-Do not invalidate the model cache merely because the Chrome runtime, locator set, or browser-tool session restarted. Recover the same conversation, verify its identity, and keep the cached tier when those checks pass.
+This is execution state, not durable history. Clear it after the submission is verified complete or deliberately marked failed/incomplete.
 
-If the binding is missing, stale, ambiguous, or unverifiable, start a fresh Web conversation only when no unresolved `SENT` or `UNKNOWN` submission remains attached to it. A new Codex conversation starts with no binding or model cache.
-
-The current submission's dispatch state is transient execution state only. Do not persist it after the consultation finishes.
-
-## Context handoff
-
-`references/context-packet-template.md` contains the canonical `CONTEXT_PACKET_V1` format used for substantial consultations. It preserves the structured metadata and sections that help GPT-5.6 Sol review complex work consistently.
-
-Use the full packet when the task has substantial background, several constraints, source artifacts, prior attempts, options, risks, or a decision that benefits from explicit framing.
-
-The packet keeps the proven `task_id`, `sentinel`, `task_type`, `context_strategy`, `credential_status`, `context_hash`, `required_output`, `TASK`, `BACKGROUND`, `USER_INTENT`, `LOCAL_JUDGMENT`, `EVIDENCE`, `ATTEMPTS_SO_FAR`, `OPTIONS`, `RISKS`, `ASK`, and `RETURN_FORMAT` structure. Adapt task-specific values to the user's actual request.
-
-For second and later turns in the same verified Web conversation, avoid repeating the full packet unless earlier context is stale or ambiguous. Use a fresh `task_id` and sentinel with the compact delta form from the template. This preserves the packet protocol while reducing context-window and browser-token waste.
+The purpose is recovery: after a reset, Codex should know which sentinel and attachments belong to the in-flight request and whether resending is safe. `SENT` and `UNKNOWN` must never create a replacement submission until the original outcome is resolved or the consultation is marked incomplete.
 
 ## Browser ownership
 
-A browser tab/page is Skill-owned only when this Skill created it during the current Codex conversation and the exact handle still identifies that resource. Proven ownership survives later reuse of the same handle.
+A tab/page is Skill-owned only when this Skill created it during the current Codex conversation and the exact handle remains known. Navigation does not change ownership.
 
-After a new result is verified:
+After a result is verified, establish and confirm the replacement binding before considering cleanup. Close a superseded resource only when it is distinct and proven Skill-owned. Leave user-created or ownership-unknown resources alone.
 
-```text
-verify result
-  -> establish new binding
-  -> confirm new binding
-  -> close the superseded old tab only if it is distinct and proven Skill-owned
-```
-
-Never close user-opened, pre-existing, unrelated, or ownership-unknown tabs. Never close a tab whose send state is uncertain. Never use process-wide Chrome termination, process scanning, a background cleanup daemon, or a persistent tab registry.
-
-If generation or ownership is uncertain, leave the tab alone.
+Never use process-wide Chrome termination, process scanning, a cleanup daemon, or a persistent tab registry.
 
 ## Safety guard
 
-`scripts/safety_guard.py` blocks high-confidence secrets, authentication material, and payment credentials in UTF-8 text. It may also warn about obvious personal/private identifiers without blocking the consultation.
-
-Example:
+Run:
 
 ```bash
 python3 "<SKILL_ROOT>/scripts/safety_guard.py" packet.md src/example.py
 ```
 
-Use `-` to scan stdin. Personal information unrelated to the consultation should be removed or generalized before sending.
+on the exact outgoing prompt/packet and every UTF-8 text attachment. Blocking findings stop transmission. Privacy warnings are reviewed contextually; a warning does not automatically mean task-relevant business/project context must be removed.
+
+## Completion and integration
+
+A submission is complete only when the Chrome workflow verifies the intended conversation/model state, actual attachments and composer text, a single dispatch, stopped generation, the latest assistant turn, and the expected sentinel.
+
+The Web result is advisory. Before final delivery, Codex should check claims that matter against the available local evidence. For a second-opinion review, an `Adopt / Reject / Modify` summary is useful when it makes the final decision clearer. It is not a mandatory output wrapper for every consultation.
 
 ## Failure handling
 
-- Chrome unavailable or disconnected: stop and report the missing capability.
+- Chrome unavailable/disconnected: stop and report the missing capability. Do not invent an OpenCLI route.
 - ChatGPT not signed in: ask the user to sign in.
-- A fresh conversation cannot verify GPT-5.6 Sol Pro or High: stop.
-- Cached model state is contradicted or uncertain: re-verify the picker before sending.
-- Browser runtime reset before Send: reacquire fresh state and rebuild only when Send definitely did not occur.
-- Browser reset during/after Send with unknown outcome: recover the same conversation; never send a replacement while the outcome remains uncertain.
-- Safety guard blocks the payload: redact/remove the sensitive value locally; do not send until clean.
-- Required attachment upload fails: do not claim it was reviewed.
-- Composer is empty or cannot be verified: do not Send.
-- Generation is active: do not resend, refresh, close that tab, or send `continue`.
-- Sentinel verification fails: treat the consultation as incomplete and do not refresh the binding.
-- Continuation binding cannot be verified: start fresh only when there is no unresolved `SENT`/`UNKNOWN` submission attached to it.
-- Current Web conversation is too context-heavy: branch when useful, otherwise start fresh.
-- Browser ownership is uncertain: leave the resource open.
+- Fresh conversation cannot verify Pro or High: stop.
+- Cached model state is contradicted or uncertain: re-verify before Send.
+- Safety guard blocks: remove/redact locally and scan again.
+- Bundle helper fails completeness/safety checks: select fewer files, use faithful excerpts, or upload originals; do not hide missing evidence.
+- Required attachment fails: do not claim it was reviewed.
+- Composer is empty/unverified: do not Send.
+- `NOT_SENT`: recovery may rebuild and submit after fresh verification.
+- `SENT`: recover the original conversation and wait/extract; never resend.
+- `UNKNOWN`: recover the original conversation and look for submission/generation evidence; never send a replacement while uncertain.
+- Generation active: stay in the same conversation; do not resend, refresh, close it, or send `continue`.
+- Sentinel verification fails after one complete re-read: mark incomplete and do not refresh the binding.
+- Continuation identity cannot be verified: start fresh only when no unresolved `SENT`/`UNKNOWN` submission remains attached to the old conversation.
+- Browser ownership uncertain: leave the resource open.
