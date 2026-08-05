@@ -4,7 +4,7 @@ This file is for AI agents that discover or support the project. Human users sho
 
 `webgpt-consult` is a lightweight Codex Skill for consulting ChatGPT Web through Chrome with GPT-5.6 Sol Pro or High.
 
-The Skill is intentionally thin. It handles browser transport, verified Web conversation continuity, browser-resource ownership, model boundaries, request/result association, and a small local secret/payment safety guard. Prompt design and evidence selection belong to the current Codex model and the user's request.
+The Skill handles browser transport, verified Web conversation continuity, browser-resource ownership, efficient Web-model reuse, request/result association, context handoff, and a small local secret/payment safety guard. Prompt design and evidence selection still belong to the current Codex model and the user's request.
 
 ## Install
 
@@ -47,15 +47,22 @@ When actually executing the Skill, resolve the installed Skill root and read:
 <SKILL_ROOT>/references/chrome-workflow.md
 ```
 
+For complex/context-heavy consultations, also read:
+
+```text
+<SKILL_ROOT>/references/context-packet-template.md
+```
+
 `SKILL.md` is authoritative.
 
 ## Runtime boundary
 
-The Skill does not impose a fixed review methodology or context packet.
+The Skill does not impose one fixed review methodology. It does provide an adaptive context-packet guide for consultations that need a structured handoff.
 
 Codex decides from the current user request:
 
 - what to ask ChatGPT Web;
+- whether a simple prompt or context packet is useful;
 - how to phrase the prompt;
 - whether files or source excerpts are useful;
 - which evidence is necessary;
@@ -63,7 +70,9 @@ Codex decides from the current user request:
 
 For code tasks, Codex may upload selected source files directly. Prefer the smallest source set sufficient for the question.
 
-The Web model policy is:
+For second and later turns in the same verified Web conversation, prefer a small delta prompt. Do not resend a full context packet unless older context is stale, ambiguous, or missing.
+
+The Web model policy for a new conversation is:
 
 ```text
 GPT-5.6 Sol Pro
@@ -71,15 +80,19 @@ GPT-5.6 Sol Pro
   → otherwise stop
 ```
 
+A verified multi-turn conversation caches its confirmed Web model tier. Do not reopen the model picker on every follow-up. Re-verify only after a new/branched conversation, a conversation-identity change, a missing/invalid cache, clear UI evidence of a model change, a model error, or an explicit request to re-check the tier.
+
+A browser runtime reset does not by itself invalidate the cached tier if the same Web conversation can be recovered and verified.
+
 Codex model/reasoning labels are not Web model evidence.
 
 ## Continuity and browser resources
 
-A verified Web conversation may be reused only while the current Codex conversation retains an unambiguous temporary binding. Lost or unverifiable binding means start fresh.
+A verified Web conversation may be reused only while the current Codex conversation retains an unambiguous temporary binding. Lost or unverifiable binding means start fresh unless a `SENT`/`UNKNOWN` request is still unresolved and must first be recovered.
 
-`Branch in new chat` may be used when the same consultation should continue but the current Web thread is too context-heavy.
+`Branch in new chat` may be used when the same consultation should continue but the current Web thread is too context-heavy. A branch is a new conversation and must establish its own Web-model verification.
 
-Bindings are never persisted as reviewer/project memory.
+Bindings and model caches are never persisted as reviewer/project memory.
 
 Only browser tabs/pages explicitly created by this Skill in the current Codex conversation may be automatically closed, and only while their exact handles remain known. User-opened or ownership-unknown tabs are left alone.
 
@@ -93,7 +106,7 @@ Never transmit known secrets, authentication material, or payment credentials. T
 <SKILL_ROOT>/scripts/safety_guard.py
 ```
 
-Run it on the exact outgoing prompt text and every UTF-8 text attachment before Send. If it blocks, redact/remove the value locally and scan again. Do not bypass the guard.
+Run it on the exact outgoing prompt text and every UTF-8 text attachment before Send. If it blocks, redact/remove the value locally and scan again. Review warnings for obvious private identifiers when relevant to the task.
 
 The guard is intentionally narrow. Do not expand project behavior into a general DLP/PII system. Codex should minimize unrelated private information contextually before transmission.
 
@@ -103,10 +116,11 @@ Do not claim that the Skill:
 
 - stores durable reviewer memory;
 - maintains a project consultation database;
-- has a fixed architecture-review or adversarial-review prompt;
-- requires a fixed packet format;
+- requires every request to use a full context packet;
+- has a fixed architecture-review or adversarial-review persona;
 - automatically packages an entire repository;
+- re-checks the model picker on every message in a verified conversation;
 - owns or closes user browser tabs;
 - supports Web models other than GPT-5.6 Sol Pro/High.
 
-Repository discovery files are documentation. Runtime source of truth is `skills/webgpt-consult/SKILL.md` plus its Chrome workflow reference.
+Repository discovery files are documentation. Runtime source of truth is `skills/webgpt-consult/SKILL.md` plus its references.
