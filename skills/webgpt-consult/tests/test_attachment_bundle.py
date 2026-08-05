@@ -27,14 +27,37 @@ class AttachmentBundleTests(unittest.TestCase):
 
             result = bundle.build_bundle([root], output)
             text = output.read_text(encoding="utf-8")
+            first_hash = hashlib.sha256(first.read_bytes()).hexdigest()
 
             self.assertTrue(result["ok"])
             self.assertEqual(result["files"], 2)
             self.assertIn("`project/a.py`", text)
             self.assertIn("`project/notes.md`", text)
-            self.assertIn(hashlib.sha256(first.read_bytes()).hexdigest(), text)
+            self.assertIn(f"source_sha256={first_hash}", text)
+            self.assertIn(f"included_sha256={first_hash}", text)
             self.assertIn("status=full", text)
             self.assertNotIn(str(root.resolve()), text)
+
+    def test_preserves_trailing_whitespace_inside_source_fence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "exact.txt"
+            original = "value with spaces  \n\n"
+            source.write_text(original, encoding="utf-8")
+            output = Path(tmp) / "bundle.md"
+
+            bundle.build_bundle([source], output)
+            text = output.read_text(encoding="utf-8")
+            opening = "````txt\n"
+            start = text.index(opening) + len(opening)
+            end = text.index("````\n", start)
+            embedded = text[start:end]
+            digest = hashlib.sha256(original.encode("utf-8")).hexdigest()
+
+            self.assertEqual(embedded, original)
+            self.assertIn(f"source_bytes={len(original.encode('utf-8'))}", text)
+            self.assertIn(f"included_bytes={len(original.encode('utf-8'))}", text)
+            self.assertIn(f"source_sha256={digest}", text)
+            self.assertIn(f"included_sha256={digest}", text)
 
     def test_oversized_file_fails_closed_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -58,6 +81,8 @@ class AttachmentBundleTests(unittest.TestCase):
             self.assertEqual(result["partial_files"], 1)
             self.assertIn("status=truncated", text)
             self.assertIn("PARTIAL FILE", text)
+            self.assertIn("source_sha256=", text)
+            self.assertIn("included_sha256=", text)
 
     def test_secret_blocks_bundle_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
