@@ -78,7 +78,7 @@
 ~/.codex/skills/webgpt-consult/
 ```
 
-安装成功后，先在下一轮直接调用 `/webgpt-consult`。如果当前 Codex 客户端仍未刷新 Skill 列表，再重启 Codex或新建任务。
+安装成功后，先在下一轮直接调用 `/webgpt-consult`。如果当前 Codex 客户端仍未刷新 Skill 列表，再重启 Codex 或新建任务。
 
 如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 依赖 Codex Chrome plugin，因此不维护另一套 legacy installer。
 
