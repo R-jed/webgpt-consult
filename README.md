@@ -1,9 +1,17 @@
 <p align="center">
-  <img src="./skills/webgpt-consult/assets/webgpt-consult.svg" alt="webgpt-consult" width="136" />
+  <img src="./skills/webgpt-consult/assets/mobius.svg" alt="webgpt-consult" width="136" />
 </p>
 
 <h1 align="center">webgpt-consult</h1>
 <p align="center">Codex → Chrome → ChatGPT Web</p>
+
+<p align="center">
+  <a href="#安装">安装</a> ·
+  <a href="#使用">使用</a> ·
+  <a href="#一个实际例子">示例</a> ·
+  <a href="#隐私与安全">隐私与安全</a> ·
+  <a href="README_en.md">English</a>
+</p>
 
 `webgpt-consult` 让 Codex 通过 Chrome 使用 ChatGPT Web 里的 GPT-5.6 Sol Pro 或 High。
 
@@ -90,7 +98,7 @@ skills/webgpt-consult/
 ├── agents/
 │   └── openai.yaml
 ├── assets/
-│   └── webgpt-consult.svg
+│   └── mobius.svg
 ├── references/
 │   └── chrome-workflow.md
 └── scripts/
@@ -98,8 +106,6 @@ skills/webgpt-consult/
 ```
 
 详细规则见 [SKILL.md](skills/webgpt-consult/SKILL.md)。
-
-English: [README_en.md](README_en.md)
 
 ## License
 
