@@ -1,17 +1,15 @@
-# GPT-5.6 Sol Context Packet Template
+# GPT-5.6 Sol Pro Context Packet Template
 
-Use this template for substantial ChatGPT Web consultations. Simple questions and short follow-ups in an already verified conversation may use a smaller delta prompt instead of repeating the whole packet.
+Use this format for substantial ChatGPT Web consultations. It follows the proven GPT 5.6 Sol Pro consultation packet structure, with only the identifiers adapted for `webgpt-consult`.
 
 ````markdown
-Request-ID: wgpt-<random>
-
 CONTEXT_PACKET_V1
 
 ```json
 {
-  "task_id": "webgpt-consult-YYYYMMDD-HHMMSS",
-  "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS",
-  "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|other",
+  "task_id": "webgpt-consult-YYYYMMDD-HHMMSS-<nonce>",
+  "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>",
+  "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|debugging|code_review|other",
   "context_strategy": "problem_first_full_context",
   "credential_status": "no_executable_credentials",
   "context_hash": "<sha256 of markdown body>",
@@ -47,11 +45,7 @@ Please act as a strict reviewer and deep reasoning partner. Find the biggest fla
 
 ## RETURN_FORMAT
 
-First line must be:
-Request-ID: wgpt-<random>
-
-Second line must be:
-WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
+First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>
 
 Then use:
 1. Reasoning brief: assumptions, frame, evidence, counterargument, tradeoffs
@@ -62,15 +56,33 @@ Then use:
 6. Final adoption recommendation
 ````
 
+## Adaptation rules
+
+The packet format is reusable. The user's request remains authoritative.
+
+- Change `task_type` when another label describes the task better.
+- Change `required_output` and `RETURN_FORMAT` when the user asks for a different deliverable.
+- `LOCAL_JUDGMENT` may be omitted when an independent first view is more useful.
+- Sections with no useful information may be omitted instead of filled with boilerplate.
+- `credential_status` must reflect the actual local safety check.
+- Generate a fresh `task_id` and `sentinel` for every Web submission.
+
 ## Follow-up in the same verified conversation
 
-Do not resend the full packet when the existing ChatGPT Web conversation already contains the relevant background. Use the same conversation and send only the new delta with a fresh Request-ID. Include a fresh sentinel when the follow-up is substantial enough to benefit from the full completion contract.
+Do not resend the full packet when the existing conversation already contains the relevant background. Reuse the same verified conversation and send a compact delta packet with a fresh identity:
 
-Example:
+````markdown
+CONTEXT_PACKET_V1
 
-```markdown
-Request-ID: wgpt-<new-random>
-Sentinel: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
+```json
+{
+  "task_id": "webgpt-consult-YYYYMMDD-HHMMSS-<nonce>",
+  "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>",
+  "task_type": "follow_up",
+  "context_strategy": "same_conversation_delta",
+  "credential_status": "no_executable_credentials"
+}
+```
 
 ## CURRENT_DELTA
 <What changed, what new evidence appeared, or what was implemented?>
@@ -78,10 +90,12 @@ Sentinel: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
 ## ASK
 <What should GPT-5.6 Sol examine now?>
 
-Begin your response with exactly:
-Request-ID: wgpt-<new-random>
-WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
-```
+## RETURN_FORMAT
+
+First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>
+````
+
+Reuse prior context already present in the verified conversation. Restate older material only when it is stale, ambiguous, or essential to the new question.
 
 ## Evidence rules
 
@@ -89,4 +103,4 @@ WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
 - Prefer the smallest source set that preserves the truth of the problem.
 - Preserve verbatim errors, measurements, and important constraints when wording matters.
 - Remove unrelated private information and never include blocked secrets, authentication material, or payment credentials.
-- Run the local safety guard on the exact outgoing packet and UTF-8 text attachments before Send.
+- Run the local safety guard on the exact outgoing packet and every UTF-8 text attachment before Send.
