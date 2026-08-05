@@ -27,6 +27,7 @@ These fail closed:
 - Evidence truthfulness: never claim a local artifact was reviewed unless its contents were actually transmitted.
 - Result binding: the latest assistant turn must match the exact sentinel and task ID.
 - Send idempotency: send once and never duplicate a request while the existing turn may still be generating.
+- Conversation identity: never continue a Web conversation unless the current Codex session can bind it to the immediately relevant verified review.
 
 Web conversation continuity is optional and temporary. If the useful Web context is unavailable or unclear, start fresh with the evidence needed for the current review.
 
@@ -69,7 +70,7 @@ Typical cases:
 - new implementation evidence directly follows the immediately preceding review;
 - the same artifact or decision is being examined one step further.
 
-If continuity is ambiguous, browser context was lost, the project changed, or the question changed materially, use `independent` instead.
+A `continuation` additionally requires a valid session-scoped conversation binding as defined below. If continuity is ambiguous, browser context was lost, the project changed, the question changed materially, or the binding cannot be verified, use `independent` instead.
 
 ### `branch`
 
@@ -82,11 +83,44 @@ After branching:
 1. confirm the branch is active;
 2. re-verify the GPT-5.6 Sol tier;
 3. send the current task plus the minimum necessary evidence;
-4. continue the review there.
+4. complete result verification;
+5. replace the session-scoped conversation binding with the new branch.
 
 If no suitable branch point exists, branching is unavailable, or the branch is unreliable, fall back to `independent` with a fresh conversation.
 
 `branch` preserves useful short-term Web context only.
+
+## Session-scoped conversation binding
+
+The Skill needs a deterministic way to know which Web conversation a `continuation` refers to without creating persistent project memory.
+
+The binding exists only inside the current Codex conversation. Do not write it to a file, repository, config store, database, or long-lived cache.
+
+After every successfully verified `independent`, `continuation`, or `branch` review, retain the smallest available browser identity in the current Codex working context:
+
+```text
+review_tab_handle: <Chrome plugin tab/page handle when available>
+review_conversation_url: <exact canonical chatgpt.com conversation URL when available>
+last_task_id: <verified Task-ID>
+last_sentinel: <verified sentinel>
+```
+
+A tab handle and URL are locators, not proof of identity. The previous verified Task-ID and sentinel are the identity check.
+
+For `continuation`, resolve the Web conversation in this order:
+
+1. reuse the previously bound Chrome tab/page handle if it is still valid;
+2. otherwise open the exact previously observed canonical ChatGPT conversation URL if that URL is still present in the current Codex context;
+3. inspect the loaded conversation and confirm that the immediately relevant previous assistant result contains the expected prior Task-ID and sentinel;
+4. only then continue in that conversation.
+
+If the page cannot be opened, the prior Task-ID/sentinel cannot be matched, multiple candidate conversations exist, or the current Codex session no longer retains an unambiguous binding, switch to `independent`.
+
+Do not locate an old review by guessing from ChatGPT sidebar titles, recent-chat ordering, browser history, semantic similarity, project name alone, or approximate timestamps.
+
+A newly successful `independent` review establishes a new binding for the current Codex session. A successful `branch` replaces the previous binding with the new branch. A successful `continuation` refreshes the binding to the currently verified tab and URL.
+
+The binding lifetime is the current Codex conversation only. A new Codex conversation starts with no Web review binding and therefore defaults to `independent` unless the user explicitly supplies a Web conversation and it can be verified safely.
 
 ## No local reviewer memory
 
@@ -156,9 +190,9 @@ Use fresh DOM views and stable semantic locators. Confirm authentication, select
 Conversation choice follows the review mode:
 
 ```text
-independent  -> fresh conversation
-continuation -> current usable conversation
-branch       -> Branch in new chat from an earlier useful point
+independent  -> fresh conversation, then establish a session binding after verification
+continuation -> resolve and verify the current session binding before reuse
+branch       -> branch from the verified bound conversation, then replace the binding
 ```
 
 If the chosen conversation path is unreliable, move toward a fresh `independent` review rather than inventing recovery data.
@@ -183,6 +217,8 @@ A review is complete only when:
 - the latest assistant turn was extracted;
 - exact result verification passed.
 
+Only after exact result verification may the current Codex session establish or refresh the temporary conversation binding.
+
 ## Local adoption
 
 The external answer is advisory evidence.
@@ -200,8 +236,9 @@ Do not write the external answer into a persistent reviewer-memory layer.
 - Preflight fails: do not send.
 - Attachment upload fails: retry upload or rebuild a faithful bundle; do not claim the artifact was received.
 - Still generating: remain in the same conversation and do not duplicate Send.
-- Missing or misplaced sentinel/task ID: mark the review incomplete.
+- Missing or misplaced sentinel/task ID: mark the review incomplete and do not establish or refresh a binding from that result.
 - Ambiguous `continuation`: switch to `independent`.
+- Missing, stale, or unverifiable session binding: switch to `independent`.
 - Lost or unreliable current conversation: switch to `independent`.
 - Context-limited current conversation: use `branch` from an earlier useful point; if unsuitable, switch to `independent`.
 - Low-quality external answer: reject unsupported parts and keep local judgment authoritative.
