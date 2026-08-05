@@ -43,14 +43,20 @@ def iter_files(paths: Iterable[Path], *, exclude_output: Path | None = None) -> 
     return sorted(set(files), key=lambda p: str(p))
 
 
-def is_probably_text(path: Path, allowed_extensions: set[str]) -> bool:
+def read_utf8_text(path: Path, allowed_extensions: set[str]) -> tuple[bytes, str] | None:
     if path.suffix.lower() not in allowed_extensions:
-        return False
+        return None
     try:
-        chunk = path.read_bytes()[:4096]
+        raw = path.read_bytes()
     except OSError:
-        return False
-    return b"\x00" not in chunk
+        return None
+    if b"\x00" in raw[:4096]:
+        return None
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    return raw, text
 
 
 def relative_label(path: Path, roots: list[Path]) -> str:
@@ -97,25 +103,42 @@ def main() -> int:
     roots = [p.resolve() for p in args.paths]
     allowed_extensions = set(DEFAULT_EXTENSIONS)
     allowed_extensions.update(ext if ext.startswith(".") else f".{ext}" for ext in args.include_extension)
-    candidates = iter_files(roots, exclude_output=args.output.resolve())
+    candidates = iter_files(args.paths, exclude_output=args.output.resolve())
 
-    explicit_unsupported = [str(p) for p in roots if p.is_file() and not is_probably_text(p, allowed_extensions)]
+    explicit_unsupported = []
+    for original, resolved in zip(args.paths, roots):
+        if original.is_file() and read_utf8_text(resolved, allowed_extensions) is None:
+            explicit_unsupported.append(str(original))
     if explicit_unsupported:
-        print(json.dumps({"ok": False, "error": "explicit_file_not_text", "paths": explicit_unsupported}, ensure_ascii=False))
+        print(json.dumps({"ok": False, "error": "explicit_file_not_strict_utf8_text", "paths": explicit_unsupported}, ensure_ascii=False))
         return 1
 
-    selected: list[tuple[Path, str, int, int, str, bool]] = []
+    selected: list[tuple[Path, str, str, int, int, str, bool]] = []
     skipped: list[str] = []
     total = 0
     hard_failure = False
+    seen_labels: dict[str, Path] = {}
 
     for path in candidates:
         resolved = path.resolve()
         label = relative_label(resolved, roots)
-        if not is_probably_text(resolved, allowed_extensions):
-            skipped.append(f"{label} (unsupported or binary)")
+        prior = seen_labels.get(label)
+        if prior is not None and prior != resolved:
+            print(json.dumps({
+                "ok": False,
+                "error": "ambiguous_labels",
+                "label": label,
+                "paths": [str(prior), str(resolved)],
+                "hint": "Pass a common parent directory or otherwise preserve unique relative paths.",
+            }, ensure_ascii=False))
+            return 1
+        seen_labels[label] = resolved
+
+        loaded = read_utf8_text(resolved, allowed_extensions)
+        if loaded is None:
+            skipped.append(f"{label} (unsupported, binary, unreadable, or non-UTF-8)")
             continue
-        raw = resolved.read_bytes()
+        raw, full_text = loaded
         original_size = len(raw)
         truncated = original_size > args.max_file_bytes
         if truncated and not args.allow_truncation:
@@ -123,13 +146,21 @@ def main() -> int:
             hard_failure = True
             continue
         included = raw[: args.max_file_bytes]
+        if truncated:
+            try:
+                text = included.decode("utf-8")
+            except UnicodeDecodeError:
+                skipped.append(f"{label} (byte truncation would split a UTF-8 sequence)")
+                hard_failure = True
+                continue
+        else:
+            text = full_text
         if total + len(included) > args.max_total_bytes:
             skipped.append(f"{label} (total bundle limit reached)")
             hard_failure = hard_failure or not args.allow_partial
             continue
         total += len(included)
-        text = included.decode("utf-8", errors="replace")
-        selected.append((resolved, text, original_size, len(included), sha256(raw), truncated))
+        selected.append((resolved, label, text, original_size, len(included), sha256(raw), truncated))
 
     if not selected:
         print(json.dumps({"ok": False, "error": "no_text_files_selected", "skipped": skipped}, ensure_ascii=False))
@@ -138,9 +169,8 @@ def main() -> int:
         print(json.dumps({"ok": False, "error": "incomplete_bundle", "skipped": skipped}, ensure_ascii=False))
         return 1
 
-    lines = ["# WebGPT Consult Attachment Bundle", "", "Local paths are provenance labels only. Each manifest entry records original size and SHA-256.", "", "## Manifest"]
-    for path, _text, original_size, included_size, digest, truncated in selected:
-        label = relative_label(path, roots)
+    lines = ["# WebGPT Consult Attachment Bundle", "", "Each manifest entry identifies the transmitted text by a unique relative label and records the original file size and SHA-256.", "", "## Manifest"]
+    for _path, label, _text, original_size, included_size, digest, truncated in selected:
         status = "truncated" if truncated else "complete"
         lines.append(f"- `{label}` | sha256 `{digest}` | original {original_size} bytes | included {included_size} bytes | {status}")
     if skipped:
@@ -148,8 +178,7 @@ def main() -> int:
         lines.extend(f"- {item}" for item in skipped)
     lines.extend(["", "## Files"])
 
-    for path, text, *_rest in selected:
-        label = relative_label(path, roots)
+    for path, label, text, *_rest in selected:
         fence = safe_fence(text)
         lines.extend(["", f"### `{label}`", "", f"{fence}{fence_for(path)}", text.rstrip(), fence])
 
