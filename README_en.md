@@ -68,6 +68,8 @@ Why this project exists:
 
 ### Recommended install
 
+Standard install entry point:
+
 ```bash
 npx skills add R-jed/webgpt-consult
 ```
@@ -78,13 +80,28 @@ This repository uses the standard layout:
 skills/webgpt-consult/SKILL.md
 ```
 
-`npx skills` discovers `webgpt-consult` automatically. Normal users do not need to specify global scope or the Codex agent manually.
+`npx skills` discovers `webgpt-consult` automatically. Without `-g`, the `skills` CLI uses project scope by default.
 
-For an explicit non-interactive global Codex install:
+For a global Codex installation available across projects:
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex
+```
+
+For the same global Codex installation without prompts:
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex -y
 ```
+
+Inspect or update installed Skills with:
+
+```bash
+npx skills list
+npx skills update webgpt-consult
+```
+
+Add `-g` to the update command for a global installation.
 
 After installation, invoke:
 
@@ -146,7 +163,7 @@ The Skill never guesses the "previous review" from ChatGPT history. After a Web 
 
 ```text
 Chrome tab/page handle, when available
-+ whether the tab was explicitly created by the Skill
++ whether the tab was explicitly created by the Skill in the current Codex conversation
 + exact chatgpt.com conversation URL, when available
 + previous verified Task-ID
 + previous verified sentinel
@@ -174,6 +191,8 @@ The Skill never locates a prior review using ChatGPT sidebar titles, recent-chat
 
 This binding lives only inside the current Codex conversation. It is not written to files, the repository, a database, or a long-lived cache. A new Codex conversation starts with no Web binding and therefore defaults to `independent`.
 
+Every new consultation invocation generates a fresh Task-ID and sentinel with a random nonce. `continuation` reuses the Web conversation, not the previous invocation identifiers.
+
 `branch` must start from the currently verified binding. The binding moves from the old conversation to the new branch only after the branch result passes verification.
 
 ### Web conversation continuity
@@ -196,7 +215,7 @@ If no useful branch point exists, start a fresh conversation.
 
 The Skill distinguishes `skill-owned` browser tabs from user-owned or unknown tabs.
 
-A tab may be closed automatically only when the Skill explicitly created it and still has the exact browser handle. User-opened ChatGPT tabs, ordinary Chrome tabs, and tabs with uncertain ownership are never closed automatically.
+A tab may be closed automatically only when the Skill created it during the current Codex conversation and still has the exact browser handle. That ownership remains valid when later `continuation` invocations reuse the same handle. User-opened ChatGPT tabs, ordinary Chrome tabs, and tabs with uncertain ownership are never closed automatically.
 
 When a newly verified review becomes the current binding, a superseded tab may be closed only if it is a different tab and was explicitly Skill-owned. Temporary candidate tabs from failed flows are cleaned up only after the Skill can confirm that no request is still generating there.
 
@@ -211,9 +230,10 @@ This keeps WebGPT independent, preserves deterministic short-term continuity, an
 These boundaries fail closed:
 
 - GPT-5.6 Sol model identity cannot be verified
-- neither Pro nor High is usable
+- neither Pro nor High is usable or enabled
 - executable credentials are detected in the packet or transmitted text attachments
 - required evidence was not actually uploaded
+- the packet Task-ID / sentinel do not exactly match the preflight arguments
 - the final reply cannot be bound to the exact sentinel and task ID
 
 Run preflight immediately before Send. Resolve `<SKILL_ROOT>` from the actual installed Skill location:
@@ -225,15 +245,17 @@ python3 <SKILL_ROOT>/scripts/submission_preflight.py packet.md \
   --attachment ./src/example.py
 ```
 
+Preflight also requires the supplied `Task-ID` line and supplied `Sentinel` line to occur exactly once in the packet. Mismatches or duplicates fail closed.
+
 Non-text attachments require local review before `--confirm-unscanned-binary` may be used. That confirmation never overrides a detected credential finding.
 
 Model routing is fixed:
 
 ```text
-verified GPT-5.6 Sol Pro
+verified enabled GPT-5.6 Sol Pro
       ↓ unavailable / disabled / ambiguous / not actionable
-verified GPT-5.6 Sol High
-      ↓ unavailable
+verified enabled GPT-5.6 Sol High
+      ↓ unavailable / disabled
 fail closed
 ```
 
@@ -258,7 +280,7 @@ Task-ID: <task-id>
 | [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, branching, and tab cleanup workflow |
 | [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web review context template |
 | [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High identity and routing policy |
-| [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | pre-send safety and attachment checks |
+| [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | pre-send safety, attachment, and invocation-ID checks |
 | [skills/webgpt-consult/scripts/result_verifier.py](skills/webgpt-consult/scripts/result_verifier.py) | exact external-result binding |
 
 ### Repository layout
