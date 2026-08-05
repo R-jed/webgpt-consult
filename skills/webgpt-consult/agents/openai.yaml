@@ -1,8 +1,8 @@
 interface:
   display_name: "webgpt-consult"
   short_description: "ChatGPT Web consultation bridge for GPT-5.6 Sol Pro/High"
-  icon_small: "./assets/webgpt-consult.svg"
-  icon_large: "./assets/webgpt-consult.svg"
+  icon_small: "./assets/mobius.svg"
+  icon_large: "./assets/mobius.svg"
   brand_color: "#67E8F9"
 
 policy:
