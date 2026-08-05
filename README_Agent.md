@@ -98,17 +98,9 @@ Report the first verified blocker. Do not fabricate successful installation or r
 
 `webgpt-consult` is a Codex-specific Skill for obtaining a verified independent second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web.
 
-Local Codex remains authoritative. It owns:
+Local Codex remains authoritative. It owns task understanding, initial judgment, evidence selection, preflight, model verification, result verification, and the final adoption decision.
 
-- task understanding;
-- initial judgment;
-- evidence selection;
-- credential and attachment preflight;
-- model verification;
-- result verification;
-- adoption, rejection, or modification of the external advice.
-
-WebGPT is an external reviewer. It does not maintain durable project memory and is not a second project manager.
+WebGPT is an external reviewer. It does not maintain a long-lived model of the user's project and is not a second project manager.
 
 The intended chain is:
 
@@ -124,7 +116,7 @@ user task
   -> local adoption decision
 ```
 
-This project is useful for difficult architecture, debugging, product, business, risk, and file-grounded review work where a strong independent second opinion can improve the decision.
+Use this project for difficult architecture, debugging, product, business, risk, and file-grounded review work where a strong independent second opinion can improve the decision.
 
 ---
 
@@ -245,15 +237,7 @@ The Skill uses one mode field with three possible values.
 
 ### `independent`
 
-Start a fresh ChatGPT Web conversation for:
-
-- deep review;
-- milestone review;
-- adversarial review;
-- architecture reset;
-- a different project;
-- a materially different question;
-- any request that benefits from an unanchored second opinion.
+Start a fresh ChatGPT Web conversation for deep reviews, milestone reviews, adversarial reviews, architecture resets, different projects, materially different questions, or any request that benefits from an unanchored second opinion.
 
 Local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
@@ -263,11 +247,7 @@ Share the local proposal only when the user explicitly wants Sol to attack, comp
 
 Continue the current Web conversation only when the new request clearly continues the same review and the conversation is still active, identifiable, useful, and not context-limited.
 
-Useful signals include:
-
-- the user explicitly asks to continue the current review;
-- new evidence directly follows the immediately preceding review;
-- the same artifact or decision is being examined one step further.
+Useful signals include an explicit request to continue, new evidence directly following the immediately preceding review, or the same artifact or decision being examined one step further.
 
 If the relationship is ambiguous, browser state is lost, the project changed, or the question changed materially, use `independent`.
 
@@ -292,13 +272,13 @@ If no useful branch point exists or the branch is unreliable, use `independent`.
 
 ## 6. No local reviewer memory
 
-Do not create or maintain local review-history files, conversation registries, project summaries, reviewer snapshots, accepted-decision caches, stored ChatGPT conversation URLs, or review IDs for future restoration.
+Do not create or maintain local review-history files, conversation registries, project summaries, accepted-decision caches, stored ChatGPT conversation URLs, or review IDs for future reuse.
 
 The Web model should receive what is needed for the current review. Historical conclusions should be reintroduced only when they remain factual inputs required by the current question.
 
 This keeps WebGPT closer to an independent second opinion and reduces long-term anchoring or understanding drift.
 
-An open Web tab may provide temporary continuity. It is not durable project state.
+An open Web tab may provide temporary continuity. It is not project memory.
 
 ---
 
@@ -323,7 +303,7 @@ A branch inherits all history before the selected message. Prefer an earlier use
 
 If no suitable branch point exists, start fresh with `independent`.
 
-Do not create a local summary database to compensate for a lost Web conversation. Rebuild the current review from the current task and evidence.
+Do not build a local summary system to compensate for a lost Web conversation. Rebuild the current review from the current task and evidence.
 
 ---
 
@@ -442,7 +422,7 @@ webgpt-consult/
 | "Does it run automatically?" | No. Implicit invocation is disabled. |
 | "Does Sol replace Codex?" | No. Sol is an external reviewer; local Codex makes the adoption decision. |
 | "What if the Web chat is full?" | Use `branch` from an earlier useful point and resend the current minimum evidence. If no useful branch point exists, use `independent`. |
-| "Does it store reviewer memory locally?" | No. The design deliberately avoids durable local reviewer memory. |
+| "Does it store reviewer memory locally?" | No. The design deliberately avoids local reviewer memory. |
 | "Can it use another browser or OpenCLI?" | The supported browser transport is the Codex Chrome plugin; there is no OpenCLI fallback. |
 | "Is git clone enough?" | No. Cloning downloads source but does not register the Skill. |
 
