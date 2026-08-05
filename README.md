@@ -86,16 +86,16 @@ $skill-installer install https://github.com/R-jed/webgpt-consult
 
 ### 第一次使用
 
-本项目关闭隐式调用。安装后请显式使用 `$webgpt-consult`：
+本项目关闭隐式调用。安装后请显式使用 `/webgpt-consult`：
 
 ```text
-$webgpt-consult 对这个项目做一次独立的 GPT-5.6 Sol 架构审查。
+/webgpt-consult 对这个项目做一次独立的 GPT-5.6 Sol 架构审查。
 ```
 
 也可以把具体目标直接接在 Skill 名后面：
 
 ```text
-$webgpt-consult 检查这个修复方案有没有遗漏的架构风险，并给出第二意见。
+/webgpt-consult 检查这个修复方案有没有遗漏的架构风险，并给出第二意见。
 ```
 
 本 Skill 没有 OpenCLI fallback。Chrome plugin 不可用时会停止执行。
