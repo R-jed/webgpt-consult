@@ -55,7 +55,7 @@ For example:
 /webgpt-consult Ask GPT-5.6 Sol to investigate this login bug and inspect the relevant source and logs if needed.
 ```
 
-Simple questions can be sent directly. For architecture work, code review, difficult debugging, or anything with a lot of background, Codex can use the built-in context-packet guide to organize the important background, constraints, evidence, prior attempts, and current question before sending it to the Web model.
+Simple questions can be sent directly. For architecture work, code review, difficult debugging, or anything with substantial context, Codex uses the built-in standard `CONTEXT_PACKET_V1` to organize the task, background, user intent, local judgment, evidence, prior attempts, options, risks, and the exact ask before sending it to the Web model.
 
 ## Example
 
@@ -65,7 +65,7 @@ Suppose you have been stuck on a login bug:
 /webgpt-consult I have been chasing this login issue for a while. Ask GPT-5.6 Sol to help find the root cause.
 ```
 
-Codex first looks at the current project and picks the material that matters, such as `auth.py`, `session.py`, and the error log. If the problem needs more structure, it builds a concise context packet. It checks outgoing text locally for obvious secrets, then opens ChatGPT Web through Chrome and uses GPT-5.6 Sol Pro when available, with High as the fallback.
+Codex first looks at the current project and picks the material that matters, such as `auth.py`, `session.py`, and the error log. If the problem needs more structure, it uses the standard context packet. It checks outgoing text locally for obvious secrets, then opens ChatGPT Web through Chrome and uses GPT-5.6 Sol Pro when available, with High as the fallback.
 
 After GPT-5.6 Sol reviews the material, Codex verifies that the reply belongs to this consultation and brings the answer back into the task. If you keep discussing the same issue, the Skill reuses the verified Web conversation and its already-confirmed model instead of reopening the model picker on every turn. It checks the picker again only for a new conversation, a branch, a conversation-identity change, or clear evidence that the Web model state changed.
 
