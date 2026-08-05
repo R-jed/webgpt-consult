@@ -64,8 +64,7 @@ Long-lived state belongs to local Codex, not to the Web ChatGPT conversation.
 Use:
 
 ```bash
-SKILL_DIR="<path-to-installed-webgpt-consult>"
-python3 "$SKILL_DIR/scripts/consult_state.py" --project-root "<project-root>" list
+python3 "<path-to-installed-webgpt-consult>/scripts/consult_state.py" --project-root "<project-root>" list
 ```
 
 State is stored under:
@@ -100,7 +99,7 @@ The snapshot is not a transcript and must not be a copy of Sol's answer. Update 
 Save it with:
 
 ```bash
-python3 "$SKILL_DIR/scripts/consult_state.py" --project-root "<project-root>" save /tmp/consult-state.json
+python3 "<path-to-installed-webgpt-consult>/scripts/consult_state.py" --project-root "<project-root>" save /tmp/consult-state.json
 ```
 
 If a specific state file is corrupt, treat it as unavailable and continue fresh. Do not make consultation correctness depend on state recovery.
@@ -148,7 +147,7 @@ For many text files, use `scripts/build_attachment_bundle.py`. Missing inputs, s
 Immediately before Send, run one preflight over the exact packet and exact attachment set:
 
 ```bash
-python3 "$SKILL_DIR/scripts/submission_preflight.py" packet.md \
+python3 "<path-to-installed-webgpt-consult>/scripts/submission_preflight.py" packet.md \
   --task-id "<task-id>" \
   --sentinel "<sentinel>" \
   --attachment /path/to/file1
