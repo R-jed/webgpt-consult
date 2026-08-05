@@ -5,29 +5,23 @@
 <h1 align="center">webgpt-consult</h1>
 <p align="center">Codex → Chrome → ChatGPT Web</p>
 
-`webgpt-consult` is a lightweight Codex Skill that lets Codex consult GPT-5.6 Sol Pro or High through ChatGPT Web in Chrome.
+`webgpt-consult` lets Codex use GPT-5.6 Sol Pro or High through ChatGPT Web in Chrome.
 
-The Skill handles browser transport, model boundaries, conversation continuity, verified conversation binding, browser-resource lifecycle, and a small local safety guard. The current Codex model decides what to ask, how to phrase the prompt, and which source files or other evidence are useful for the user's request.
+You tell Codex what you want a second pair of eyes on. Codex works out what context is useful, attaches relevant source files, logs, or documents when needed, and brings the Web answer back into the current task. The Skill keeps the browser flow reliable, preserves useful conversation continuity, verifies the Web model, and performs a basic local safety check before sending text.
 
 > **AI agents should read [README_Agent.md](README_Agent.md) first. Runtime behavior is defined by [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md).**
 
 ## Install
 
-Requirements:
+You need Codex, the Codex Chrome plugin connected, ChatGPT Web signed in, and GPT-5.6 Sol Pro or High available on the Web side.
 
-- Codex
-- Codex Chrome plugin connected
-- ChatGPT Web signed in through Chrome
-- GPT-5.6 Sol Pro or High available in ChatGPT Web
-- Python 3.10+ for the local safety guard only
-
-Project-scoped install:
+Install for the current project:
 
 ```bash
 npx skills add R-jed/webgpt-consult
 ```
 
-Global Codex install:
+Install globally for Codex:
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex
@@ -39,97 +33,53 @@ Update:
 npx skills update webgpt-consult
 ```
 
-Add `-g` when updating a global installation.
+Add `-g` when updating a global install.
 
 ## Use
-
-Invoke explicitly:
 
 ```text
 /webgpt-consult <your consultation request>
 ```
 
-Examples:
+For example:
 
 ```text
-/webgpt-consult Review this architecture for obvious risks.
+/webgpt-consult Ask GPT-5.6 Sol to investigate this login bug and inspect the relevant source and logs if needed.
 ```
+
+There is no fixed consultation template. For code work, Codex can upload the relevant files or send only the important excerpts. It decides how much context the current question actually needs.
+
+## Example
+
+Suppose you have been stuck on a login bug:
 
 ```text
-/webgpt-consult Ask GPT-5.6 Sol to inspect the relevant source files and diagnose this bug.
+/webgpt-consult I have been chasing this login issue for a while. Ask GPT-5.6 Sol to help find the root cause.
 ```
 
-```text
-/webgpt-consult Continue the previous Web consultation and focus on the implementation results I just added.
-```
+Codex first looks at the current project and picks the material that matters, such as `auth.py`, `session.py`, and the error log. It checks outgoing text locally for obvious secrets, then opens ChatGPT Web through Chrome and uses GPT-5.6 Sol Pro when available, with High as the fallback.
 
-There is no fixed consultation template. Codex may compose the prompt directly and may upload relevant source code, logs, documents, screenshots, or other files when useful.
-
-For code work, prefer the smallest source set that is sufficient for the question. Relevant excerpts or selected files are usually better than uploading an entire repository for convenience.
-
-## How it works
-
-```text
-user request
-  → Codex prepares the consultation
-  → basic local sensitive-data guard
-  → Chrome
-  → GPT-5.6 Sol Pro
-     or High when Pro is unavailable
-  → verify the current response
-  → return to the Codex task
-```
-
-When the user clearly continues the same consultation, the Skill can reuse the verified Web conversation bound to the current Codex conversation. If that binding cannot be verified, it starts a fresh ChatGPT conversation.
-
-If the active Web conversation becomes too context-heavy, Codex may use `Branch in new chat` or start fresh.
-
-Conversation binding exists only inside the current Codex conversation. It is not written to project files, a database, or long-lived reviewer memory.
-
-## Browser resources
-
-The Skill may automatically close only old tabs that it explicitly created during the current Codex conversation and can still identify by an exact browser handle.
-
-User-opened Chrome or ChatGPT tabs, ownership-unknown tabs, and tabs with active generation are left alone.
-
-The project does not use `pkill`, `killall`, Chrome process scanning, a background cleanup daemon, or a persistent tab registry.
+After GPT-5.6 Sol reviews the material, Codex verifies that the reply belongs to this consultation and brings the answer back into the task. If you keep discussing the same issue, the Skill will reuse the current Web conversation when it can verify it safely. Otherwise it starts a fresh one.
 
 ## Privacy and safety
 
-A small local guard blocks high-confidence:
+Before text is sent to the Web, the Skill locally blocks common API keys, passwords, access tokens, cookies or session data, private keys, one-time codes, and payment-card details. If something sensitive is found, sending stops until that value is removed or redacted.
 
-- API keys and common provider tokens
-- passwords and authentication secrets
-- cookies, session tokens, and Authorization headers
-- private keys
-- OTPs and recovery codes
-- payment-card numbers, CVV/CVC, and payment PINs
+Names, email addresses, physical addresses, and other private details that are unrelated to the question should also be left out. The safety check is deliberately small and practical rather than a full privacy-auditing system.
 
-The guard intentionally does not attempt to become a general PII or DLP platform.
+## Model
 
-Codex should still minimize disclosure before sending and remove unrelated names, email addresses, physical addresses, internal information, or other private context that the Web consultation does not need.
-
-All outgoing UTF-8 prompt text and UTF-8 text attachments should pass the local guard before Send:
-
-```bash
-python3 <SKILL_ROOT>/scripts/safety_guard.py prompt.txt src/example.py
-```
-
-If it blocks, remove or redact the sensitive value locally and scan again. Do not bypass the guard.
-
-## Model boundary
-
-The Web model policy is fixed:
+The Web side uses only:
 
 ```text
 GPT-5.6 Sol Pro
-  → unavailable
+  ↓ unavailable
 GPT-5.6 Sol High
-  → unavailable
+  ↓ unavailable
 stop
 ```
 
-Codex's own model or reasoning-level labels are unrelated to Web model verification.
+The model or reasoning level currently selected in Codex does not affect Web model selection.
 
 ## Package layout
 
@@ -147,7 +97,7 @@ skills/webgpt-consult/
     └── safety_guard.py
 ```
 
-See [SKILL.md](skills/webgpt-consult/SKILL.md) for the runtime contract.
+See [SKILL.md](skills/webgpt-consult/SKILL.md) for the detailed runtime rules.
 
 中文: [README.md](README.md)
 
