@@ -37,8 +37,16 @@ def inspect_file(path: Path, *, allow_unscanned_binary: bool = False) -> dict:
         "sha256": sha256_bytes(raw),
         "mime": mimetypes.guess_type(path.name)[0],
     }
-    if path.suffix.lower() in TEXT_EXTENSIONS and b"\x00" not in raw[:4096]:
-        text = raw.decode("utf-8", errors="replace")
+
+    text_candidate = path.suffix.lower() in TEXT_EXTENSIONS and b"\x00" not in raw[:4096]
+    if text_candidate:
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            item["scan_status"] = "unscanned_binary_confirmed" if allow_unscanned_binary else "manual_review_required"
+            item["manual_review_reason"] = "non_utf8_text"
+            return item
+
         result = scan(text)
         item["scan_status"] = "passed" if result["ok"] else "blocked"
         item["high_count"] = result["high_count"]
@@ -47,6 +55,7 @@ def inspect_file(path: Path, *, allow_unscanned_binary: bool = False) -> dict:
             item["findings"] = result["findings"]
     else:
         item["scan_status"] = "unscanned_binary_confirmed" if allow_unscanned_binary else "manual_review_required"
+        item["manual_review_reason"] = "non_text_or_binary"
     return item
 
 
@@ -127,7 +136,7 @@ def main() -> int:
     parser.add_argument(
         "--confirm-unscanned-binary",
         action="store_true",
-        help="Allow intended non-text attachments after local manual review. Never overrides detected credentials.",
+        help="Allow non-scannable attachments after local manual review. Never overrides detected credentials.",
     )
     args = parser.parse_args()
     try:
