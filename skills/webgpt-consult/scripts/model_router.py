@@ -9,10 +9,15 @@ from dataclasses import dataclass
 TIER_PRO = "Pro"
 TIER_HIGH = "High"
 SUPPORTED_TIERS = (TIER_PRO, TIER_HIGH)
-ALLOWED_TIER_LABELS = frozenset(SUPPORTED_TIERS)
+TIER_LABEL_ALIASES = {
+    "Pro": TIER_PRO,
+    "High": TIER_HIGH,
+    "高": TIER_HIGH,
+    "高い": TIER_HIGH,
+}
 GPT56_PRO_TESTIDS = ("data-testid=model-switcher-gpt-5-6-pro",)
 LEGACY_PRO_HINTS = ("gpt-5-5-pro", "GPT 5.5 Pro", "GPT-5.5 Pro", "Pro Extended", "进阶专业")
-GPT56_FAMILY_HINTS = ("GPT-5.6 Sol", "GPT 5.6 Sol")
+GPT56_FAMILY_HINTS = ("GPT-5.6 Sol", "GPT 5.6 Sol", "5.6 Sol")
 
 
 @dataclass(frozen=True)
@@ -75,9 +80,10 @@ def _find_section_family(lines: list[str], candidate_index: int) -> str | None:
     return None
 
 
-def _extract_tier_label(line: str) -> str | None:
+def _extract_tier_label(line: str) -> tuple[str, str] | None:
     label = line.rsplit(">", 1)[-1].strip() if ">" in line else line.strip()
-    return label if label in ALLOWED_TIER_LABELS else None
+    canonical = TIER_LABEL_ALIASES.get(label)
+    return (canonical, label) if canonical else None
 
 
 def _is_enabled(line: str) -> bool:
@@ -103,9 +109,10 @@ def _parse_candidate(line: str, lines: list[str], index: int) -> ModelCandidate 
     if _block_has_testid(line):
         return ModelCandidate(TIER_PRO, TIER_PRO, ref, checked, "GPT-5.6 Sol", f"gpt56_testid:{line.strip()}", enabled)
 
-    tier = _extract_tier_label(line)
-    if tier in ALLOWED_TIER_LABELS and family:
-        return ModelCandidate(tier, tier, ref, checked, family, f"menuitemradio:{tier}+family", enabled)
+    tier_info = _extract_tier_label(line)
+    if tier_info and family:
+        tier, display_name = tier_info
+        return ModelCandidate(tier, display_name, ref, checked, family, f"menuitemradio:{display_name}->{tier}+family", enabled)
     return None
 
 
