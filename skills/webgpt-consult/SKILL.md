@@ -52,7 +52,7 @@ For each consultation:
 3. Generate a fresh random request ID such as `wgpt-<random>`.
 4. Build the consultation prompt freely from the user's request. There is no required packet template or review format.
 5. Include only the context and evidence Codex judges useful. For code tasks, selected source files or relevant excerpts may be uploaded directly when helpful. Do not upload a broad repository merely for convenience.
-6. Before sending text that may contain secrets, run `scripts/safety_guard.py` on the exact text files or prompt material. If it blocks, remove or redact the sensitive value locally and scan again. Do not weaken or bypass the guard.
+6. Run `scripts/safety_guard.py` on the exact outgoing prompt text and every UTF-8 text attachment. If it blocks, remove or redact the sensitive value locally and scan again. Do not weaken or bypass the guard.
 7. For binary or non-text attachments, inspect them locally before upload and avoid sending material that may expose secrets or unrelated private data.
 8. Through Chrome, select and re-verify GPT-5.6 Sol `Pro`; fall back only to GPT-5.6 Sol `High`.
 9. Put `Request-ID: <request-id>` in the prompt and instruct ChatGPT Web to begin its response with the same line.
