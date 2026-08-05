@@ -51,6 +51,7 @@
 - WebGPT 保持第二意见角色，不承担项目长期记忆
 - 每次审查只发送当前问题需要的信息，降低历史结论累积造成的锚定和理解漂移
 - 模型身份、凭证安全、附件完整性和结果绑定都有明确验证
+- 浏览器资源有明确 ownership 和 cleanup 边界，避免长期积累无用的 Skill-created review tabs
 
 <a id="快速开始"></a>
 
@@ -67,10 +68,8 @@
 
 ### 推荐安装
 
-使用开放 Agent Skills 生态的 `skills` CLI，全局安装到 Codex：
-
 ```bash
-npx skills add R-jed/webgpt-consult -g -a codex
+npx skills add R-jed/webgpt-consult
 ```
 
 仓库采用标准布局：
@@ -79,27 +78,21 @@ npx skills add R-jed/webgpt-consult -g -a codex
 skills/webgpt-consult/SKILL.md
 ```
 
-`npx skills` 会自动发现这个 Skill，并为 Codex 配置安装。项目本身无需额外 `setup.sh`、软链接脚本或自定义安装器。
+`npx skills` 会自动发现 `webgpt-consult`。普通用户不需要手动指定 global scope 或 Codex agent。
 
-如果希望跳过确认提示：
+如果你明确希望无交互地全局安装到 Codex，可以使用：
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex -y
 ```
 
-安装后可以检查：
+安装成功后调用：
 
-```bash
-npx skills list -g -a codex
+```text
+/webgpt-consult <review request>
 ```
 
-更新已安装 Skill：
-
-```bash
-npx skills update webgpt-consult -g
-```
-
-安装成功后先在下一轮直接调用 `/webgpt-consult`。如果当前 Codex 会话还没有刷新 Skill 列表，再新建 Codex 会话或重启客户端。
+如果当前 Codex 会话没有刷新 Skill 列表，再新建 Codex 会话或重启客户端。
 
 ### Codex-native 备选安装
 
@@ -109,7 +102,7 @@ npx skills update webgpt-consult -g
 /skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-这条路径明确指向 canonical Skill package。它适合 Codex 内部安装，但 README 的主推荐方式是 `npx skills`，因为后者同时覆盖发现、安装、检查和更新生命周期。
+README 的主推荐方式仍是 `npx skills`。
 
 > `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
@@ -153,12 +146,13 @@ Skill 不通过 ChatGPT 历史列表去猜“上一次咨询窗口”。第一�
 
 ```text
 Chrome tab/page handle（如果可用）
++ tab 是否由 Skill 明确创建
 + 精确 chatgpt.com conversation URL（如果可用）
 + 上一条已验证 Task-ID
 + 上一条已验证 sentinel
 ```
 
-其中 tab handle 和 conversation URL 只是定位器，上一条 `Task-ID + sentinel` 才是会话身份校验。
+其中 tab handle 和 conversation URL 只是定位器，上一条 `Task-ID + sentinel` 才是会话身份校验。ownership 只用于决定这个 tab 将来是否允许自动关闭。
 
 再次使用 `continuation` 时固定按下面的顺序执行：
 
@@ -198,7 +192,17 @@ Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏�
 
 如果没有合适的分支点，直接新建 conversation。
 
-这个设计让 WebGPT 始终保持独立 reviewer，同时只在当前 Codex 会话内部维持稳定的短期 Web continuity。
+### 浏览器资源生命周期
+
+Skill 会区分 `skill-owned` 和 `user-owned / unknown` browser tabs。
+
+只有由 Skill 明确创建、并且仍能通过精确 handle 确认的 tab 才允许自动关闭。用户原本打开的 ChatGPT tab、普通 Chrome tab、ownership 不明确的 tab 永远不会被自动关闭。
+
+当新的 review 已经验证成功并成为当前 binding 后，如果旧 binding 位于另一个明确由 Skill 创建的 tab，旧 tab 才会被关闭。失败流程产生的临时 tab 也只有在确认没有请求仍在生成时才会清理。
+
+Skill 不使用 `pkill`、`killall`、浏览器进程扫描或后台 cleanup daemon。无法安全判断时直接保留 tab。
+
+这个设计让 WebGPT 始终保持独立 reviewer，同时只在当前 Codex 会话内部维持稳定的短期 Web continuity，并避免 Skill-created review tabs 无限制积累。
 
 <a id="安全与验证"></a>
 
@@ -251,7 +255,7 @@ Task-ID: <task-id>
 | [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) | Skill 的唯一执行规范 |
 | [README_Agent.md](README_Agent.md) | AI Agent 发现、安装和支持入口 |
 | [skills/webgpt-consult/agents/openai.yaml](skills/webgpt-consult/agents/openai.yaml) | Skill 展示信息与 invocation policy |
-| [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定与分支流程 |
+| [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定、分支与 tab cleanup 流程 |
 | [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web 审查上下文模板 |
 | [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High 模型身份与路由策略 |
 | [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | 发送前安全和附件检查 |
