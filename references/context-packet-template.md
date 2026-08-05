@@ -3,12 +3,11 @@
 Use this as a compact starting point. Keep only sections that materially improve the current review.
 
 ```markdown
-CONTEXT_PACKET_V5
+CONTEXT_PACKET_V6
 
 Task-ID: webgpt-consult-YYYYMMDD-HHMMSS
 Sentinel: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
-Review-Intent: independent | follow_up
-Conversation: fresh | reuse | branch
+Review-Mode: independent | continuation | branch
 
 ## TASK
 <exact decision, review, or problem>
@@ -20,7 +19,7 @@ Conversation: fresh | reuse | branch
 <only the goals and constraints that matter to this review>
 
 ## CURRENT_DELTA
-<for a direct follow-up only: what changed since the immediately relevant prior review; omit otherwise>
+<for continuation or branch when useful: what changed since the immediately relevant prior review; omit otherwise>
 
 ## EVIDENCE
 <facts, artifacts, errors, measurements, attempts, and unknowns required for this review>
@@ -42,9 +41,9 @@ After those lines, answer in the structure best suited to the user's task. Prefe
 
 Guidance:
 
-- `independent + fresh`: send the current facts and evidence required for an unanchored review. Normally omit `LOCAL_PROPOSAL`.
-- `follow_up + reuse`: send a compact `CURRENT_DELTA` plus new evidence because the current Web conversation already contains the immediately relevant discussion.
-- `follow_up + branch`: branch from an earlier useful Web message, then send the current task plus the minimum evidence needed now. Do not rely on the inherited branch history alone.
-- A different project or materially different question should normally use `independent + fresh`.
-- Do not include durable local consultation summaries or reviewer-memory snapshots. This Skill does not persist them.
+- `independent`: use a fresh Web conversation and send the current facts and evidence required for an unanchored review. Normally omit `LOCAL_PROPOSAL`.
+- `continuation`: stay in the current useful Web conversation and send a compact `CURRENT_DELTA` plus new evidence.
+- `branch`: use `Branch in new chat` from an earlier useful message, then send the current task plus the minimum evidence needed now. Do not rely on inherited branch history alone.
+- A different project or materially different question should normally use `independent`.
+- Do not include durable local review summaries, reviewer-memory snapshots, stored conversation URLs, or review identifiers for restoration. This Skill does not persist them.
 - Keep the packet as small as possible without removing causal facts.
