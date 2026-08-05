@@ -86,16 +86,16 @@ If `$skill-installer` is missing, update Codex first. `webgpt-consult` depends o
 
 ### First use
 
-Implicit invocation is disabled. Invoke the Skill explicitly with `$webgpt-consult`:
+Implicit invocation is disabled. Invoke the Skill explicitly with `/webgpt-consult`:
 
 ```text
-$webgpt-consult Perform an independent GPT-5.6 Sol architecture review of this project.
+/webgpt-consult Perform an independent GPT-5.6 Sol architecture review of this project.
 ```
 
 You can put the exact review goal directly after the Skill name:
 
 ```text
-$webgpt-consult Check this fix for overlooked architectural risks and return a second opinion.
+/webgpt-consult Check this fix for overlooked architectural risks and return a second opinion.
 ```
 
 There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavailable.
