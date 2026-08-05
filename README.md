@@ -62,17 +62,17 @@
 - Codex
 - Codex Chrome plugin 已安装并连接
 - Chrome 中已经登录 ChatGPT Web
-- 当前账号实际提供 GPT-5.6 Sol Pro 或 High
+- 拥有ChatGPT Pro 或 High 订阅。
 
 ### 推荐安装
 
-标准安装入口：
+安装入口：
 
 ```bash
 npx skills add R-jed/webgpt-consult
 ```
 
-仓库采用标准布局：
+仓库布局：
 
 ```text
 skills/webgpt-consult/SKILL.md
@@ -108,8 +108,6 @@ npx skills update webgpt-consult
 ```
 
 如果当前 Codex 会话没有刷新 Skill 列表，再新建 Codex 会话或重启客户端。
-
-> `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
 ### 第一次使用
 
