@@ -66,10 +66,10 @@ Why this project exists:
 
 ### Recommended install
 
-Current Codex versions include the built-in `$skill-installer`. Run this inside Codex:
+Current Codex versions include the built-in `/skill-installer`. Run this inside Codex:
 
 ```text
-$skill-installer install https://github.com/R-jed/webgpt-consult
+/skill-installer install https://github.com/R-jed/webgpt-consult
 ```
 
 The installer places the complete Skill in the Codex skills directory. With the default `CODEX_HOME`, this is typically:
@@ -80,7 +80,7 @@ The installer places the complete Skill in the Codex skills directory. With the 
 
 After installation, restart Codex and open a new task so the Skill is reloaded.
 
-If `$skill-installer` is missing, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin, so this project does not maintain a separate installer for older Codex versions.
+If `/skill-installer` is missing, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin, so this project does not maintain a separate installer for older Codex versions.
 
 > `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
 
