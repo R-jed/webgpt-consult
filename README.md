@@ -241,6 +241,7 @@ webgpt-consult/
 └── skills/
     └── webgpt-consult/
         ├── SKILL.md
+        ├── LICENSE
         ├── agents/
         │   └── openai.yaml
         ├── references/
