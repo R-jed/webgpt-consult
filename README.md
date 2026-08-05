@@ -21,7 +21,7 @@
 
 ## 安装
 
-需要 Codex、已连接的 Codex Chrome plugin、已登录 ChatGPT Web，以及 Web 端可用的 GPT-5.6 Sol Pro 或 High。
+需要安装Codex、ChatGPT Chrome拓展插件和登录web端的ChatGPT的Pro 或 Plus订阅账号。
 
 项目内安装：
 
