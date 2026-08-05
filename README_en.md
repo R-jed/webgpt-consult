@@ -49,7 +49,7 @@ Why this project exists:
 
 - difficult architecture, debugging, product, and risk decisions often benefit from an independent strong-model review
 - WebGPT stays a second-opinion reviewer instead of becoming long-lived project memory
-- each review sends only what the current question requires, reducing anchoring and understanding drift from accumulated historical summaries
+- each review sends only what the current question requires, reducing anchoring and understanding drift from accumulated historical conclusions
 - model identity, credential hygiene, attachment integrity, and result binding are explicitly verified
 
 <a id="quick-start"></a>
@@ -58,29 +58,58 @@ Why this project exists:
 
 ### Requirements
 
+- Node.js / `npx` for Skill installation and lifecycle management
 - Python 3.10+
 - a current Codex version
 - Codex Chrome plugin installed and connected
 - ChatGPT Web signed in in Chrome
 - an account that actually exposes GPT-5.6 Sol Pro or High
 
-### One-line install
+### Recommended install
 
-Run this inside Codex:
+Use the open Agent Skills ecosystem CLI and install globally for Codex:
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex
+```
+
+This repository uses the standard layout:
+
+```text
+skills/webgpt-consult/SKILL.md
+```
+
+`npx skills` discovers the Skill automatically and configures it for Codex. The project does not require a custom `setup.sh`, repository symlink installer, or separate package manager.
+
+To skip confirmation prompts:
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex -y
+```
+
+Check the global Codex installation:
+
+```bash
+npx skills list -g -a codex
+```
+
+Update the installed Skill:
+
+```bash
+npx skills update webgpt-consult -g
+```
+
+After installation, try `/webgpt-consult` on the next turn. If the current Codex session has not refreshed its Skill list, start a new Codex session or restart the client.
+
+### Codex-native alternative
+
+You can also install from inside Codex with its built-in `/skill-installer`:
 
 ```text
 /skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-The canonical installable Skill lives at `skills/webgpt-consult/`. Using an explicit GitHub skill path lets the Codex installer identify the Skill directory directly and install it as:
-
-```text
-~/.codex/skills/webgpt-consult/
-```
-
-After installation, try `/webgpt-consult` on the next turn. If the current Codex client has not refreshed its Skill list, restart Codex or open a new task.
-
-If `/skill-installer` is unavailable, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin and does not maintain a separate legacy installer.
+That URL points directly to the canonical Skill package. It remains a valid Codex-native path, while `npx skills` is the recommended public installation method because it also covers discovery, inspection, updates, and broader Agent Skills tooling.
 
 > `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
 
@@ -183,10 +212,10 @@ These boundaries fail closed:
 - required evidence was not actually uploaded
 - the final reply cannot be bound to the exact sentinel and task ID
 
-Run preflight immediately before Send:
+Run preflight immediately before Send. Resolve `<SKILL_ROOT>` from the actual installed Skill location:
 
 ```bash
-python3 ~/.codex/skills/webgpt-consult/scripts/submission_preflight.py packet.md \
+python3 <SKILL_ROOT>/scripts/submission_preflight.py packet.md \
   --task-id webgpt-consult-... \
   --sentinel WEBGPT_CONSULT_RESULT_... \
   --attachment ./src/example.py
