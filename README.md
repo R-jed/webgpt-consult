@@ -109,7 +109,7 @@ Skill 内保留一个小型本地安全门，用于阻断高置信度的：
 
 Codex 仍应在发送前做 data minimization，删除与当前咨询无关的姓名、邮箱、地址、内部信息或其他私人上下文。
 
-安全检查脚本：
+所有即将发送的 UTF-8 prompt 文本和 UTF-8 文本附件都应先通过安全检查：
 
 ```bash
 python3 <SKILL_ROOT>/scripts/safety_guard.py prompt.txt src/example.py
