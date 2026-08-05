@@ -49,8 +49,8 @@
 
 - 复杂架构、调试、产品和风险决策通常值得一次独立强模型复核
 - WebGPT 保持第二意见角色，不承担项目长期记忆
-- 每次审查只发送当前问题需要的信息，降低历史结论持续累积造成的锚定和理解漂移
-- 模型身份、凭证安全、附件完整性和结果绑定都经过明确验证
+- 每次审查只发送当前问题需要的信息，降低历史结论累积造成的锚定和理解漂移
+- 模型身份、凭证安全、附件完整性和结果绑定都有明确验证
 
 <a id="快速开始"></a>
 
@@ -58,29 +58,58 @@
 
 ### 前置条件
 
+- Node.js / `npx`，用于安装和管理 Skill
 - Python 3.10+
 - 当前版本 Codex
 - Codex Chrome plugin 已安装并连接
 - Chrome 中已经登录 ChatGPT Web
 - 当前账号实际提供 GPT-5.6 Sol Pro 或 High
 
-### 一行安装
+### 推荐安装
 
-直接在 Codex 中运行：
+使用开放 Agent Skills 生态的 `skills` CLI，全局安装到 Codex：
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex
+```
+
+仓库采用标准布局：
+
+```text
+skills/webgpt-consult/SKILL.md
+```
+
+`npx skills` 会自动发现这个 Skill，并为 Codex 配置安装。项目本身无需额外 `setup.sh`、软链接脚本或自定义安装器。
+
+如果希望跳过确认提示：
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex -y
+```
+
+安装后可以检查：
+
+```bash
+npx skills list -g -a codex
+```
+
+更新已安装 Skill：
+
+```bash
+npx skills update webgpt-consult -g
+```
+
+安装成功后先在下一轮直接调用 `/webgpt-consult`。如果当前 Codex 会话还没有刷新 Skill 列表，再新建 Codex 会话或重启客户端。
+
+### Codex-native 备选安装
+
+如果你希望直接从 Codex 内部安装，也可以使用内置 `/skill-installer`：
 
 ```text
 /skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-仓库中的 canonical Skill package 位于 `skills/webgpt-consult/`。使用明确的 GitHub skill path 可以让 Codex installer 直接识别 Skill 目录，并安装为：
-
-```text
-~/.codex/skills/webgpt-consult/
-```
-
-安装成功后，先在下一轮直接调用 `/webgpt-consult`。如果当前 Codex 客户端仍未刷新 Skill 列表，再重启 Codex 或新建任务。
-
-如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 依赖 Codex Chrome plugin，因此不维护另一套 legacy installer。
+这条路径明确指向 canonical Skill package。它适合 Codex 内部安装，但 README 的主推荐方式是 `npx skills`，因为后者同时覆盖发现、安装、检查和更新生命周期。
 
 > `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
@@ -183,10 +212,10 @@ Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏�
 - 必需证据没有真实上传
 - 最终回复无法通过 sentinel 和 task ID 精确绑定
 
-发送前运行统一 preflight：
+发送前运行统一 preflight。运行时以实际安装后的 `<SKILL_ROOT>` 为准：
 
 ```bash
-python3 ~/.codex/skills/webgpt-consult/scripts/submission_preflight.py packet.md \
+python3 <SKILL_ROOT>/scripts/submission_preflight.py packet.md \
   --task-id webgpt-consult-... \
   --sentinel WEBGPT_CONSULT_RESULT_... \
   --attachment ./src/example.py
