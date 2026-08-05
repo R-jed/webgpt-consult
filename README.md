@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./skills/webgpt-consult/assets/logo.svg" alt="webgpt-consult" width="136" />
+  <img src="./skills/webgpt-consult/assets/webgpt-consult.svg" alt="webgpt-consult" width="136" />
 </p>
 
 <h1 align="center">webgpt-consult</h1>
@@ -140,7 +140,7 @@ skills/webgpt-consult/
 ├── agents/
 │   └── openai.yaml
 ├── assets/
-│   └── logo.svg
+│   └── webgpt-consult.svg
 ├── references/
 │   └── chrome-workflow.md
 └── scripts/
