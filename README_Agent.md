@@ -28,13 +28,19 @@ Minimum accurate description:
 
 ### Install the project
 
-Primary public install:
+Standard public install:
 
 ```bash
 npx skills add R-jed/webgpt-consult
 ```
 
-For an explicit non-interactive global Codex install:
+The `skills` CLI defaults to project scope when `-g` is omitted. If the user explicitly wants the Skill available across projects in Codex, use:
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex
+```
+
+For the same global Codex install without prompts:
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex -y
@@ -49,6 +55,8 @@ Codex-native alternative:
 Do not invent `setup.sh`, a symlink installer, a second package format, or a legacy installer.
 
 If you cannot actually execute or verify installation, provide the command and say that execution was not verified.
+
+For an installation created through `npx skills`, use `npx skills list` to inspect installed Skills and `npx skills update webgpt-consult` to update it. Add `-g` to lifecycle commands when the installation is global.
 
 ### Use the project
 
@@ -202,13 +210,15 @@ Never identify a previous review from sidebar title, recent-chat order, browser 
 
 The binding is temporary and lives only in the current Codex conversation. Do not persist it to files, repository state, a database, or a long-lived cache.
 
+Every new consultation invocation must generate a fresh Task-ID and sentinel with a fresh random nonce. `continuation` reuses the conversation binding, not the previous invocation identifiers.
+
 ---
 
 ## 5. Browser ownership and cleanup
 
 Browser-resource ownership is part of correctness because Codex uses the user's real Chrome environment.
 
-A tab/page is `skill-owned` only when this Skill explicitly created it through the browser capability and still has its exact handle.
+A tab/page is `skill-owned` only when this Skill created it during the current Codex conversation and its exact handle still identifies the same resource. Proven ownership persists when that same handle is reused by later `continuation` invocations.
 
 A tab/page is `unowned` when:
 
@@ -277,8 +287,10 @@ Fail closed when:
 
 - GPT-5.6 Sol identity cannot be verified;
 - neither verified Pro nor verified High is usable;
+- the selected tier is disabled;
 - executable credentials are detected in transmitted text;
 - required evidence was not actually transmitted;
+- packet Task-ID/sentinel do not exactly match the preflight arguments;
 - the latest result cannot be bound to the exact sentinel and Task-ID.
 
 Never transmit known executable credentials, cookies, private keys, browser profiles, session material, or unrelated private context.
@@ -291,7 +303,7 @@ verified usable GPT-5.6 Sol Pro
   -> otherwise fail closed
 ```
 
-The external response must begin with:
+The external response must begin with the fresh identifiers for this invocation:
 
 ```text
 WEBGPT_CONSULT_RESULT_<unique-id>
@@ -310,7 +322,8 @@ During an actual `/webgpt-consult` execution:
 - Chrome plugin unavailable -> stop;
 - ChatGPT not signed in -> ask the user to sign in;
 - no verified Pro or High -> fail closed;
-- preflight failure -> do not Send;
+- selected tier disabled -> fail closed or use the valid fallback;
+- preflight failure or identifier mismatch -> do not Send;
 - attachment upload failure -> do not claim the artifact was reviewed;
 - generation active -> do not duplicate Send or close that tab;
 - result verification failure -> mark the review incomplete;
@@ -327,15 +340,17 @@ Do not claim success for installation, model selection, upload, consultation, bi
 
 | User request | Correct Agent response |
 |---|---|
-| "Install it." | `npx skills add R-jed/webgpt-consult` |
+| "Install it." | `npx skills add R-jed/webgpt-consult` and note that the CLI defaults to project scope. |
+| "Install globally for Codex." | `npx skills add R-jed/webgpt-consult -g -a codex` |
 | "Install globally for Codex without prompts." | `npx skills add R-jed/webgpt-consult -g -a codex -y` |
 | "Can I install from Codex?" | Use the documented `/skill-installer` path as an alternative. |
+| "How do I update it?" | `npx skills update webgpt-consult`; add `-g` for a global install. |
 | "How do I use it?" | `/webgpt-consult <review request>` |
 | "Does Sol replace Codex?" | No. Sol is advisory; local Codex makes the final decision. |
 | "How does it find the previous review?" | Current-session binding plus prior Task-ID and sentinel verification. |
 | "What if the Web chat is too long?" | Use `branch` from an earlier useful point, or `independent` if no useful branch point exists. |
 | "Does it store project memory locally?" | No. |
-| "Will it close my Chrome tabs?" | It may close only superseded tabs that the Skill explicitly created and can identify exactly. User/pre-existing/unknown tabs are left alone. |
+| "Will it close my Chrome tabs?" | It may close only superseded tabs that the Skill created in the current Codex conversation and can identify exactly. User/pre-existing/unknown tabs are left alone. |
 | "Does it kill browser processes?" | No. Process-level browser cleanup is outside this Skill. |
 
 ---
