@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.svg" alt="webgpt-consult" width="136" />
+  <img src="./skills/webgpt-consult/assets/logo.svg" alt="webgpt-consult" width="136" />
 </p>
 
 <h1 align="center">webgpt-consult</h1>
@@ -110,16 +110,6 @@ After installation, invoke:
 ```
 
 If the current Codex session has not refreshed its Skill list, start a new Codex session or restart the client.
-
-### Codex-native alternative
-
-You can also install from inside Codex with its built-in `/skill-installer`:
-
-```text
-/skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
-```
-
-The README still recommends `npx skills` as the primary public installation path.
 
 > `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
 
@@ -245,7 +235,7 @@ python3 <SKILL_ROOT>/scripts/submission_preflight.py packet.md \
   --attachment ./src/example.py
 ```
 
-Preflight also requires the supplied `Task-ID` line and supplied `Sentinel` line to occur exactly once in the packet. Mismatches or duplicates fail closed.
+Preflight validates the V7 invocation-ID format, requires Task-ID and sentinel to share the same timestamp + nonce, and requires the corresponding packet lines to occur exactly once. Mismatches, duplicates, or the old timestamp-only form fail closed.
 
 Non-text attachments require local review before `--confirm-unscanned-binary` may be used. That confirmation never overrides a detected credential finding.
 
@@ -259,14 +249,15 @@ verified enabled GPT-5.6 Sol High
 fail closed
 ```
 
-The external reply must begin with:
+The external reply must begin with the binding headers and include substantive review content:
 
 ```text
 WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
+<review body>
 ```
 
-`result_verifier.py` verifies the latest assistant turn. A sentinel appearing later in prose does not count.
+`result_verifier.py` verifies the latest assistant turn's sentinel, Task-ID, and non-empty body. A sentinel appearing later in prose does not count.
 
 <a id="key-files"></a>
 
@@ -277,6 +268,7 @@ Task-ID: <task-id>
 | [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) | authoritative Skill execution contract |
 | [README_Agent.md](README_Agent.md) | AI-agent discovery, installation, and support entry point |
 | [skills/webgpt-consult/agents/openai.yaml](skills/webgpt-consult/agents/openai.yaml) | display metadata and invocation policy |
+| [skills/webgpt-consult/assets/logo.svg](skills/webgpt-consult/assets/logo.svg) | single logo source used by README and installed Skill UI |
 | [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, branching, and tab cleanup workflow |
 | [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web review context template |
 | [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High identity and routing policy |
@@ -291,12 +283,12 @@ webgpt-consult/
 ├── README_en.md
 ├── README_Agent.md
 ├── LICENSE
-├── assets/
-│   └── logo.svg
 └── skills/
     └── webgpt-consult/
         ├── SKILL.md
         ├── LICENSE
+        ├── assets/
+        │   └── logo.svg
         ├── agents/
         │   └── openai.yaml
         ├── references/
