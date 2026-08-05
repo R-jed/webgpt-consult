@@ -45,5 +45,5 @@ Guidance:
 - `continuation`: stay in the current useful Web conversation and send a compact `CURRENT_DELTA` plus new evidence.
 - `branch`: use `Branch in new chat` from an earlier useful message, then send the current task plus the minimum evidence needed now. Do not rely on inherited branch history alone.
 - A different project or materially different question should normally use `independent`.
-- Do not include durable local review summaries, reviewer-memory snapshots, stored conversation URLs, or review identifiers for restoration. This Skill does not persist them.
+- Do not include local review summaries, stored conversation URLs, historical decision caches, or review IDs for future reuse. This Skill does not persist them.
 - Keep the packet as small as possible without removing causal facts.
