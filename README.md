@@ -59,33 +59,43 @@
 ### 前置条件
 
 - Python 3.10+
-- Codex
+- 当前版本 Codex
 - Codex Chrome plugin 已安装并连接
 - Chrome 中已经登录 ChatGPT Web
 - 当前账号实际提供 GPT-5.6 Sol Pro 或 High
 
-### 安装
+### 推荐安装
 
-如果你的 Codex 环境使用 Skills CLI：
-
-```bash
-npx skills add R-jed/webgpt-consult -g -y
-```
-
-也可以 clone 完整仓库，再通过当前 Codex 环境支持的 Skill / Plugin 机制加载。单独 `git clone` 不会自动完成 Skill 注册。
-
-### 调用
-
-新建 Codex 任务后显式调用：
+当前 Codex 自带 `$skill-installer`。直接在 Codex 中运行：
 
 ```text
-Use $webgpt-consult to get a strict GPT-5.6 Sol review of this architecture.
+$skill-installer install https://github.com/R-jed/webgpt-consult
 ```
 
-或者直接描述目标：
+安装器会把完整 Skill 放入 Codex 的 Skill 目录。默认 `CODEX_HOME` 下，通常是：
 
 ```text
-用 webgpt-consult 对这个项目做一次独立的 GPT-5.6 Sol 架构审查。
+~/.codex/skills/webgpt-consult/
+```
+
+安装完成后重启 Codex，再新建一个任务，让新的 Skill 被重新加载。
+
+如果当前 Codex 中没有 `$skill-installer`，优先升级 Codex。`webgpt-consult` 本身依赖 Codex Chrome plugin，因此不为旧版 Codex 维护另一套安装器。
+
+> `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
+
+### 第一次使用
+
+本项目关闭隐式调用。安装后请显式使用 `$webgpt-consult`：
+
+```text
+$webgpt-consult 对这个项目做一次独立的 GPT-5.6 Sol 架构审查。
+```
+
+也可以把具体目标直接接在 Skill 名后面：
+
+```text
+$webgpt-consult 检查这个修复方案有没有遗漏的架构风险，并给出第二意见。
 ```
 
 本 Skill 没有 OpenCLI fallback。Chrome plugin 不可用时会停止执行。
