@@ -109,7 +109,7 @@ The guard intentionally does not attempt to become a general PII or DLP platform
 
 Codex should still minimize disclosure before sending and remove unrelated names, email addresses, physical addresses, internal information, or other private context that the Web consultation does not need.
 
-Run the guard on text before sending when sensitive values may be present:
+All outgoing UTF-8 prompt text and UTF-8 text attachments should pass the local guard before Send:
 
 ```bash
 python3 <SKILL_ROOT>/scripts/safety_guard.py prompt.txt src/example.py
