@@ -68,6 +68,8 @@
 
 ### 推荐安装
 
+标准安装入口：
+
 ```bash
 npx skills add R-jed/webgpt-consult
 ```
@@ -78,13 +80,28 @@ npx skills add R-jed/webgpt-consult
 skills/webgpt-consult/SKILL.md
 ```
 
-`npx skills` 会自动发现 `webgpt-consult`。普通用户不需要手动指定 global scope 或 Codex agent。
+`npx skills` 会自动发现 `webgpt-consult`。不加 `-g` 时，`skills` CLI 默认使用 project scope。
 
-如果你明确希望无交互地全局安装到 Codex，可以使用：
+如果希望跨项目全局安装到 Codex：
+
+```bash
+npx skills add R-jed/webgpt-consult -g -a codex
+```
+
+无交互全局安装：
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex -y
 ```
+
+检查或更新已安装 Skill：
+
+```bash
+npx skills list
+npx skills update webgpt-consult
+```
+
+如果是 global 安装，更新时可以加 `-g`。
 
 安装成功后调用：
 
@@ -146,7 +163,7 @@ Skill 不通过 ChatGPT 历史列表去猜“上一次咨询窗口”。第一�
 
 ```text
 Chrome tab/page handle（如果可用）
-+ tab 是否由 Skill 明确创建
++ tab 是否由 Skill 在当前 Codex 会话中明确创建
 + 精确 chatgpt.com conversation URL（如果可用）
 + 上一条已验证 Task-ID
 + 上一条已验证 sentinel
@@ -174,6 +191,8 @@ Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏�
 
 这个 binding 只活在当前 Codex conversation 中，不写入文件、仓库、数据库或长期缓存。新开一个 Codex conversation 时默认没有 Web binding，因此默认从 `independent` 开始。
 
+每一次新的咨询调用都会生成新的 Task-ID 和 sentinel，并加入随机 nonce。`continuation` 复用的是 Web conversation，不复用上一轮的调用标识。
+
 `branch` 必须从当前已验证的 binding 出发。新 branch 的结果验证通过后，binding 才从旧 conversation 切换到新 branch。
 
 ### Web 会话连续性
@@ -196,7 +215,7 @@ Skill 不会根据 ChatGPT sidebar title、最近会话排序、项目名、浏�
 
 Skill 会区分 `skill-owned` 和 `user-owned / unknown` browser tabs。
 
-只有由 Skill 明确创建、并且仍能通过精确 handle 确认的 tab 才允许自动关闭。用户原本打开的 ChatGPT tab、普通 Chrome tab、ownership 不明确的 tab 永远不会被自动关闭。
+只有由 Skill 在当前 Codex 会话中明确创建、并且仍能通过精确 handle 确认的 tab 才允许自动关闭。这个 ownership 在后续 `continuation` 复用同一 handle 时继续有效。用户原本打开的 ChatGPT tab、普通 Chrome tab、ownership 不明确的 tab 永远不会被自动关闭。
 
 当新的 review 已经验证成功并成为当前 binding 后，如果旧 binding 位于另一个明确由 Skill 创建的 tab，旧 tab 才会被关闭。失败流程产生的临时 tab 也只有在确认没有请求仍在生成时才会清理。
 
@@ -211,9 +230,10 @@ Skill 不使用 `pkill`、`killall`、浏览器进程扫描或后台 cleanup dae
 以下边界采用 fail closed：
 
 - GPT-5.6 Sol 模型身份无法验证
-- Pro 和 High 都不可用
+- Pro 和 High 都不可用或被禁用
 - packet 或文本附件检测到 executable credential
 - 必需证据没有真实上传
+- packet 内的 Task-ID / sentinel 与 preflight 参数不完全一致
 - 最终回复无法通过 sentinel 和 task ID 精确绑定
 
 发送前运行统一 preflight。运行时以实际安装后的 `<SKILL_ROOT>` 为准：
@@ -225,15 +245,17 @@ python3 <SKILL_ROOT>/scripts/submission_preflight.py packet.md \
   --attachment ./src/example.py
 ```
 
+Preflight 会同时确认 packet 中指定的 `Task-ID` 和 `Sentinel` 各自精确出现一次。错配或重复都会 fail closed。
+
 二进制附件需要本地检查后才能显式使用 `--confirm-unscanned-binary`。这个确认不会覆盖已经检测到的凭证。
 
 模型路由固定为：
 
 ```text
-verified GPT-5.6 Sol Pro
+verified enabled GPT-5.6 Sol Pro
       ↓ unavailable / disabled / ambiguous / not actionable
-verified GPT-5.6 Sol High
-      ↓ unavailable
+verified enabled GPT-5.6 Sol High
+      ↓ unavailable / disabled
 fail closed
 ```
 
@@ -258,7 +280,7 @@ Task-ID: <task-id>
 | [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定、分支与 tab cleanup 流程 |
 | [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web 审查上下文模板 |
 | [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High 模型身份与路由策略 |
-| [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | 发送前安全和附件检查 |
+| [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | 发送前安全、附件和调用标识检查 |
 | [skills/webgpt-consult/scripts/result_verifier.py](skills/webgpt-consult/scripts/result_verifier.py) | 外部结果精确绑定验证 |
 
 ### 仓库结构
