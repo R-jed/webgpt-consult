@@ -245,15 +245,15 @@ Share the local proposal only when the user explicitly wants Sol to attack, comp
 
 ### `continuation`
 
-Continue the current Web conversation only when the new request clearly continues the same review and the conversation is still active, identifiable, useful, and not context-limited.
+Continue the current Web conversation only when the new request clearly continues the same review and the current Codex session can resolve and verify the bound Web conversation.
 
 Useful signals include an explicit request to continue, new evidence directly following the immediately preceding review, or the same artifact or decision being examined one step further.
 
-If the relationship is ambiguous, browser state is lost, the project changed, or the question changed materially, use `independent`.
+If the relationship is ambiguous, the session binding is unavailable, the project changed, or the question changed materially, use `independent`.
 
 ### `branch`
 
-Use `Branch in new chat` when the same review should continue but the active Web conversation has accumulated enough history to create context pressure.
+Use `Branch in new chat` when the same review should continue but the bound Web conversation has accumulated enough history to create context pressure.
 
 Choose an earlier still-relevant message as the branch point. The new branch inherits all conversation history before that message, so branching from a near-limit final message may preserve most of the unwanted context.
 
@@ -263,14 +263,61 @@ After branching:
 confirm branch
   -> re-verify GPT-5.6 Sol tier
   -> send current task + minimum evidence
-  -> continue review
+  -> verify the result
+  -> bind the current Codex session to the new branch
 ```
 
 If no useful branch point exists or the branch is unreliable, use `independent`.
 
 ---
 
-## 6. No local reviewer memory
+## 6. How the same Web conversation is found
+
+The Skill does not search ChatGPT history for a conversation that merely looks related.
+
+Instead, it uses a temporary binding that exists only inside the current Codex conversation.
+
+After a Web review succeeds and the returned result passes exact Task-ID and sentinel verification, the Agent retains the smallest browser identity currently available:
+
+```text
+review_tab_handle: <Chrome tab/page handle when available>
+review_conversation_url: <exact chatgpt.com conversation URL when available>
+last_task_id: <verified prior Task-ID>
+last_sentinel: <verified prior sentinel>
+```
+
+For `continuation`, resolve in this order:
+
+```text
+previous bound Chrome tab/page handle
+  -> exact previously observed ChatGPT conversation URL
+  -> fresh DOM inspection
+  -> match previous Task-ID + sentinel
+  -> continuation allowed
+```
+
+The handle and URL only locate the candidate page. The previous Task-ID and sentinel verify that it is the correct review conversation.
+
+If the tab is gone, the URL is unavailable, the prior Task-ID/sentinel cannot be matched, or multiple candidate conversations exist, use `independent`.
+
+Never choose a previous Web review based only on:
+
+- ChatGPT sidebar title;
+- recent-chat ordering;
+- browser history;
+- project name;
+- approximate time;
+- semantic similarity to the current task.
+
+A successful `independent` review establishes the current binding. A successful `continuation` refreshes it. A successful `branch` replaces it with the new branch.
+
+The binding lives only for the current Codex conversation. Starting a new Codex conversation means there is no prior Web binding, so the safe default is `independent`.
+
+This provides deterministic short-term continuation without creating local reviewer memory.
+
+---
+
+## 7. No local reviewer memory
 
 Do not create or maintain local review-history files, conversation registries, project summaries, accepted-decision caches, stored ChatGPT conversation URLs, or review IDs for future reuse.
 
@@ -278,25 +325,27 @@ The Web model should receive what is needed for the current review. Historical c
 
 This keeps WebGPT closer to an independent second opinion and reduces long-term anchoring or understanding drift.
 
-An open Web tab may provide temporary continuity. It is not project memory.
+An open Web tab and the current Codex session binding may provide temporary continuity. They are not project memory.
 
 ---
 
-## 7. Context pressure and branching
+## 8. Context pressure and branching
 
-Use `continuation` while the current Web review remains compact and useful.
+Use `continuation` while the bound Web review remains compact and useful.
 
 Move to `branch` when the same review should continue but the active conversation has accumulated too much history.
 
 Branching procedure:
 
 ```text
-identify an earlier useful branch point
+resolve and verify the current binding
+  -> identify an earlier useful branch point
   -> Branch in new chat
   -> confirm the new branch is active
   -> re-verify GPT-5.6 Sol Pro / High
   -> send the current task + minimum necessary evidence
-  -> continue there
+  -> verify the result
+  -> replace the binding with the new branch
 ```
 
 A branch inherits all history before the selected message. Prefer an earlier useful point that preserves enough shared context without carrying an unnecessary long tail.
@@ -307,7 +356,7 @@ Do not build a local summary system to compensate for a lost Web conversation. R
 
 ---
 
-## 8. Safety and evidence integrity
+## 9. Safety and evidence integrity
 
 These boundaries fail closed:
 
@@ -325,7 +374,7 @@ Text attachments are scanned before Send. Non-text attachments require explicit 
 
 ---
 
-## 9. Model policy
+## 10. Model policy
 
 The supported model route is fixed:
 
@@ -343,7 +392,7 @@ Re-verify model identity after creating a fresh conversation or branch.
 
 ---
 
-## 10. Result verification and local adoption
+## 11. Result verification and local adoption
 
 The external response must begin with:
 
@@ -358,9 +407,11 @@ A verified Sol response is advisory evidence. Local Codex compares it with local
 
 For an independent review, preserve meaningful disagreement between Codex and Sol when it matters. Do not manufacture consensus.
 
+Only a verified result may establish or refresh the temporary Web conversation binding.
+
 ---
 
-## 11. Runtime file order
+## 12. Runtime file order
 
 When `/webgpt-consult` is actually invoked, read:
 
@@ -385,7 +436,7 @@ If this guide and `SKILL.md` ever conflict during execution, `SKILL.md` is autho
 
 ---
 
-## 12. Repository layout
+## 13. Repository layout
 
 ```text
 webgpt-consult/
@@ -411,7 +462,7 @@ webgpt-consult/
 
 ---
 
-## 13. How to answer common user requests
+## 14. How to answer common user requests
 
 | User request | Agent response |
 |---|---|
@@ -421,6 +472,7 @@ webgpt-consult/
 | "How do I use it?" | Show `/webgpt-consult <review request>`. |
 | "Does it run automatically?" | No. Implicit invocation is disabled. |
 | "Does Sol replace Codex?" | No. Sol is an external reviewer; local Codex makes the adoption decision. |
+| "How does it find the previous Web review?" | It uses a temporary binding in the current Codex conversation, then verifies the candidate Web conversation with the previous Task-ID and sentinel. It never guesses from ChatGPT history titles. |
 | "What if the Web chat is full?" | Use `branch` from an earlier useful point and resend the current minimum evidence. If no useful branch point exists, use `independent`. |
 | "Does it store reviewer memory locally?" | No. The design deliberately avoids local reviewer memory. |
 | "Can it use another browser or OpenCLI?" | The supported browser transport is the Codex Chrome plugin; there is no OpenCLI fallback. |
@@ -428,7 +480,7 @@ webgpt-consult/
 
 ---
 
-## 14. Failure handling
+## 15. Failure handling
 
 During discovery or installation support, continue helping the user even when the Skill is not yet installed.
 
@@ -440,8 +492,9 @@ During an actual `/webgpt-consult` execution:
 - no verified Pro or High -> fail closed;
 - preflight failure -> do not Send;
 - attachment upload failure -> do not claim the artifact was reviewed;
-- result verification failure -> mark the review incomplete;
+- result verification failure -> mark the review incomplete and do not refresh the binding;
 - ambiguous `continuation` -> use `independent`;
+- missing or unverifiable session binding -> use `independent`;
 - unavailable Web conversation -> use `independent`;
 - context-limited Web conversation -> use `branch`, or `independent` if no good branch point exists.
 
