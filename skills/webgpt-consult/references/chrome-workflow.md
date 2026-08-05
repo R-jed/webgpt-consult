@@ -1,6 +1,6 @@
 # Chrome workflow
 
-This reference contains browser-state rules that should remain deterministic. Prompt design, evidence selection, and consultation style belong to Codex and the user's request.
+This reference contains browser-state rules that should remain deterministic. Prompt design and evidence selection belong to Codex and the user's request. Substantial consultations use the standard `CONTEXT_PACKET_V1` format from `context-packet-template.md`.
 
 ## 1. Connect and authenticate
 
@@ -117,11 +117,11 @@ Generate a fresh random request ID for every consultation, including follow-ups 
 wgpt-a83f9271c4e24d11
 ```
 
-Codex may write a simple prompt directly or use `context-packet-template.md` when a structured handoff materially improves the answer.
+For a simple question or short follow-up, Codex may write a direct prompt.
 
-Use the packet guide for complex tasks with several constraints, artifacts, prior attempts, options, risks, or important background. Keep only useful sections.
+For a substantial consultation, use `context-packet-template.md` and preserve its `CONTEXT_PACKET_V1` metadata and section order. The packet supplies the structured review handoff; the Request-ID remains the browser-level request identity.
 
-For a second or later turn in the same verified conversation, prefer a delta prompt with the new evidence and current ask. Do not resend the full background simply because a packet template exists.
+For a second or later turn in the same verified conversation, prefer a delta prompt with the new evidence and current ask. Do not resend the full packet when the existing conversation already contains the relevant background.
 
 Prefer minimal disclosure:
 
@@ -139,19 +139,21 @@ If many small text files are genuinely needed and individual uploads become unre
 
 ## 6. Fill the composer and upload files
 
-Include this line in the prompt:
+Every request must include:
 
 ```text
 Request-ID: <request-id>
 ```
 
-Also instruct ChatGPT Web to begin its response with that exact line.
+and instruct ChatGPT Web to begin its response with the same line.
+
+A substantial `CONTEXT_PACKET_V1` request must also include its generated sentinel and require that sentinel as the second non-empty response line.
 
 Use the real file chooser for attachments. Keep the entire chooser lifecycle together: establish the chooser wait, open the add-file UI, resolve the chooser, and set the selected files within the same browser-tool invocation whenever the browser API uses a pending chooser promise. Do not carry a pending chooser across calls or resets.
 
 After every upload UI change, reacquire the composer from fresh browser state. Confirm every required attachment is visibly present and fully uploaded.
 
-Then insert the intended prompt once. Reacquire the composer again and verify its rendered text contains the current `Request-ID` and enough distinctive prompt text to prove the intended request is present.
+Then insert the intended prompt once. Reacquire the composer again and verify its rendered text contains the current `Request-ID` and enough distinctive prompt text to prove the intended request is present. For a context packet, also verify `CONTEXT_PACKET_V1` and the expected sentinel are present.
 
 If an uploaded text/Markdown preview leaves the composer empty and the current UI exposes exactly one associated `Show in text field`, `在文本字段中显示`, or equivalent action, use that recovery action once, then reacquire and verify the composer again. Do not cycle through multiple text-entry methods.
 
@@ -172,6 +174,7 @@ Immediately before Send, confirm:
 - the intended Web conversation is active;
 - model state is valid, either from fresh verification for a new conversation or from the verified model cache for the same conversation;
 - the fresh request ID is present in the verified composer text;
+- for a context packet, the expected sentinel is present;
 - the prompt matches the user's current intent;
 - all required attachments are visibly uploaded;
 - the exact outgoing prompt and all UTF-8 text attachments passed the blocking safety checks;
@@ -203,17 +206,19 @@ Long-running Pro responses may take substantial time. Continue observing the sam
 
 ## 9. Verify the result and bind the conversation
 
-When generation stops, inspect only the latest assistant turn from fresh browser state. Do not treat the user's echoed request ID as success.
+When generation stops, inspect only the latest assistant turn from fresh browser state. Do not treat the user's echoed request ID or sentinel as success.
 
-The first non-empty line must exactly equal:
+For every consultation, the first non-empty line must exactly equal:
 
 ```text
 Request-ID: <request-id>
 ```
 
-There must also be substantive content after that line.
+For a `CONTEXT_PACKET_V1` consultation, the second non-empty line must exactly equal the packet's expected sentinel.
 
-If the ID does not match, re-read the complete latest assistant turn once. If it still does not match or appears truncated, treat the consultation as incomplete.
+There must be substantive content after the identity lines.
+
+If verification fails, re-read the complete latest assistant turn once. If the Request-ID or required sentinel still does not match, or the answer appears truncated, treat the consultation as incomplete.
 
 Only after verification passes may the current Codex conversation establish or refresh the temporary binding with the current handle, ownership value, canonical conversation URL when available, `last_request_id`, and the current verified/cached Web model tier.
 
