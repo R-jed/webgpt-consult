@@ -27,7 +27,7 @@
 
 ## About
 
-> **AI agents should read [README_Agent.md](README_Agent.md) first, then treat [SKILL.md](SKILL.md) as the execution contract.**
+> **AI agents should read [README_Agent.md](README_Agent.md) first, then treat [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) as the execution contract.**
 
 `webgpt-consult` lets Codex obtain a verified independent second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web.
 
@@ -64,23 +64,23 @@ Why this project exists:
 - ChatGPT Web signed in in Chrome
 - an account that actually exposes GPT-5.6 Sol Pro or High
 
-### Recommended install
+### One-line install
 
 Run this inside Codex:
 
 ```text
-/skill-installer install https://github.com/R-jed/webgpt-consult
+/skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-With the default `CODEX_HOME`, the Skill is typically installed at:
+The canonical installable Skill lives at `skills/webgpt-consult/`. Using an explicit GitHub skill path lets the Codex installer identify the Skill directory directly and install it as:
 
 ```text
 ~/.codex/skills/webgpt-consult/
 ```
 
-After installation, restart Codex and open a new task so the Skill is reloaded.
+After installation, try `/webgpt-consult` on the next turn. If the current Codex client has not refreshed its Skill list, restart Codex or open a new task.
 
-If `/skill-installer` is unavailable, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin and does not maintain a separate installer for older Codex versions.
+If `/skill-installer` is unavailable, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin and does not maintain a separate legacy installer.
 
 > `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
 
@@ -116,7 +116,7 @@ In `independent` mode, local Codex forms its own judgment first but normally kee
 
 Use `continuation` only when the current Codex conversation can identify and verify the immediately relevant Web review. If the binding is missing, identity verification fails, or multiple candidates exist, switch to `independent`.
 
-Use `branch` only to relieve context pressure. It does not create project memory. After a branch review is successfully verified, the temporary binding moves to the new branch.
+Use `branch` only to relieve context pressure. After a branch review is successfully verified, the temporary binding moves to the new branch.
 
 ### Conversation binding
 
@@ -165,7 +165,7 @@ Continuity exists only through the temporary binding between the current Codex c
 - a context-heavy active conversation uses `branch`
 - a lost or unverifiable session binding uses `independent`
 
-`Branch in new chat` inherits all history before the selected message. Do not mechanically branch from a near-limit final message. Choose an earlier point that still contains useful shared context, then send the minimum evidence required for the current question again.
+`Branch in new chat` inherits all history before the selected message. Choose an earlier point that still contains useful shared context, then send the minimum evidence required for the current question again.
 
 If no useful branch point exists, start a fresh conversation.
 
@@ -186,7 +186,7 @@ These boundaries fail closed:
 Run preflight immediately before Send:
 
 ```bash
-python3 scripts/submission_preflight.py packet.md \
+python3 ~/.codex/skills/webgpt-consult/scripts/submission_preflight.py packet.md \
   --task-id webgpt-consult-... \
   --sentinel WEBGPT_CONSULT_RESULT_... \
   --attachment ./src/example.py
@@ -211,7 +211,7 @@ WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
 ```
 
-`scripts/result_verifier.py` verifies the latest assistant turn. A sentinel appearing later in prose does not count.
+`result_verifier.py` verifies the latest assistant turn. A sentinel appearing later in prose does not count.
 
 <a id="key-files"></a>
 
@@ -219,14 +219,14 @@ Task-ID: <task-id>
 
 | File | Purpose |
 |---|---|
-| [SKILL.md](SKILL.md) | authoritative Skill execution contract |
+| [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) | authoritative Skill execution contract |
 | [README_Agent.md](README_Agent.md) | AI-agent discovery, installation, and support entry point |
-| [agents/openai.yaml](agents/openai.yaml) | display metadata and invocation policy |
-| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, and branching workflow |
-| [references/context-packet-template.md](references/context-packet-template.md) | Web review context template |
-| [scripts/model_router.py](scripts/model_router.py) | Pro → High identity and routing policy |
-| [scripts/submission_preflight.py](scripts/submission_preflight.py) | pre-send safety and attachment checks |
-| [scripts/result_verifier.py](scripts/result_verifier.py) | exact external-result binding |
+| [skills/webgpt-consult/agents/openai.yaml](skills/webgpt-consult/agents/openai.yaml) | display metadata and invocation policy |
+| [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web browser, conversation binding, and branching workflow |
+| [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web review context template |
+| [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High identity and routing policy |
+| [skills/webgpt-consult/scripts/submission_preflight.py](skills/webgpt-consult/scripts/submission_preflight.py) | pre-send safety and attachment checks |
+| [skills/webgpt-consult/scripts/result_verifier.py](skills/webgpt-consult/scripts/result_verifier.py) | exact external-result binding |
 
 ### Repository layout
 
@@ -235,21 +235,23 @@ webgpt-consult/
 ├── README.md
 ├── README_en.md
 ├── README_Agent.md
-├── SKILL.md
 ├── LICENSE
 ├── assets/
 │   └── logo.svg
-├── agents/
-│   └── openai.yaml
-├── references/
-│   ├── chrome-workflow.md
-│   └── context-packet-template.md
-└── scripts/
-    ├── build_attachment_bundle.py
-    ├── check_packet_safety.py
-    ├── model_router.py
-    ├── result_verifier.py
-    └── submission_preflight.py
+└── skills/
+    └── webgpt-consult/
+        ├── SKILL.md
+        ├── agents/
+        │   └── openai.yaml
+        ├── references/
+        │   ├── chrome-workflow.md
+        │   └── context-packet-template.md
+        └── scripts/
+            ├── build_attachment_bundle.py
+            ├── check_packet_safety.py
+            ├── model_router.py
+            ├── result_verifier.py
+            └── submission_preflight.py
 ```
 
 ## License
