@@ -1,86 +1,91 @@
-# Context packet guide
+# GPT-5.6 Sol Context Packet Template
 
-Use this when a consultation is complex enough that ChatGPT Web benefits from a structured handoff. It is guidance for Codex, not a required schema for every request.
+Use this template when preparing a substantial ChatGPT Web consultation. Simple questions and short follow-ups in an already verified conversation may use a smaller delta prompt instead of repeating the whole packet.
 
-Simple questions and short follow-ups should stay simple. When the same verified Web conversation already contains the needed context, send only the new information and the current ask.
+````markdown
+CONTEXT_PACKET_V1
 
-## When to use a packet
-
-A structured packet is useful when the task has several constraints, source files, prior attempts, competing options, important risks, or enough background that a short prompt would lose causal details.
-
-It is also useful when starting fresh after a long conversation or when branching from an earlier point and the latest state needs to be restated clearly.
-
-## Adaptive template
-
-Keep only the sections that improve the current consultation.
-
-```markdown
-Request-ID: <request-id>
+```json
+{
+  "task_id": "webgpt-consult-YYYYMMDD-HHMMSS",
+  "request_id": "wgpt-<random>",
+  "sentinel": "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS",
+  "task_type": "architecture_review|business_consult|content_strategy|skill_design|risk_review|debugging|code_review|other",
+  "context_strategy": "problem_first_full_context",
+  "credential_status": "no_executable_credentials",
+  "context_hash": "<sha256 of markdown body when useful>",
+  "required_output": [
+    "reasoning_brief",
+    "direct_judgment",
+    "biggest_flaw",
+    "specific_revisions",
+    "adoption_decision"
+  ]
+}
+```
 
 ## TASK
-<What needs to be decided, explained, reviewed, debugged, designed, or produced?>
-
-## SUCCESS CONDITION
-<What would make the answer useful?>
 
 ## BACKGROUND
-<Only the background the Web model actually needs.>
 
-## USER INTENT AND CONSTRAINTS
-<Goals, non-negotiables, environment, compatibility requirements, limits.>
+## USER_INTENT
 
-## CURRENT DELTA
-<For a follow-up, branch, or restarted conversation: what changed since the earlier review?>
+## LOCAL_JUDGMENT
 
 ## EVIDENCE
-<Relevant facts, source excerpts, logs, measurements, screenshots, documents, or attachment names.>
 
-## ATTEMPTS SO FAR
-<What has already been tried and what happened?>
+## ATTEMPTS_SO_FAR
 
-## CURRENT JUDGMENT
-<Optional. Include when the user wants ChatGPT Web to critique, compare, attack, or improve an existing position. Omit when an independent view is more useful.>
+## OPTIONS
 
-## OPTIONS AND RISKS
-<Optional. Meaningful alternatives, tradeoffs, known failure modes, and unknowns.>
+## RISKS
 
 ## ASK
-<The exact question for this consultation.>
 
-## RESPONSE PREFERENCE
-<Optional. Examples: concise recommendation, code review, architecture critique, decision memo, checklist, rewrite.>
+Please act as a strict reviewer and deep reasoning partner. Find the biggest flaw first, then give the strongest revised path. Do not provide generic encouragement. Do not reveal hidden chain-of-thought; instead output a concise reasoning brief with assumptions, decision frame, evidence weighting, counterarguments, and tradeoffs.
 
-Begin your response with exactly:
-Request-ID: <request-id>
-```
+## RETURN_FORMAT
 
-## Follow-up rule
+First line must be:
+Request-ID: wgpt-<random>
 
-Do not resend a full packet just because a template exists.
+Second line must be:
+WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
 
-For a second or later turn in the same verified Web conversation, prefer a delta prompt such as:
+Then use:
+1. Reasoning brief: assumptions, frame, evidence, counterargument, tradeoffs
+2. Direct judgment
+3. Biggest flaw
+4. Required changes
+5. What to ignore
+6. Final adoption recommendation
+````
+
+## Follow-up in the same verified conversation
+
+Do not resend the full packet when the existing ChatGPT Web conversation already contains the relevant background. Use the same conversation and send only the new delta, with a fresh request ID and sentinel when useful.
+
+Example:
 
 ```markdown
-Request-ID: <new-request-id>
+Request-ID: wgpt-<new-random>
+Sentinel: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
 
-## CURRENT DELTA
-<What changed or what new evidence appeared?>
+## CURRENT_DELTA
+<What changed, what new evidence appeared, or what was implemented?>
 
 ## ASK
-<What should be examined now?>
+<What should GPT-5.6 Sol examine now?>
 
 Begin your response with exactly:
-Request-ID: <new-request-id>
+Request-ID: wgpt-<new-random>
+WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS
 ```
-
-Reuse prior context already present in that conversation. Restate older material only when it is ambiguous, outdated, or essential to the new question.
 
 ## Evidence rules
 
-- A local path is not evidence by itself. Upload the file, paste the relevant content, or provide a faithful excerpt.
+- A local path is not evidence by itself. Upload the actual file, paste the relevant content, or provide a faithful excerpt.
 - Prefer the smallest source set that preserves the truth of the problem.
-- Keep filenames and attachment names clear enough that the Web model can refer to them precisely.
 - Preserve verbatim errors, measurements, and important constraints when wording matters.
-- Remove unrelated personal information and never include blocked secrets, authentication material, or payment credentials.
-
-The template must never force Codex into a fixed reviewer persona, fixed task taxonomy, fixed output format, or mandatory local-judgment step. The user's request remains authoritative.
+- Remove unrelated private information and never include blocked secrets, authentication material, or payment credentials.
+- Run the local safety guard on the exact outgoing packet and UTF-8 text attachments before Send.
