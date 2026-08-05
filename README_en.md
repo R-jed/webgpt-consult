@@ -109,14 +109,49 @@ There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavaila
 | Mode | Best for | Web behavior |
 |---|---|---|
 | `independent` | deep review, milestone review, adversarial review, architecture reset, a different project, or a materially different question | fresh conversation |
-| `continuation` | a clear continuation of the current review when the current Codex session can still verify the bound Web conversation | continue the bound conversation |
+| `continuation` | a clear continuation of the current review when the current Codex conversation can still verify the bound Web conversation | continue the bound conversation |
 | `branch` | the same review should continue, but the active conversation has accumulated too much context | `Branch in new chat` from an earlier relevant message |
 
 In `independent` mode, local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
-`continuation` never guesses from ChatGPT history. After a successful review, the current Codex conversation temporarily retains the available Chrome tab/page handle, exact ChatGPT conversation URL, and the previous verified Task-ID and sentinel. Before continuing, it resolves the candidate Web conversation and verifies it against that prior Task-ID + sentinel. If the binding is missing or verification fails, use `independent`.
+Use `continuation` only when the current Codex conversation can identify and verify the immediately relevant Web review. If the binding is missing, identity verification fails, or multiple candidates exist, switch to `independent`.
 
-Use `branch` only to relieve context pressure. It does not create project memory or restore locally saved review state. After a successful branch review is verified, the temporary binding moves to the new branch.
+Use `branch` only to relieve context pressure. It does not create project memory. After a branch review is successfully verified, the temporary binding moves to the new branch.
+
+### Conversation binding
+
+The Skill never guesses the "previous review" from ChatGPT history. After a Web review completes successfully and its result is verified, the current Codex conversation temporarily retains the smallest useful conversation binding:
+
+```text
+Chrome tab/page handle, when available
++ exact chatgpt.com conversation URL, when available
++ previous verified Task-ID
++ previous verified sentinel
+```
+
+The tab handle and conversation URL are locators only. The previous `Task-ID + sentinel` are the identity check.
+
+A `continuation` follows this fixed resolution order:
+
+```text
+reuse the previously bound Chrome tab/page handle
+  ↓ handle unavailable
+open the exact conversation URL retained by the current Codex conversation
+  ↓
+inspect the immediately relevant prior assistant result from a fresh DOM view
+  ↓
+match previous Task-ID + previous sentinel
+  ↓ exact match
+allow continuation
+```
+
+If any step cannot be verified, use `independent` and open a fresh conversation.
+
+The Skill never locates a prior review using ChatGPT sidebar titles, recent-chat ordering, project names, browser history, approximate timestamps, or semantic similarity.
+
+This binding lives only inside the current Codex conversation. It is not written to files, the repository, a database, or a long-lived cache. A new Codex conversation starts with no Web binding and therefore defaults to `independent`.
+
+`branch` must start from the currently verified binding. The binding moves from the old conversation to the new branch only after the branch result passes verification.
 
 ### Web conversation continuity
 
@@ -129,8 +164,6 @@ Continuity exists only through the temporary binding between the current Codex c
 - a materially different question in the same project normally uses `independent`
 - a context-heavy active conversation uses `branch`
 - a lost or unverifiable session binding uses `independent`
-
-The Skill never selects a prior review based only on ChatGPT sidebar titles, recent-chat ordering, browser history, project name, approximate time, or semantic similarity.
 
 `Branch in new chat` inherits all history before the selected message. Do not mechanically branch from a near-limit final message. Choose an earlier point that still contains useful shared context, then send the minimum evidence required for the current question again.
 
