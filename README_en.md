@@ -1,42 +1,124 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="webgpt-consult: a verified GPT-5.6 Sol second opinion for Codex through ChatGPT Web">
+  <img src="./assets/logo.svg" alt="webgpt-consult" width="136" />
+</p>
+
+<h1 align="center">webgpt-consult</h1>
+<h3 align="center">GPT-5.6 Sol Pro / High second-opinion Skill for Codex</h3>
+
+<p align="center">Judge locally · Review on the Web · Verify the result · Adopt locally</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Codex-Skill-111827" alt="Codex Skill" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB" alt="Python 3.10+" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2EA44F" alt="MIT License" /></a>
+  <a href="https://github.com/R-jed/webgpt-consult/stargazers"><img src="https://img.shields.io/github/stars/R-jed/webgpt-consult?style=flat&logo=github" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">
-  <a href="README.md">中文</a> ·
-  <a href="SKILL.md">Skill contract</a> ·
-  <a href="README_Agent.md">AI Agent guide</a>
+  <a href="#about">About</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#safety-and-verification">Safety</a> ·
+  <a href="#key-files">Key files</a> ·
+  <a href="README.md">中文</a>
 </p>
 
-`webgpt-consult` is a Codex Skill for difficult architecture, debugging, product, business, risk, and file-grounded review work. Local Codex forms its own judgment first, sends a carefully bounded evidence set through the Codex Chrome plugin to ChatGPT Web, obtains a GPT-5.6 Sol second opinion, verifies the returned result, and then decides locally what to adopt, reject, or modify.
+<a id="about"></a>
 
-<p align="center">
-  <img src="./assets/readme/workflow.svg" width="100%" alt="webgpt-consult workflow from local judgment through evidence, preflight, Sol review, verification, and local adoption">
-</p>
+## About
 
-## Two review modes
+> **AI agents should read [README_Agent.md](README_Agent.md) first, then treat [SKILL.md](SKILL.md) as the execution contract.**
 
-Use `independent` for milestone reviews, deep reviews, adversarial checks, architecture resets, or materially different questions. It starts a fresh ChatGPT conversation. Codex still forms its own judgment first, but normally keeps that conclusion private from Sol to reduce anchoring.
+`webgpt-consult` lets Codex obtain a verified second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web when a problem deserves a stronger independent review.
 
-Use `follow-up` only for a clear continuation of one consultation. Explicit continuation, or one unique anchor such as a PR, issue, branch, or named artifact, can justify reusing the stored Web conversation.
+Local Codex owns task understanding, evidence selection, and the initial judgment. WebGPT reviews the problem. After the external result is verified, Codex decides locally what to adopt, reject, or modify.
 
-If the match is ambiguous, start fresh. Repeating some context is safer than attaching a request to the wrong consultation.
+```text
+user task
+  → local Codex judgment
+  → choose independent / follow-up
+  → assemble truthful context and evidence
+  → credential / attachment preflight
+  → ChatGPT Web
+  → GPT-5.6 Sol Pro, otherwise High
+  → sentinel + task ID verification
+  → local adoption decision
+  → optional local consultation-state update
+```
 
-## Durable continuity
+Why this project exists:
 
-Long-lived consultation state is stored locally:
+- difficult architecture, debugging, product, and risk decisions often benefit from an independent strong-model review
+- blindly sending local context to the Web creates privacy, evidence-integrity, and model-identity risks
+- Web conversations eventually become long, unavailable, or unreliable, so reusable consultation state is kept locally
+
+<a id="quick-start"></a>
+
+## Quick start
+
+### Requirements
+
+- Python 3.10+
+- Codex
+- Codex Chrome plugin installed and connected
+- ChatGPT Web signed in in Chrome
+- an account that actually exposes GPT-5.6 Sol Pro or High
+
+### Install
+
+If your Codex environment uses the Skills CLI:
+
+```bash
+npx skills add R-jed/webgpt-consult -g -y
+```
+
+You may also clone the complete repository and load it through the Skill or Plugin mechanism supported by your Codex environment. `git clone` alone does not register the Skill.
+
+### Invoke
+
+Open a new Codex task and invoke it explicitly:
+
+```text
+Use $webgpt-consult to get a strict GPT-5.6 Sol review of this architecture.
+```
+
+There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavailable.
+
+<a id="usage"></a>
+
+## Usage
+
+### Review modes
+
+| Mode | Best for | Web conversation |
+|---|---|---|
+| `independent` | deep review, milestone review, adversarial review, architecture reset, materially different questions | fresh conversation |
+| `follow-up` | a clear continuation of one consultation with a unique anchor | may reuse the existing conversation |
+
+In `independent` mode, local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
+
+`follow-up` reuses an old conversation only when continuity is unambiguous. If the match is uncertain, the Skill starts fresh.
+
+### Consultation continuity
+
+Durable consultation state is stored locally:
 
 ```text
 ~/.codex/webgpt-consult/state/<project-id>/<consult-id>.json
 ```
 
-Each snapshot contains only locally adopted reusable state such as user intent, standing constraints, accepted decisions, rejected or deferred paths, open questions, evidence references, and current project state.
+A snapshot contains only locally adopted reusable state such as:
 
-A ChatGPT Web conversation is an execution container. If the stored chat is unavailable, context-limited, visibly forgetting important decisions, or otherwise unreliable, Codex opens a fresh conversation and restores the same consultation from the local snapshot plus the current delta and current evidence.
+- user intent and standing constraints
+- accepted decisions
+- rejected or deferred paths
+- open questions
+- evidence references
+- current project state
 
-<p align="center">
-  <img src="./assets/readme/continuity.svg" width="100%" alt="webgpt-consult keeps durable consultation state locally while allowing Web conversations to be replaced under context pressure">
-</p>
+It does not store a full transcript and does not treat raw Sol output as project truth.
+
+If the old Web conversation is unavailable, context-limited, or visibly unreliable, Codex creates a fresh conversation and restores the same consultation from the local snapshot plus the current delta and current evidence.
 
 List consultations for the current checkout with:
 
@@ -44,7 +126,7 @@ List consultations for the current checkout with:
 python3 scripts/consult_state.py --project-root . list
 ```
 
-Project identity includes the canonical checkout path, so separate clones or worktrees do not silently share consultation state.
+<a id="safety-and-verification"></a>
 
 ## Safety and verification
 
@@ -52,9 +134,9 @@ These boundaries fail closed:
 
 - GPT-5.6 Sol model identity cannot be verified
 - neither Pro nor High is usable
-- executable credentials are detected in transmitted text
-- required evidence was not actually transmitted
-- exact sentinel and task-ID binding fails
+- executable credentials are detected in the packet or transmitted text attachments
+- required evidence was not actually uploaded
+- the final reply cannot be bound to the exact sentinel and task ID
 
 Run preflight immediately before Send:
 
@@ -84,42 +166,37 @@ WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
 ```
 
-`scripts/result_verifier.py` verifies the latest assistant turn. A sentinel merely appearing later in prose does not count.
+`scripts/result_verifier.py` verifies the latest assistant turn. A sentinel appearing later in prose does not count.
 
-## Quick start
+<a id="key-files"></a>
 
-Requirements: Python 3.10+, Codex, a connected Codex Chrome plugin, ChatGPT Web signed in in the selected Chrome profile, and an account that actually exposes GPT-5.6 Sol Pro or High.
+## Key files
 
-If your Codex environment uses the Skills CLI:
+| File | Purpose |
+|---|---|
+| [SKILL.md](SKILL.md) | authoritative Skill execution contract |
+| [README_Agent.md](README_Agent.md) | AI-agent discovery and reading entry point |
+| [agents/openai.yaml](agents/openai.yaml) | display metadata and invocation policy |
+| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser workflow |
+| [references/context-packet-template.md](references/context-packet-template.md) | consultation context template |
+| [scripts/consult_state.py](scripts/consult_state.py) | local consultation-state management |
+| [scripts/model_router.py](scripts/model_router.py) | Pro → High identity and routing policy |
+| [scripts/submission_preflight.py](scripts/submission_preflight.py) | pre-send safety and attachment checks |
+| [scripts/result_verifier.py](scripts/result_verifier.py) | exact external-result binding |
 
-```bash
-npx skills add R-jed/webgpt-consult -g -y
-```
-
-Restart or open a new Codex task, then invoke it explicitly:
-
-```text
-Use $webgpt-consult to get a strict GPT-5.6 Sol review of this architecture.
-```
-
-You may also clone the repository and load the complete directory through the Skill or Plugin mechanism supported by your Codex environment. `git clone` alone does not register the Skill.
-
-There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavailable.
-
-## Release layout
+### Repository layout
 
 ```text
 webgpt-consult/
-├── SKILL.md
 ├── README.md
 ├── README_en.md
 ├── README_Agent.md
+├── SKILL.md
 ├── LICENSE
-├── agents/openai.yaml
-├── assets/readme/
-│   ├── hero.svg
-│   ├── workflow.svg
-│   └── continuity.svg
+├── assets/
+│   └── logo.svg
+├── agents/
+│   └── openai.yaml
 ├── references/
 │   ├── chrome-workflow.md
 │   └── context-packet-template.md
@@ -131,8 +208,6 @@ webgpt-consult/
     ├── result_verifier.py
     └── submission_preflight.py
 ```
-
-AI agents should read [README_Agent.md](README_Agent.md) first and treat [SKILL.md](SKILL.md) as the authoritative execution contract.
 
 ## License
 
