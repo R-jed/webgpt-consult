@@ -12,7 +12,7 @@ Before opening ChatGPT, decide whether this request is:
 List local consultation state when useful:
 
 ```bash
-python3 "$SKILL_DIR/scripts/consult_state.py" --project-root "<project-root>" list
+python3 "<path-to-installed-webgpt-consult>/scripts/consult_state.py" --project-root "<project-root>" list
 ```
 
 Reuse a stored conversation only when there is one clear matching consultation. Explicit continuation or a unique anchor such as a PR, issue, branch, or named artifact is enough. Ambiguous match means fresh chat.
