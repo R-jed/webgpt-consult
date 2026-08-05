@@ -43,7 +43,8 @@ class SourceFile:
     text: str
     source_bytes: int
     included_bytes: int
-    sha256: str
+    source_sha256: str
+    included_sha256: str
     status: str
 
 
@@ -142,7 +143,7 @@ def _collect(
         except UnicodeDecodeError as exc:
             raise BundleError(f"strict UTF-8 decode failed for {label}: {exc}") from exc
 
-        digest = hashlib.sha256(raw).hexdigest()
+        source_sha256 = hashlib.sha256(raw).hexdigest()
         source_bytes = len(raw)
         status = "full"
         included = text
@@ -156,7 +157,9 @@ def _collect(
             included = _truncate_utf8(text, max_file_bytes)
             status = "truncated"
 
-        included_bytes = len(included.encode("utf-8"))
+        included_raw = included.encode("utf-8")
+        included_bytes = len(included_raw)
+        included_sha256 = hashlib.sha256(included_raw).hexdigest()
         if total + included_bytes > max_total_bytes:
             if not allow_partial:
                 raise BundleError(
@@ -173,7 +176,8 @@ def _collect(
                 text=included,
                 source_bytes=source_bytes,
                 included_bytes=included_bytes,
-                sha256=digest,
+                source_sha256=source_sha256,
+                included_sha256=included_sha256,
                 status=status,
             )
         )
@@ -184,42 +188,41 @@ def _collect(
 
 
 def _render(sources: list[SourceFile], skipped: list[str], partial_allowed: bool) -> str:
-    lines = [
+    header = [
         "# webgpt-consult Attachment Bundle",
         "",
         "This bundle contains selected local text files for ChatGPT Web review.",
         "Manifest labels are provenance labels; they do not give ChatGPT access to the local filesystem.",
+        "The bytes and hashes describe the source content inside each code fence. If a source does not end with a newline,",
+        "the bundle adds one wrapper newline before the closing fence; that wrapper newline is not part of included_bytes/included_sha256.",
         "",
         f"Partial bundle explicitly allowed: {'yes' if partial_allowed else 'no'}",
         "",
         "## Manifest",
     ]
     for source in sources:
-        lines.append(
+        header.append(
             f"- `{source.label}` | status={source.status} | source_bytes={source.source_bytes} | "
-            f"included_bytes={source.included_bytes} | sha256={source.sha256}"
+            f"included_bytes={source.included_bytes} | source_sha256={source.source_sha256} | "
+            f"included_sha256={source.included_sha256}"
         )
     if skipped:
-        lines.extend(["", "## Excluded"])
-        lines.extend(f"- {item}" for item in skipped)
+        header.extend(["", "## Excluded"])
+        header.extend(f"- {item}" for item in skipped)
 
-    lines.extend(["", "## Files"])
+    chunks = ["\n".join(header), "\n\n## Files\n"]
     for source in sources:
         fence = _fence_delimiter(source.text)
-        lines.extend([
-            "",
-            f"### `{source.label}`",
-            "",
-            f"{fence}{_language(source.path)}",
-            source.text.rstrip(),
-            fence,
-        ])
+        chunks.append(f"\n### `{source.label}`\n\n{fence}{_language(source.path)}\n")
+        chunks.append(source.text)
+        if not source.text.endswith("\n"):
+            chunks.append("\n")
+        chunks.append(f"{fence}\n")
         if source.status == "truncated":
-            lines.extend([
-                "",
-                "[PARTIAL FILE: content was truncated only because --allow-partial was explicitly supplied.]",
-            ])
-    return "\n".join(lines) + "\n"
+            chunks.append(
+                "\n[PARTIAL FILE: content was truncated only because --allow-partial was explicitly supplied.]\n"
+            )
+    return "".join(chunks)
 
 
 def build_bundle(
