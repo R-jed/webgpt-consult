@@ -30,12 +30,14 @@ Do not inspect cookies, local storage, passwords, browser profiles, or session d
 
 Every tab/page used by this workflow is either `owned` or `unowned`.
 
-Set ownership when the browser resource is first obtained:
+Ownership is scoped to the current Codex conversation:
 
 ```text
-owned   = this Skill invocation explicitly created the tab/page and has its exact handle
-unowned = the tab already existed, was supplied by the user, was merely discovered, or ownership is uncertain
+owned   = this Skill created the tab/page during the current Codex conversation and still has its exact handle
+unowned = the tab predated Skill use, was supplied by the user, was merely discovered, or ownership is uncertain
 ```
+
+Set ownership when the resource is first obtained and preserve that proven value while the same exact handle is reused in later `/webgpt-consult` invocations within the same Codex conversation.
 
 Do not infer ownership later from URL, page title, ChatGPT content, project name, or the fact that the page now contains a WebGPT review.
 
@@ -63,13 +65,13 @@ Do not write this binding to disk. Do not place it in the repository. Do not mai
 
 The tab handle and URL are only locators. The prior Task-ID and sentinel prove that the loaded Web conversation is the intended review thread.
 
-### Establishing a binding
+### Establishing or refreshing a binding
 
-After a successful `independent` review:
+After a successful review:
 
-1. wait until result verification passes;
+1. wait until exact result verification passes;
 2. observe the current browser tab/page handle if the Chrome capability exposes one;
-3. retain the ownership value that was established when that tab/page was first obtained;
+3. retain the ownership value previously established for that exact handle, or establish it now if this is a newly created resource;
 4. observe the exact canonical ChatGPT conversation URL if available;
 5. retain those values together with the verified Task-ID and sentinel in the current Codex working context.
 
@@ -85,7 +87,7 @@ Resolve in this order:
 4. confirm that the immediately relevant prior assistant result contains the expected previous Task-ID and sentinel;
 5. only then treat the conversation as the valid continuation target.
 
-If the exact URL must be opened in a new tab because the old handle is gone, treat that newly created tab according to how it was created. Do not assume it inherited ownership from the lost tab.
+If the exact URL must be opened in a new tab because the old handle is gone, establish ownership from the actual creation event. Do not assume the new tab inherited ownership from the lost tab.
 
 If any identity check fails, switch to `independent`.
 
@@ -115,6 +117,8 @@ Reuse the resolved review conversation only when:
 - it loads successfully;
 - its context remains useful;
 - it is not visibly confused or context-limited.
+
+Preserve the existing ownership value when the same exact tab handle is reused.
 
 If any condition fails, switch to `independent`.
 
@@ -152,9 +156,9 @@ Selection policy:
 verified usable Pro -> verified usable High -> fail
 ```
 
-A disabled, ambiguous, generic, legacy, or non-actionable Pro entry must not block a valid High fallback.
+A checked but disabled candidate is not usable. A disabled, ambiguous, generic, legacy, or non-actionable Pro entry must not block a valid High fallback.
 
-After a model click, capture fresh picker context and confirm the selected tier is checked under the GPT-5.6 Sol family. DOM refs are click locators only.
+After a model click, capture fresh picker context and confirm the selected tier is both checked and enabled under the GPT-5.6 Sol family. DOM refs are click locators only.
 
 Re-verify model identity whenever a fresh conversation or branch is opened.
 
@@ -162,13 +166,15 @@ Re-verify model identity whenever a fresh conversation or branch is opened.
 
 Build the packet from the user's current task and the minimum evidence required for a truthful review.
 
+Generate a fresh Task-ID and sentinel for this invocation using the nonce rule in `context-packet-template.md`. Never reuse the previous review's identifiers, including for `continuation` or `branch`.
+
 For `independent`, keep Codex's local judgment private by default. Send it only when the user specifically wants Sol to attack, compare, or revise that proposal.
 
 For `continuation`, send a compact current delta and any new evidence. Do not resend historical material that the current conversation already contains unless it remains necessary.
 
 For `branch`, send the current task and minimum necessary evidence again. Treat inherited branch history as useful context, not as proof that the reviewer has every current fact.
 
-Run `scripts/submission_preflight.py` over the exact packet and exact attachment list. Do not proceed unless it returns `ok=true`.
+Run `scripts/submission_preflight.py` over the exact packet and exact attachment list. Preflight must confirm that the exact Task-ID line and exact Sentinel line supplied on the command line each occur exactly once in the packet. Do not proceed unless it returns `ok=true`.
 
 ## 8. Fill the composer and upload files
 
@@ -183,11 +189,11 @@ Immediately before Send, confirm:
 - intended review mode;
 - intended conversation or branch;
 - current tab/page handle and ownership when available;
-- verified GPT-5.6 Sol tier;
-- task ID and sentinel;
+- verified and enabled GPT-5.6 Sol tier;
+- fresh Task-ID and sentinel for this invocation;
 - composer content;
 - required attachment chips;
-- preflight passed for this exact payload.
+- preflight passed for this exact payload and identifier pair.
 
 Click Send once.
 
@@ -199,7 +205,7 @@ If ChatGPT rejects the request because the conversation is too long, do not retr
 
 When generation stops, read only the latest assistant turn from a fresh DOM view. Save the extracted text locally only as part of the current task workflow when needed and run `scripts/result_verifier.py`.
 
-The first two non-empty lines must exactly match the expected sentinel and task ID. A sentinel appearing later in prose or in quoted content does not count.
+The first two non-empty lines must exactly match the expected fresh sentinel and task ID for this invocation. A sentinel appearing later in prose or in quoted content does not count.
 
 If verification fails, re-read the latest complete assistant turn once. If it still fails, mark the review incomplete.
 
@@ -229,7 +235,7 @@ The goal is to keep the useful current review available without allowing Skill-c
 After a new binding is safely established:
 
 1. compare the previous and current tab/page handles;
-2. if they are the same, keep the tab open;
+2. if they are the same, keep the tab open and preserve its proven ownership value;
 3. if they are different and the previous tab was explicitly `review_tab_owned_by_skill=true`, close the previous tab;
 4. if the previous tab was unowned or ownership is unknown, leave it open;
 5. keep the current verified bound tab available for possible `continuation` or `branch`.
