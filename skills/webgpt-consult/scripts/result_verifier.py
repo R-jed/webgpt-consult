@@ -18,10 +18,12 @@ def verify(reply: str, sentinel: str, task_id: str) -> dict:
     expected_task = f"Task-ID: {task_id}"
     first_ok = bool(lines) and normalize_line(lines[0]) == sentinel
     task_ok = len(lines) >= 2 and normalize_line(lines[1]) == expected_task
+    body_ok = len(lines) >= 3 and any(normalize_line(line) for line in lines[2:])
     return {
-        "ok": first_ok and task_ok,
+        "ok": first_ok and task_ok and body_ok,
         "sentinel_ok": first_ok,
         "task_id_ok": task_ok,
+        "body_ok": body_ok,
         "expected_sentinel": sentinel,
         "expected_task_line": expected_task,
     }
