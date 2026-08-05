@@ -79,6 +79,19 @@ class AttachmentBundleTests(unittest.TestCase):
                 bundle.build_bundle([source], output)
             self.assertFalse(output.exists())
 
+    def test_markdown_with_four_backticks_gets_longer_outer_fence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "nested.md"
+            source.write_text("# Example\n````python\nprint('nested')\n````\n", encoding="utf-8")
+            output = Path(tmp) / "bundle.md"
+
+            bundle.build_bundle([source], output)
+            text = output.read_text(encoding="utf-8")
+
+            self.assertIn("`````markdown", text)
+            self.assertIn("````python", text)
+            self.assertIn("print('nested')", text)
+
 
 if __name__ == "__main__":
     unittest.main()
