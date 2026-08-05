@@ -1,278 +1,161 @@
-# Codex Chrome Workflow
+# Chrome workflow
 
-Chrome is the browser adapter for WebGPT Consult. It handles navigation, observation, model selection, uploads, Send, waiting, extraction, optional conversation continuation, optional conversation branching, and safe cleanup of browser resources created by the Skill.
+This reference contains the browser-state rules that should remain deterministic. Prompt design, evidence selection, and consultation style belong to Codex and the user's request.
 
-Web conversation continuity is temporary. The Skill does not maintain a local review registry or persistent reviewer memory.
+## 1. Connect and authenticate
 
-## 1. Choose the review mode
-
-Before opening or continuing ChatGPT Web, choose exactly one mode:
-
-- `independent`: fresh conversation for a new or deliberately unanchored second opinion;
-- `continuation`: continue the current useful review conversation;
-- `branch`: continue the same review from an earlier useful message because the current conversation has context pressure.
-
-Use `independent` for a different project, a materially different question, an architecture reset, or any request that benefits from a fresh reviewer view.
-
-Use `continuation` only when the relationship to the active Web review is obvious and the current Codex session still has a verifiable binding to that review.
-
-Use `branch` only when the same review should continue but the currently bound conversation has accumulated too much history.
-
-If the correct path is unclear, use `independent`.
-
-## 2. Connect and authenticate
-
-Read the installed Chrome control Skill before browser work. Initialize the extension binding and confirm ChatGPT is signed in and the composer is available.
+Use the Codex Chrome capability to open ChatGPT Web. Confirm that ChatGPT is signed in and the composer is usable.
 
 Do not inspect cookies, local storage, passwords, browser profiles, or session databases.
 
-## 3. Track browser ownership immediately
+## 2. Track browser ownership when a tab/page is obtained
 
-Every tab/page used by this workflow is either `owned` or `unowned`.
-
-Ownership is scoped to the current Codex conversation:
+Treat every browser resource as either `owned` or `unowned`.
 
 ```text
-owned   = this Skill created the tab/page during the current Codex conversation and still has its exact handle
-unowned = the tab predated Skill use, was supplied by the user, was merely discovered, or ownership is uncertain
+owned   = this Skill created it during the current Codex conversation and still knows the exact handle
+unowned = it existed beforehand, was supplied by the user, was merely discovered, or ownership is uncertain
 ```
 
-Set ownership when the resource is first obtained and preserve that proven value while the same exact handle is reused in later `/webgpt-consult` invocations within the same Codex conversation.
+Ownership follows the exact browser handle. Navigating an existing user tab to ChatGPT does not make it owned. A new conversation URL does not imply a new tab.
 
-Do not infer ownership later from URL, page title, ChatGPT content, project name, or the fact that the page now contains a WebGPT review.
+Never infer ownership later from URL, title, content, project name, or history.
 
-Navigating an existing user tab to ChatGPT does not make it Skill-owned.
+## 3. Resolve conversation continuity
 
-If a fresh conversation or `Branch in new chat` stays in the same existing tab, the tab keeps its previous ownership value. A new conversation URL does not imply a new tab.
-
-Never close an `unowned` tab automatically.
-
-## 4. Session-scoped conversation binding
-
-The browser side needs a deterministic locator for `continuation` without creating durable project memory.
-
-After a review has completed and exact result verification has passed, retain the smallest available binding in the current Codex conversation only:
+After a successful consultation, the current Codex conversation may retain:
 
 ```text
-review_tab_handle: <Chrome plugin tab/page handle when exposed>
-review_tab_owned_by_skill: true | false
-review_conversation_url: <exact canonical chatgpt.com conversation URL when exposed>
-last_task_id: <verified Task-ID>
-last_sentinel: <verified sentinel>
+review_tab_handle
+review_tab_owned_by_skill
+review_conversation_url
+last_request_id
 ```
 
-Do not write this binding to disk. Do not place it in the repository. Do not maintain it across separate Codex conversations.
+Do not persist these values outside the current Codex conversation.
 
-The tab handle and URL are only locators. The prior Task-ID and sentinel prove that the loaded Web conversation is the intended review thread.
+When the user's next request clearly continues the same Web consultation:
 
-### Establishing or refreshing a binding
+1. reuse the bound tab handle if still valid;
+2. otherwise open the exact retained conversation URL when available;
+3. inspect the loaded conversation from fresh browser state;
+4. verify the immediately relevant prior assistant response against `last_request_id`;
+5. continue only if the identity is unambiguous.
 
-After a successful review:
+If any step fails, start a fresh ChatGPT conversation. Never search for an old consultation by guessing from sidebar titles, recent-chat order, browser history, project names, timestamps, or semantic similarity.
 
-1. wait until exact result verification passes;
-2. observe the current browser tab/page handle if the Chrome capability exposes one;
-3. retain the ownership value previously established for that exact handle, or establish it now if this is a newly created resource;
-4. observe the exact canonical ChatGPT conversation URL if available;
-5. retain those values together with the verified Task-ID and sentinel in the current Codex working context.
+If the same consultation should continue but the bound Web conversation is too context-heavy, use `Branch in new chat` from an earlier useful point when that preserves helpful context. If branching is unavailable or unhelpful, start fresh.
 
-Do not establish a binding from an incomplete or unverified Web result.
+Branching is a browser recovery/continuity technique, not a required user-visible consultation mode.
 
-### Resolving a binding for `continuation`
+## 4. Select the Web model
 
-Resolve in this order:
+Open the ChatGPT Web model picker from fresh browser state.
 
-1. try the previously bound Chrome tab/page handle;
-2. if the handle is stale or unavailable, open the exact canonical ChatGPT conversation URL retained by the current Codex session;
-3. inspect the conversation from a fresh DOM view;
-4. confirm that the immediately relevant prior assistant result contains the expected previous Task-ID and sentinel;
-5. only then treat the conversation as the valid continuation target.
-
-If the exact URL must be opened in a new tab because the old handle is gone, establish ownership from the actual creation event. Do not assume the new tab inherited ownership from the lost tab.
-
-If any identity check fails, switch to `independent`.
-
-Never locate a prior review by guessing from sidebar titles, recent-chat order, project names, browser history, approximate timestamps, or semantic similarity.
-
-If multiple candidate conversations exist, treat the binding as ambiguous and switch to `independent`.
-
-## 5. Open the correct Web conversation
-
-### `independent`
-
-Create a fresh ChatGPT conversation.
-
-Prefer using one current Skill-owned review tab when that can be done safely rather than accumulating new tabs unnecessarily. If the browser workflow explicitly creates a new tab, mark it `owned` immediately.
-
-A successful verified result from this conversation replaces any previous session-scoped binding.
-
-Do not close the previous bound tab until the new result has passed verification and the new binding is established.
-
-### `continuation`
-
-Resolve the session binding using Section 4.
-
-Reuse the resolved review conversation only when:
-
-- the prior Task-ID and sentinel match;
-- it loads successfully;
-- its context remains useful;
-- it is not visibly confused or context-limited.
-
-Preserve the existing ownership value when the same exact tab handle is reused.
-
-If any condition fails, switch to `independent`.
-
-### `branch`
-
-Start from the currently verified bound conversation.
-
-Choose an earlier still-relevant message in that review and use `Branch in new chat`.
-
-A branch inherits all conversation history before the selected message. Branching from a near-limit final message may preserve most of the context pressure, so choose the earliest point that still preserves genuinely useful shared context.
-
-The branch may remain in the same browser tab or may produce a different tab/page depending on the browser/UI behavior. Determine this from the actual handle returned or observed. Do not assume a new branch means a new tab.
-
-After branching:
-
-1. confirm the new branch is active;
-2. determine the current tab/page handle and its ownership;
-3. re-open and verify the model picker;
-4. prepare a current packet rather than relying on inherited history alone;
-5. send and verify the new review result;
-6. replace the previous session binding with the new branch handle/URL and new verified Task-ID/sentinel;
-7. only then consider cleanup of the superseded old tab.
-
-If no suitable branch point exists, branching is unavailable, or the new branch is unreliable, switch to `independent`.
-
-If the previous Web review is lost and cannot be identified confidently, start fresh. Do not build a local recovery mechanism for old Web conversations.
-
-## 6. Verify the model
-
-Open the model picker from a fresh DOM view and apply `scripts/model_router.py` semantics.
-
-Selection policy:
+Use this policy only:
 
 ```text
-verified usable Pro -> verified usable High -> fail
+verified GPT-5.6 Sol Pro
+  -> otherwise verified GPT-5.6 Sol High
+  -> otherwise stop
 ```
 
-A checked but disabled candidate is not usable. A disabled, ambiguous, generic, legacy, or non-actionable Pro entry must not block a valid High fallback.
+Only literal `Pro` and `High` entries associated with GPT-5.6 Sol are eligible. Do not map Codex model labels, reasoning levels, localized reasoning labels, or unrelated model names into these tiers.
 
-After a model click, capture fresh picker context and confirm the selected tier is both checked and enabled under the GPT-5.6 Sol family. DOM refs are click locators only.
+Do not maintain a DOM parser or hard-coded element-reference table in this Skill. Use the current browser UI semantically, then re-observe the picker after selection and verify that the intended GPT-5.6 Sol tier is selected and usable.
 
-Re-verify model identity whenever a fresh conversation or branch is opened.
+Re-verify after a fresh conversation or branch.
 
-## 7. Prepare and preflight the exact payload
+## 5. Prepare the consultation
 
-Build the packet from the user's current task and the minimum evidence required for a truthful review.
+Generate a fresh random request ID for every consultation, including follow-ups in the same Web conversation. Example:
 
-Generate a fresh Task-ID and sentinel for this invocation using the nonce rule in `context-packet-template.md`. Never reuse the previous review's identifiers, including for `continuation` or `branch`.
+```text
+wgpt-a83f9271c4e24d11
+```
 
-For `independent`, keep Codex's local judgment private by default. Send it only when the user specifically wants Sol to attack, compare, or revise that proposal.
+Codex should construct the prompt directly from the user's current request. There is no fixed packet schema.
 
-For `continuation`, send a compact current delta and any new evidence. Do not resend historical material that the current conversation already contains unless it remains necessary.
+The prompt may contain whatever task-relevant structure Codex finds useful. It may also ask ChatGPT Web to inspect uploaded code, documents, logs, images, or other files when that helps.
 
-For `branch`, send the current task and minimum necessary evidence again. Treat inherited branch history as useful context, not as proof that the reviewer has every current fact.
+Prefer minimal disclosure:
 
-Run `scripts/submission_preflight.py` over the exact packet and exact attachment list. Preflight must confirm that the exact Task-ID line and exact Sentinel line supplied on the command line each occur exactly once in the packet. Do not proceed unless it returns `ok=true`.
+- send only context relevant to the current question;
+- for code work, use relevant excerpts or selected files before broader directories;
+- avoid uploading an entire repository merely because it is available;
+- remove unrelated personal/private information;
+- never send secrets, authentication material, or payment credentials.
 
-## 8. Fill the composer and upload files
+Run `scripts/safety_guard.py` over text that may contain sensitive values. If it blocks, redact or remove the value locally and scan again.
 
-Fill the complete packet. Verify the exact task ID and sentinel are present.
+For binary/non-text files, inspect them locally before upload. The Skill does not attempt to build a general binary DLP system.
 
-Use the Chrome plugin's real file chooser for attachments. Prefer semantic locators over localized text. Confirm every required attachment is visibly present and no upload is pending or failed.
+## 6. Fill the composer and upload files
 
-## 9. Send exactly once
+Include this line in the prompt:
+
+```text
+Request-ID: <request-id>
+```
+
+Also instruct ChatGPT Web to begin its response with that exact line. The rest of the prompt is unconstrained by the Skill.
+
+Use the real file chooser for attachments. Confirm required attachment chips are visible and uploads have completed successfully.
+
+Never claim a source or file was reviewed unless it was actually included or uploaded.
+
+## 7. Send once
 
 Immediately before Send, confirm:
 
-- intended review mode;
-- intended conversation or branch;
-- current tab/page handle and ownership when available;
-- verified and enabled GPT-5.6 Sol tier;
-- fresh Task-ID and sentinel for this invocation;
-- composer content;
-- required attachment chips;
-- preflight passed for this exact payload and identifier pair.
+- the intended Web conversation is active;
+- the selected model is verified GPT-5.6 Sol Pro or High;
+- the fresh request ID is present;
+- the prompt matches the user's current intent;
+- all required attachments are visibly uploaded;
+- no blocked secret/payment material remains.
 
-Click Send once.
+Send once.
 
-While generation is active, stay in the same conversation. Do not refresh, retry, send a duplicate request, or close that tab.
+While generation is active, do not refresh, duplicate the request, or close that tab.
 
-If ChatGPT rejects the request because the conversation is too long, do not retry the same payload there. Use `branch` from an earlier useful point or switch to `independent`, re-run preflight for the exact new payload, and send once.
+## 8. Verify the result and bind the conversation
 
-## 10. Extract and verify
+When generation stops, inspect only the latest assistant turn from fresh browser state.
 
-When generation stops, read only the latest assistant turn from a fresh DOM view. Save the extracted text locally only as part of the current task workflow when needed and run `scripts/result_verifier.py`.
-
-The first two non-empty lines must exactly match the expected fresh sentinel and task ID for this invocation. A sentinel appearing later in prose or in quoted content does not count.
-
-If verification fails, re-read the latest complete assistant turn once. If it still fails, mark the review incomplete.
-
-Only a verified result may establish or refresh the session-scoped conversation binding.
-
-## 11. Commit the new binding before cleanup
-
-Binding replacement and tab cleanup are ordered operations:
+The first non-empty line must exactly equal:
 
 ```text
-new Web result verified
-  -> establish/refresh new binding
-  -> confirm new binding points to the intended review
-  -> only then inspect superseded browser resources for cleanup
+Request-ID: <request-id>
 ```
 
-Never close the old bound tab first and hope the new binding succeeds afterward.
+There must also be substantive content after that line.
 
-If old and new bindings use the same tab/page handle, there is no superseded tab to close even if the conversation URL changed.
+If the ID does not match, re-read the latest completed assistant turn once. If it still does not match, treat the consultation as incomplete.
 
-## 12. Browser cleanup
+Only after verification passes may the current Codex conversation establish or refresh the temporary binding with the current handle, ownership value, canonical conversation URL when available, and `last_request_id`.
 
-The goal is to keep the useful current review available without allowing Skill-created tabs to accumulate indefinitely.
+## 9. Cleanup
 
-### Normal cleanup
+Binding replacement must happen before cleanup:
 
-After a new binding is safely established:
+```text
+verified result
+  -> new binding established and confirmed
+  -> inspect superseded browser resource
+```
 
-1. compare the previous and current tab/page handles;
-2. if they are the same, keep the tab open and preserve its proven ownership value;
-3. if they are different and the previous tab was explicitly `review_tab_owned_by_skill=true`, close the previous tab;
-4. if the previous tab was unowned or ownership is unknown, leave it open;
-5. keep the current verified bound tab available for possible `continuation` or `branch`.
+If the old and new bindings use the same handle, keep the tab open.
 
-### Failed or abandoned candidates
+If the handles differ, close the old tab only when it is proven Skill-owned. Leave user-owned or ownership-unknown tabs alone.
 
-A temporary candidate tab created by this Skill may be closed when all of the following are true:
+A failed temporary candidate may be closed only when:
 
-- the candidate is explicitly Skill-owned;
-- it did not become the current verified binding;
-- no request is currently generating there;
-- the exact candidate handle is still known.
+- it is proven Skill-owned;
+- it did not become the current binding;
+- its exact handle is still known;
+- no request is still generating there.
 
-Before Send, an owned failed candidate can normally be closed immediately.
+Never use `pkill`, `killall`, generic Chrome termination, process scanning, a background cleanup daemon, or a persistent tab registry.
 
-After Send, do not close the candidate until generation is known to have stopped or the page has reached a terminal failure state. If generation state is uncertain, leave it open.
-
-### Never-touch boundary
-
-Never automatically close:
-
-- user-opened ChatGPT tabs;
-- tabs that existed before the Skill obtained them;
-- tabs whose ownership is uncertain;
-- arbitrary ChatGPT tabs found from sidebar titles or browser history;
-- normal Chrome windows or unrelated browser tabs.
-
-Never use `pkill`, `killall`, broad Chrome termination, process scanning, or another process-level browser cleanup mechanism as part of this Skill.
-
-If a Skill-owned tab cannot be closed safely, leave it alone. Cleanup is best-effort and must never compromise a verified result or active generation.
-
-Do not create a persistent tab registry, background cleanup daemon, or cross-session browser cleanup database.
-
-## 13. Local adoption
-
-Return to the local Codex task.
-
-Compare the external review with local evidence and decide what to adopt, reject, modify, or leave unresolved.
-
-Do not create persistent reviewer memory after adoption.
+If state is uncertain, leave the tab alone.
