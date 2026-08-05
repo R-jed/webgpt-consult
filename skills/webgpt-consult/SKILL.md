@@ -124,6 +124,10 @@ verified enabled GPT-5.6 Sol Pro
   -> otherwise fail closed
 ```
 
+Only literal `Pro` and `High` candidates belonging to the GPT-5.6 Sol family are eligible. Do not map localized labels, Codex reasoning levels, or any other tier names into `Pro` or `High`.
+
+The local Codex model selector, reasoning level, status badge, or any model text shown in the Codex UI is unrelated to WebGPT model verification and must never be used as evidence. Model verification comes only from the ChatGPT Web model picker observed through the Chrome workflow.
+
 A checked but disabled candidate is not usable. Generic model labels or DOM refs alone do not prove GPT-5.6 Sol identity. Re-verify the selected tier from fresh browser state after opening a fresh conversation or branch.
 
 ## Browser lifecycle
