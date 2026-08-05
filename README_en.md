@@ -59,27 +59,43 @@ Why this project exists:
 ### Requirements
 
 - Python 3.10+
-- Codex
+- a current Codex version
 - Codex Chrome plugin installed and connected
 - ChatGPT Web signed in in Chrome
 - an account that actually exposes GPT-5.6 Sol Pro or High
 
-### Install
+### Recommended install
 
-If your Codex environment uses the Skills CLI:
-
-```bash
-npx skills add R-jed/webgpt-consult -g -y
-```
-
-You may also clone the complete repository and load it through the Skill or Plugin mechanism supported by your Codex environment. `git clone` alone does not register the Skill.
-
-### Invoke
-
-Open a new Codex task and invoke it explicitly:
+Current Codex versions include the built-in `$skill-installer`. Run this inside Codex:
 
 ```text
-Use $webgpt-consult to get a strict GPT-5.6 Sol review of this architecture.
+$skill-installer install https://github.com/R-jed/webgpt-consult
+```
+
+The installer places the complete Skill in the Codex skills directory. With the default `CODEX_HOME`, this is typically:
+
+```text
+~/.codex/skills/webgpt-consult/
+```
+
+After installation, restart Codex and open a new task so the Skill is reloaded.
+
+If `$skill-installer` is missing, update Codex first. `webgpt-consult` depends on the Codex Chrome plugin, so this project does not maintain a separate installer for older Codex versions.
+
+> `git clone` is for reading or developing the source only. Cloning the repository does not register the Skill with Codex.
+
+### First use
+
+Implicit invocation is disabled. Invoke the Skill explicitly with `$webgpt-consult`:
+
+```text
+$webgpt-consult Perform an independent GPT-5.6 Sol architecture review of this project.
+```
+
+You can put the exact review goal directly after the Skill name:
+
+```text
+$webgpt-consult Check this fix for overlooked architectural risks and return a second opinion.
 ```
 
 There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavailable.
