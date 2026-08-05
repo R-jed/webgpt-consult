@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.svg" alt="webgpt-consult" width="136" />
+  <img src="./skills/webgpt-consult/assets/logo.svg" alt="webgpt-consult" width="136" />
 </p>
 
 <h1 align="center">webgpt-consult</h1>
@@ -110,16 +110,6 @@ npx skills update webgpt-consult
 ```
 
 如果当前 Codex 会话没有刷新 Skill 列表，再新建 Codex 会话或重启客户端。
-
-### Codex-native 备选安装
-
-如果你希望直接从 Codex 内部安装，也可以使用内置 `/skill-installer`：
-
-```text
-/skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
-```
-
-README 的主推荐方式仍是 `npx skills`。
 
 > `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
@@ -245,7 +235,7 @@ python3 <SKILL_ROOT>/scripts/submission_preflight.py packet.md \
   --attachment ./src/example.py
 ```
 
-Preflight 会同时确认 packet 中指定的 `Task-ID` 和 `Sentinel` 各自精确出现一次。错配或重复都会 fail closed。
+Preflight 会确认 V7 调用标识格式有效、Task-ID 和 sentinel 使用同一 timestamp + nonce，并且 packet 中对应两行各自精确出现一次。错配、重复或旧秒级格式都会 fail closed。
 
 二进制附件需要本地检查后才能显式使用 `--confirm-unscanned-binary`。这个确认不会覆盖已经检测到的凭证。
 
@@ -259,14 +249,15 @@ verified enabled GPT-5.6 Sol High
 fail closed
 ```
 
-外部回复必须以前两行开始：
+外部回复必须以前两行开始，并包含实际审查正文：
 
 ```text
 WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
+<review body>
 ```
 
-`result_verifier.py` 会验证最新 assistant turn。sentinel 只在正文里出现不算完成。
+`result_verifier.py` 会验证最新 assistant turn 的 sentinel、Task-ID 和非空正文。sentinel 只在正文里出现不算完成。
 
 <a id="关键文件"></a>
 
@@ -277,6 +268,7 @@ Task-ID: <task-id>
 | [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) | Skill 的唯一执行规范 |
 | [README_Agent.md](README_Agent.md) | AI Agent 发现、安装和支持入口 |
 | [skills/webgpt-consult/agents/openai.yaml](skills/webgpt-consult/agents/openai.yaml) | Skill 展示信息与 invocation policy |
+| [skills/webgpt-consult/assets/logo.svg](skills/webgpt-consult/assets/logo.svg) | README 与已安装 Skill UI 共用的唯一 logo |
 | [skills/webgpt-consult/references/chrome-workflow.md](skills/webgpt-consult/references/chrome-workflow.md) | ChatGPT Web 浏览器执行、会话绑定、分支与 tab cleanup 流程 |
 | [skills/webgpt-consult/references/context-packet-template.md](skills/webgpt-consult/references/context-packet-template.md) | Web 审查上下文模板 |
 | [skills/webgpt-consult/scripts/model_router.py](skills/webgpt-consult/scripts/model_router.py) | Pro → High 模型身份与路由策略 |
@@ -291,12 +283,12 @@ webgpt-consult/
 ├── README_en.md
 ├── README_Agent.md
 ├── LICENSE
-├── assets/
-│   └── logo.svg
 └── skills/
     └── webgpt-consult/
         ├── SKILL.md
         ├── LICENSE
+        ├── assets/
+        │   └── logo.svg
         ├── agents/
         │   └── openai.yaml
         ├── references/
