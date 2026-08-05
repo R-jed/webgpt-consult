@@ -46,17 +46,11 @@ For the same global Codex install without prompts:
 npx skills add R-jed/webgpt-consult -g -a codex -y
 ```
 
-Codex-native alternative:
-
-```text
-/skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
-```
-
 Do not invent `setup.sh`, a symlink installer, a second package format, or a legacy installer.
 
 If you cannot actually execute or verify installation, provide the command and say that execution was not verified.
 
-For an installation created through `npx skills`, use `npx skills list` to inspect installed Skills and `npx skills update webgpt-consult` to update it. Add `-g` to lifecycle commands when the installation is global.
+Use `npx skills list` to inspect installed Skills and `npx skills update webgpt-consult` to update this Skill. Add `-g` to lifecycle commands when the installation is global.
 
 ### Use the project
 
@@ -84,24 +78,14 @@ Resolve `<SKILL_ROOT>` and read, in order:
 
 ## 1. Product boundary
 
-Local Codex owns:
-
-- task understanding;
-- initial judgment;
-- evidence selection;
-- credential and attachment preflight;
-- model verification;
-- result verification;
-- adoption, rejection, or modification of the external advice.
+Local Codex owns task understanding, initial judgment, evidence selection, preflight, model verification, result verification, and the final adoption decision.
 
 WebGPT is an external reviewer. It is not a second project manager and does not maintain durable project memory.
-
-The intended chain is:
 
 ```text
 user task
   -> local Codex judgment
-  -> choose independent / continuation / branch
+  -> independent / continuation / branch
   -> current truthful evidence
   -> preflight
   -> ChatGPT Web
@@ -112,9 +96,7 @@ user task
 
 ---
 
-## 2. Requirements and installation verification
-
-Runtime requirements:
+## 2. Runtime requirements
 
 - Python 3.10+;
 - current Codex;
@@ -124,12 +106,14 @@ Runtime requirements:
 
 There is no OpenCLI fallback.
 
-The repository uses the standard Agent Skills layout:
+The installable package contains:
 
 ```text
 skills/webgpt-consult/
 ├── SKILL.md
 ├── LICENSE
+├── assets/
+│   └── logo.svg
 ├── agents/
 │   └── openai.yaml
 ├── references/
@@ -145,28 +129,19 @@ skills/webgpt-consult/
 
 Do not hard-code one install path when the Skill was installed through `npx skills`. Resolve the actual `<SKILL_ROOT>` from the current environment.
 
-After installation, ask the user to try `/webgpt-consult` on the next turn. Start a new Codex conversation or restart the client only if the current session has not refreshed its Skill list.
-
 ---
 
 ## 3. Review modes
-
-Choose exactly one mode.
 
 ### `independent`
 
 Use a fresh ChatGPT conversation for a new project, materially different question, architecture reset, deep review, milestone review, adversarial review, or any task that benefits from an unanchored second opinion.
 
-Local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
+Local Codex forms its own judgment first but normally keeps that conclusion private from Sol.
 
 ### `continuation`
 
-Continue the same Web review only when:
-
-- the new request clearly continues the immediately relevant review;
-- the current Codex conversation still has a valid Web conversation binding;
-- the previous review can be verified by its prior Task-ID and sentinel;
-- the Web conversation remains useful and is not context-limited.
+Continue the same Web review only when the new request clearly continues the immediately relevant review, the current Codex conversation still has a valid binding, the previous review can be verified by Task-ID + sentinel, and the Web conversation remains useful.
 
 If any condition is unclear, use `independent`.
 
@@ -174,9 +149,7 @@ If any condition is unclear, use `independent`.
 
 Use `Branch in new chat` when the same review should continue but the current Web conversation has accumulated too much context.
 
-Choose an earlier still-relevant message. After branching, re-verify the GPT-5.6 Sol tier and resend the current task plus the minimum evidence needed now.
-
-If no useful branch point exists, use `independent`.
+Choose an earlier still-relevant message, re-verify the GPT-5.6 Sol tier, and resend the current task plus the minimum evidence needed now. If no useful branch point exists, use `independent`.
 
 ---
 
@@ -184,7 +157,7 @@ If no useful branch point exists, use `independent`.
 
 Do not search ChatGPT history for a conversation that merely looks related.
 
-After a Web review completes and exact result verification passes, retain only this temporary binding inside the current Codex conversation:
+After exact result verification passes, retain only this temporary binding inside the current Codex conversation:
 
 ```text
 review_tab_handle: <exact browser handle when available>
@@ -194,80 +167,45 @@ last_task_id: <verified prior Task-ID>
 last_sentinel: <verified prior sentinel>
 ```
 
-The tab handle and URL are locators. The prior `Task-ID + sentinel` are the conversation identity check.
+The handle and URL are locators. The prior `Task-ID + sentinel` are the conversation identity check.
 
 For `continuation`:
 
 ```text
 bound tab handle
-  -> exact retained conversation URL if handle is stale
+  -> retained exact conversation URL if handle is stale
   -> fresh DOM inspection
-  -> match previous Task-ID + sentinel
+  -> previous Task-ID + sentinel match
   -> continuation allowed
 ```
 
 Never identify a previous review from sidebar title, recent-chat order, browser history, project name, approximate time, or semantic similarity alone.
 
-The binding is temporary and lives only in the current Codex conversation. Do not persist it to files, repository state, a database, or a long-lived cache.
+The binding lives only in the current Codex conversation. Do not persist it.
 
-Every new consultation invocation must generate a fresh Task-ID and sentinel with a fresh random nonce. `continuation` reuses the conversation binding, not the previous invocation identifiers.
+Every new consultation invocation generates a fresh Task-ID and sentinel with a fresh random nonce. `continuation` reuses the Web conversation, not previous invocation identifiers.
 
 ---
 
 ## 5. Browser ownership and cleanup
 
-Browser-resource ownership is part of correctness because Codex uses the user's real Chrome environment.
+A tab/page is `skill-owned` only when this Skill created it during the current Codex conversation and its exact handle still identifies the same resource. Proven ownership persists when the same handle is reused by later `continuation` invocations.
 
-A tab/page is `skill-owned` only when this Skill created it during the current Codex conversation and its exact handle still identifies the same resource. Proven ownership persists when that same handle is reused by later `continuation` invocations.
+Everything else is `unowned`, including user-opened, pre-existing, merely discovered, or uncertain tabs.
 
-A tab/page is `unowned` when:
-
-- it existed before the Skill used it;
-- the user supplied or opened it;
-- it was merely discovered;
-- ownership is uncertain.
-
-Never infer ownership from a ChatGPT URL, title, conversation contents, or project name.
-
-### Cleanup order
-
-When a new review replaces the current binding:
+When a new review replaces the binding:
 
 ```text
-verify new Web result
-  -> establish new binding
-  -> confirm new binding
-  -> inspect old tab ownership
+verify new result
+  -> establish and confirm new binding
   -> close old tab only if it is distinct and skill-owned
 ```
 
-Never close the old bound tab before the new review is verified.
+A failed temporary candidate may be closed only when it is skill-owned, did not become the verified binding, its exact handle is known, and no request is still generating there.
 
-If old and new conversation URLs use the same tab handle, there is no old tab to close.
+Never close user/pre-existing/unknown tabs. Never use `pkill`, `killall`, broad Chrome termination, process scanning, a background cleanup daemon, or a persistent tab registry.
 
-### Failed candidates
-
-A temporary candidate tab may be closed only when:
-
-- the Skill explicitly created it;
-- it did not become the verified binding;
-- its exact handle is still known;
-- no request is still generating there.
-
-If generation state or ownership is uncertain, leave the tab open.
-
-### Never-touch boundary
-
-Never automatically close:
-
-- user-opened ChatGPT tabs;
-- pre-existing Chrome tabs;
-- tabs with uncertain ownership;
-- unrelated Chrome windows or tabs.
-
-Never use `pkill`, `killall`, broad Chrome termination, process scanning, a background cleanup daemon, or a persistent tab registry.
-
-Cleanup is best-effort. A cleanup failure does not invalidate an otherwise verified consultation result.
+Cleanup is best-effort and never invalidates a verified review.
 
 ---
 
@@ -275,9 +213,7 @@ Cleanup is best-effort. A cleanup failure does not invalidate an otherwise verif
 
 Do not maintain local review-history files, project summaries, accepted-decision caches, conversation registries, or stored WebGPT memory for future consultations.
 
-Each invocation should be grounded in the user's current task and the evidence that currently matters.
-
-For `continuation` and `branch`, carry only the current delta and evidence required for the next review. Do not create a hidden long-term project summary just to preserve WebGPT continuity.
+Each invocation should be grounded in the current task and current evidence. For `continuation` and `branch`, carry only the delta and evidence needed now.
 
 ---
 
@@ -286,29 +222,25 @@ For `continuation` and `branch`, carry only the current delta and evidence requi
 Fail closed when:
 
 - GPT-5.6 Sol identity cannot be verified;
-- neither verified Pro nor verified High is usable;
-- the selected tier is disabled;
+- neither verified Pro nor verified High is usable and enabled;
 - executable credentials are detected in transmitted text;
 - required evidence was not actually transmitted;
+- V7 Task-ID/sentinel format is invalid or the nonce pair does not match;
 - packet Task-ID/sentinel do not exactly match the preflight arguments;
-- the latest result cannot be bound to the exact sentinel and Task-ID.
+- the latest result cannot be bound to the exact sentinel and Task-ID;
+- the returned review has no substantive body after its two binding headers.
 
 Never transmit known executable credentials, cookies, private keys, browser profiles, session material, or unrelated private context.
 
 Model route:
 
 ```text
-verified usable GPT-5.6 Sol Pro
-  -> otherwise verified usable GPT-5.6 Sol High
+verified enabled GPT-5.6 Sol Pro
+  -> otherwise verified enabled GPT-5.6 Sol High
   -> otherwise fail closed
 ```
 
-The external response must begin with the fresh identifiers for this invocation:
-
-```text
-WEBGPT_CONSULT_RESULT_<unique-id>
-Task-ID: <task-id>
-```
+The external response must begin with the fresh identifiers for this invocation and contain review content afterward.
 
 Only after exact result verification may the current Codex conversation establish or refresh the Web conversation binding.
 
@@ -321,16 +253,14 @@ During an actual `/webgpt-consult` execution:
 - unresolved `<SKILL_ROOT>` -> report the installation problem;
 - Chrome plugin unavailable -> stop;
 - ChatGPT not signed in -> ask the user to sign in;
-- no verified Pro or High -> fail closed;
-- selected tier disabled -> fail closed or use the valid fallback;
+- no verified enabled Pro or High -> fail closed;
 - preflight failure or identifier mismatch -> do not Send;
 - attachment upload failure -> do not claim the artifact was reviewed;
 - generation active -> do not duplicate Send or close that tab;
 - result verification failure -> mark the review incomplete;
 - ambiguous or unverifiable continuation -> use `independent`;
 - context-limited conversation -> use `branch`, otherwise `independent`;
-- unknown tab ownership -> leave it open;
-- failed cleanup -> keep the verified review result and report cleanup only if it causes a meaningful user-visible issue.
+- unknown tab ownership -> leave it open.
 
 Do not claim success for installation, model selection, upload, consultation, binding, or cleanup that was not actually observed.
 
@@ -343,15 +273,14 @@ Do not claim success for installation, model selection, upload, consultation, bi
 | "Install it." | `npx skills add R-jed/webgpt-consult` and note that the CLI defaults to project scope. |
 | "Install globally for Codex." | `npx skills add R-jed/webgpt-consult -g -a codex` |
 | "Install globally for Codex without prompts." | `npx skills add R-jed/webgpt-consult -g -a codex -y` |
-| "Can I install from Codex?" | Use the documented `/skill-installer` path as an alternative. |
 | "How do I update it?" | `npx skills update webgpt-consult`; add `-g` for a global install. |
 | "How do I use it?" | `/webgpt-consult <review request>` |
 | "Does Sol replace Codex?" | No. Sol is advisory; local Codex makes the final decision. |
 | "How does it find the previous review?" | Current-session binding plus prior Task-ID and sentinel verification. |
 | "What if the Web chat is too long?" | Use `branch` from an earlier useful point, or `independent` if no useful branch point exists. |
 | "Does it store project memory locally?" | No. |
-| "Will it close my Chrome tabs?" | It may close only superseded tabs that the Skill created in the current Codex conversation and can identify exactly. User/pre-existing/unknown tabs are left alone. |
-| "Does it kill browser processes?" | No. Process-level browser cleanup is outside this Skill. |
+| "Will it close my Chrome tabs?" | Only superseded tabs created by this Skill in the current Codex conversation and still identified exactly. |
+| "Does it kill browser processes?" | No. |
 
 ---
 
@@ -371,6 +300,7 @@ Runtime source of truth:
 skills/webgpt-consult/SKILL.md
 skills/webgpt-consult/references/chrome-workflow.md
 skills/webgpt-consult/references/context-packet-template.md
+skills/webgpt-consult/scripts/
 ```
 
 If this file and `SKILL.md` conflict during execution, follow `SKILL.md`.
