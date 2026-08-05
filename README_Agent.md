@@ -2,109 +2,67 @@
 
 > **For AI agents.** Human readers should use [README.md](README.md) or [README_en.md](README_en.md).
 
-This file is the discovery, installation-support, and bootstrap guide for AI agents handling `webgpt-consult` on behalf of a user.
+This file tells an AI Agent how to explain, install, verify, troubleshoot, and hand off into `webgpt-consult` without inventing behavior that the project does not support.
 
-A user should be able to provide this repository URL and receive an accurate explanation, installation path, verification steps, invocation example, troubleshooting path, and runtime handoff.
+Reading this file does not authorize installation, environment changes, or a Web consultation.
 
-Reading this file alone does not authorize installation, environment changes, or an external Web review.
-
-The repository root is the project and discovery surface. The canonical installable Skill package is:
+The canonical installable Skill package is:
 
 ```text
 skills/webgpt-consult/
 ```
 
-`<SKILL_ROOT>` means the actual installed location of that Skill as resolved by the installer or Codex environment. Do not hard-code `~/.codex/skills/webgpt-consult/` when the Skill was installed through `npx skills`, because the CLI may use an agent-specific or shared Agent Skills location.
+`<SKILL_ROOT>` means the actual installed location resolved by the current Agent Skills/Codex environment.
 
 ---
 
-## 0. First instruction for the Agent
+## 0. Route the user's intent first
 
-Classify the user's intent and follow exactly one path.
+### Explain the project
 
-### A. The user is asking what this project is
+Explain only. Do not install anything and do not start a Web review.
 
-Explain the project from this file. Do not install anything and do not start a Web review.
+Minimum accurate description:
 
-Minimum explanation:
+> `webgpt-consult` is a Codex Skill that obtains a verified GPT-5.6 Sol Pro or High second opinion through ChatGPT Web. Local Codex prepares the current evidence, verifies the external result, and remains responsible for the final decision.
 
-> `webgpt-consult` is a Codex Skill that lets local Codex obtain a verified GPT-5.6 Sol Pro or High second opinion through ChatGPT Web. Codex prepares the current evidence, verifies the returned result, and remains responsible for the final decision.
+### Install the project
 
-Mention the Codex Chrome plugin dependency and explicit `/webgpt-consult` invocation when relevant.
-
-### B. The user is asking to install the project
-
-Use the open Agent Skills CLI as the primary public installation path:
+Primary public install:
 
 ```bash
-npx skills add R-jed/webgpt-consult -g -a codex
+npx skills add R-jed/webgpt-consult
 ```
 
-For a non-interactive install:
+For an explicit non-interactive global Codex install:
 
 ```bash
 npx skills add R-jed/webgpt-consult -g -a codex -y
 ```
 
-The repository uses the standard `skills/<name>/SKILL.md` layout, so the CLI can discover `webgpt-consult` from the repository root.
-
-Do not invent a project-specific installer, `setup.sh`, symlink script, or package format.
-
-After installation, verify through the same lifecycle tool when possible:
-
-```bash
-npx skills list -g -a codex
-```
-
-Then tell the user to try `/webgpt-consult` on the next turn. Start a new Codex session or restart the client only if the current session has not refreshed its Skill list.
-
-If the Agent cannot run terminal commands in the current environment, provide the exact command. Never claim installation succeeded when it was not actually executed or verified.
-
-### C. The user wants the Codex-native installer
-
-The supported Codex-native alternative is:
+Codex-native alternative:
 
 ```text
 /skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
 ```
 
-This points directly to the canonical Skill package.
+Do not invent `setup.sh`, a symlink installer, a second package format, or a legacy installer.
 
-Treat `/skill-installer` as an alternative for users who specifically want installation from inside Codex. Do not present it as the primary public installation path while `npx skills` is available.
+If you cannot actually execute or verify installation, provide the command and say that execution was not verified.
 
-### D. The user is asking how to update the Skill
+### Use the project
 
-If the Skill was installed with `npx skills`, use its lifecycle command:
-
-```bash
-npx skills update webgpt-consult -g
-```
-
-Do not claim that re-running Codex `/skill-installer` upgrades an existing installation. The Codex installer may stop when the destination already exists.
-
-### E. The user is asking how to use the project
-
-Show the explicit entry point:
+The user-facing entry point is:
 
 ```text
 /webgpt-consult <review request>
 ```
 
-Examples:
+Ordinary discussion about the repository is not an invocation.
 
-```text
-/webgpt-consult 对这个项目做一次独立的 GPT-5.6 Sol 架构审查。
-```
+### Execute `/webgpt-consult`
 
-```text
-/webgpt-consult Check this fix for overlooked architectural risks.
-```
-
-Do not treat ordinary discussion about the repository as an invocation.
-
-### F. The user actually invokes `/webgpt-consult`
-
-Enter the runtime workflow. Resolve the installed `<SKILL_ROOT>`, then read in this order:
+Resolve `<SKILL_ROOT>` and read, in order:
 
 ```text
 1. <SKILL_ROOT>/SKILL.md
@@ -112,32 +70,23 @@ Enter the runtime workflow. Resolve the installed `<SKILL_ROOT>`, then read in t
 3. <SKILL_ROOT>/references/context-packet-template.md
 ```
 
-Then execute the review contract defined there.
-
-### G. The user is troubleshooting installation or invocation
-
-Check the smallest relevant set of facts first:
-
-1. Is Node.js / `npx` available if the user chose the recommended installer?
-2. Does `npx skills list -g -a codex` show `webgpt-consult` when it was installed globally for Codex?
-3. Can the actual installed `<SKILL_ROOT>` be resolved?
-4. Does that Skill root contain `SKILL.md`, `LICENSE`, `agents/openai.yaml`, `references/`, and `scripts/`?
-5. If just installed, has the user tried the next turn before assuming a restart is required?
-6. Is the user invoking `/webgpt-consult` explicitly?
-7. Is the Codex Chrome plugin installed and connected?
-8. Is ChatGPT Web signed in, with GPT-5.6 Sol Pro or High actually exposed?
-
-Report the first verified blocker. Do not fabricate installation or runtime capability.
+`SKILL.md` is authoritative if any support document conflicts with it.
 
 ---
 
-## 1. Project identity
+## 1. Product boundary
 
-`webgpt-consult` is a Codex-specific Skill for obtaining a verified independent second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web.
+Local Codex owns:
 
-Local Codex remains authoritative. It owns task understanding, initial judgment, evidence selection, preflight, model verification, result verification, and the final adoption decision.
+- task understanding;
+- initial judgment;
+- evidence selection;
+- credential and attachment preflight;
+- model verification;
+- result verification;
+- adoption, rejection, or modification of the external advice.
 
-WebGPT is an external reviewer. It does not maintain a long-lived model of the user's project and is not a second project manager.
+WebGPT is an external reviewer. It is not a second project manager and does not maintain durable project memory.
 
 The intended chain is:
 
@@ -145,38 +94,29 @@ The intended chain is:
 user task
   -> local Codex judgment
   -> choose independent / continuation / branch
-  -> current truthful context + evidence
-  -> credential / attachment preflight
+  -> current truthful evidence
+  -> preflight
   -> ChatGPT Web
   -> verified GPT-5.6 Sol Pro, otherwise High
-  -> exact sentinel + task-ID verification
+  -> exact sentinel + Task-ID verification
   -> local adoption decision
 ```
 
-Use this project for difficult architecture, debugging, product, business, risk, and file-grounded review work where a strong independent second opinion can improve the decision.
-
 ---
 
-## 2. Requirements
+## 2. Requirements and installation verification
 
-| Requirement | Why it matters |
-|---|---|
-| Node.js / `npx` | Recommended Skill installation and lifecycle management |
-| Python 3.10+ | Runtime helper scripts |
-| Current Codex | Skill loading and current command/capability support |
-| Codex Chrome plugin | Only supported browser transport |
-| Chrome signed into ChatGPT Web | Required Web session |
-| GPT-5.6 Sol Pro or High available to the account | Required external reviewer tier |
+Runtime requirements:
+
+- Python 3.10+;
+- current Codex;
+- Codex Chrome plugin connected;
+- Chrome signed into ChatGPT Web;
+- GPT-5.6 Sol Pro or High actually available.
 
 There is no OpenCLI fallback.
 
----
-
-## 3. Installation contract
-
-### Canonical source
-
-The repository contains exactly one installable runtime source:
+The repository uses the standard Agent Skills layout:
 
 ```text
 skills/webgpt-consult/
@@ -195,250 +135,161 @@ skills/webgpt-consult/
     └── submission_preflight.py
 ```
 
-Repository-level README files and `assets/` are discovery/documentation surfaces and are not runtime duplicates.
+Do not hard-code one install path when the Skill was installed through `npx skills`. Resolve the actual `<SKILL_ROOT>` from the current environment.
 
-### Recommended public install
-
-```bash
-npx skills add R-jed/webgpt-consult -g -a codex
-```
-
-The `-g` flag is appropriate because `webgpt-consult` is designed as a reusable Codex capability across projects. The `-a codex` flag targets Codex explicitly.
-
-The installer may manage the Skill through an agent-specific directory or a shared Agent Skills location depending on its current implementation. Therefore:
-
-- use `npx skills list -g -a codex` for installation verification;
-- resolve the actual `<SKILL_ROOT>` at runtime;
-- do not make correctness depend on one hard-coded filesystem path.
-
-### Update
-
-```bash
-npx skills update webgpt-consult -g
-```
-
-### Inspect before installing
-
-```bash
-npx skills add R-jed/webgpt-consult --list
-```
-
-### Codex-native alternative
-
-```text
-/skill-installer install https://github.com/R-jed/webgpt-consult/tree/main/skills/webgpt-consult
-```
-
-This remains useful when the user explicitly wants to perform installation from inside Codex.
-
-### Installation report
-
-When useful, report:
-
-```text
-WebGPT Consult status
-
-Repository: R-jed/webgpt-consult
-Canonical package: skills/webgpt-consult/
-Primary installer: npx skills
-Target agent: codex
-Scope: global
-Installed: yes / no / not checked
-Skill root: <verified path> / not resolved
-Chrome plugin: connected / missing / not checked
-ChatGPT Web login: ready / missing / not checked
-GPT-5.6 Sol Pro or High: available / unavailable / not checked
-Next command: /webgpt-consult <review request>
-```
-
-Only mark a field as ready when it was actually verified.
+After installation, ask the user to try `/webgpt-consult` on the next turn. Start a new Codex conversation or restart the client only if the current session has not refreshed its Skill list.
 
 ---
 
-## 4. User-facing invocation
+## 3. Review modes
 
-Implicit invocation is disabled in `agents/openai.yaml`.
-
-The supported user-facing entry is:
-
-```text
-/webgpt-consult <review request>
-```
-
-Representative requests:
-
-```text
-/webgpt-consult Deep review this architecture before implementation.
-```
-
-```text
-/webgpt-consult Review this debugging diagnosis and identify the strongest counterargument.
-```
-
-```text
-/webgpt-consult Continue the current Web review using the new implementation evidence.
-```
-
-Preserve the user's actual task rather than replacing it with a generic review prompt.
-
----
-
-## 5. Review modes
-
-The Skill uses one mode field with three possible values.
+Choose exactly one mode.
 
 ### `independent`
 
-Start a fresh ChatGPT Web conversation for deep reviews, milestone reviews, adversarial reviews, architecture resets, different projects, materially different questions, or any request that benefits from an unanchored second opinion.
+Use a fresh ChatGPT conversation for a new project, materially different question, architecture reset, deep review, milestone review, adversarial review, or any task that benefits from an unanchored second opinion.
 
 Local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
-Share the local proposal only when the user explicitly wants Sol to attack, compare, or revise it.
-
 ### `continuation`
 
-Continue the current Web conversation only when the new request clearly continues the same review and the current Codex session can resolve and verify the bound Web conversation.
+Continue the same Web review only when:
 
-Useful signals include an explicit request to continue, new evidence directly following the immediately preceding review, or the same artifact or decision being examined one step further.
+- the new request clearly continues the immediately relevant review;
+- the current Codex conversation still has a valid Web conversation binding;
+- the previous review can be verified by its prior Task-ID and sentinel;
+- the Web conversation remains useful and is not context-limited.
 
-If the relationship is ambiguous, the session binding is unavailable, the project changed, or the question changed materially, use `independent`.
+If any condition is unclear, use `independent`.
 
 ### `branch`
 
-Use `Branch in new chat` when the same review should continue but the bound Web conversation has accumulated enough history to create context pressure.
+Use `Branch in new chat` when the same review should continue but the current Web conversation has accumulated too much context.
 
-Choose an earlier still-relevant message as the branch point. The new branch inherits all conversation history before that message.
+Choose an earlier still-relevant message. After branching, re-verify the GPT-5.6 Sol tier and resend the current task plus the minimum evidence needed now.
 
-After branching:
-
-```text
-confirm branch
-  -> re-verify GPT-5.6 Sol tier
-  -> send current task + minimum evidence
-  -> verify the result
-  -> bind the current Codex session to the new branch
-```
-
-If no useful branch point exists or the branch is unreliable, use `independent`.
+If no useful branch point exists, use `independent`.
 
 ---
 
-## 6. How the same Web conversation is found
+## 4. Session-scoped Web conversation binding
 
-The Skill does not search ChatGPT history for a conversation that merely looks related.
+Do not search ChatGPT history for a conversation that merely looks related.
 
-Instead, it uses a temporary binding that exists only inside the current Codex conversation.
-
-After a Web review succeeds and the returned result passes exact Task-ID and sentinel verification, the Agent retains the smallest browser identity currently available:
+After a Web review completes and exact result verification passes, retain only this temporary binding inside the current Codex conversation:
 
 ```text
-review_tab_handle: <Chrome tab/page handle when available>
-review_conversation_url: <exact chatgpt.com conversation URL when available>
+review_tab_handle: <exact browser handle when available>
+review_tab_owned_by_skill: true | false
+review_conversation_url: <exact canonical chatgpt.com conversation URL when available>
 last_task_id: <verified prior Task-ID>
 last_sentinel: <verified prior sentinel>
 ```
 
-For `continuation`, resolve in this order:
+The tab handle and URL are locators. The prior `Task-ID + sentinel` are the conversation identity check.
+
+For `continuation`:
 
 ```text
-previous bound Chrome tab/page handle
-  -> exact previously observed ChatGPT conversation URL
+bound tab handle
+  -> exact retained conversation URL if handle is stale
   -> fresh DOM inspection
   -> match previous Task-ID + sentinel
   -> continuation allowed
 ```
 
-The handle and URL only locate the candidate page. The previous Task-ID and sentinel verify that it is the correct review conversation.
+Never identify a previous review from sidebar title, recent-chat order, browser history, project name, approximate time, or semantic similarity alone.
 
-If the tab is gone, the URL is unavailable, the prior Task-ID/sentinel cannot be matched, or multiple candidate conversations exist, use `independent`.
-
-Never choose a previous Web review based only on:
-
-- ChatGPT sidebar title;
-- recent-chat ordering;
-- browser history;
-- project name;
-- approximate time;
-- semantic similarity to the current task.
-
-A successful `independent` review establishes the current binding. A successful `continuation` refreshes it. A successful `branch` replaces it with the new branch.
-
-The binding lives only for the current Codex conversation. Starting a new Codex conversation means there is no prior Web binding, so the safe default is `independent`.
+The binding is temporary and lives only in the current Codex conversation. Do not persist it to files, repository state, a database, or a long-lived cache.
 
 ---
 
-## 7. No local reviewer memory
+## 5. Browser ownership and cleanup
 
-Do not create or maintain local review-history files, conversation registries, project summaries, accepted-decision caches, stored ChatGPT conversation URLs, or review IDs for future reuse.
+Browser-resource ownership is part of correctness because Codex uses the user's real Chrome environment.
 
-The Web model should receive what is needed for the current review. Historical conclusions should be reintroduced only when they remain factual inputs required by the current question.
+A tab/page is `skill-owned` only when this Skill explicitly created it through the browser capability and still has its exact handle.
 
-An open Web tab and the current Codex session binding may provide temporary continuity. They are not project memory.
+A tab/page is `unowned` when:
 
----
+- it existed before the Skill used it;
+- the user supplied or opened it;
+- it was merely discovered;
+- ownership is uncertain.
 
-## 8. Context pressure and branching
+Never infer ownership from a ChatGPT URL, title, conversation contents, or project name.
 
-Use `continuation` while the bound Web review remains compact and useful.
+### Cleanup order
 
-Move to `branch` when the same review should continue but the active conversation has accumulated too much history.
-
-Branching procedure:
+When a new review replaces the current binding:
 
 ```text
-resolve and verify the current binding
-  -> identify an earlier useful branch point
-  -> Branch in new chat
-  -> confirm the new branch is active
-  -> re-verify GPT-5.6 Sol Pro / High
-  -> send the current task + minimum necessary evidence
-  -> verify the result
-  -> replace the binding with the new branch
+verify new Web result
+  -> establish new binding
+  -> confirm new binding
+  -> inspect old tab ownership
+  -> close old tab only if it is distinct and skill-owned
 ```
 
-If no suitable branch point exists, start fresh with `independent`.
+Never close the old bound tab before the new review is verified.
 
-Do not build a local summary system to compensate for a lost Web conversation. Rebuild the current review from the current task and evidence.
+If old and new conversation URLs use the same tab handle, there is no old tab to close.
+
+### Failed candidates
+
+A temporary candidate tab may be closed only when:
+
+- the Skill explicitly created it;
+- it did not become the verified binding;
+- its exact handle is still known;
+- no request is still generating there.
+
+If generation state or ownership is uncertain, leave the tab open.
+
+### Never-touch boundary
+
+Never automatically close:
+
+- user-opened ChatGPT tabs;
+- pre-existing Chrome tabs;
+- tabs with uncertain ownership;
+- unrelated Chrome windows or tabs.
+
+Never use `pkill`, `killall`, broad Chrome termination, process scanning, a background cleanup daemon, or a persistent tab registry.
+
+Cleanup is best-effort. A cleanup failure does not invalidate an otherwise verified consultation result.
 
 ---
 
-## 9. Safety and evidence integrity
+## 6. No local reviewer memory
 
-These boundaries fail closed:
+Do not maintain local review-history files, project summaries, accepted-decision caches, conversation registries, or stored WebGPT memory for future consultations.
 
-- GPT-5.6 Sol model identity cannot be verified;
+Each invocation should be grounded in the user's current task and the evidence that currently matters.
+
+For `continuation` and `branch`, carry only the current delta and evidence required for the next review. Do not create a hidden long-term project summary just to preserve WebGPT continuity.
+
+---
+
+## 7. Evidence, model, and result verification
+
+Fail closed when:
+
+- GPT-5.6 Sol identity cannot be verified;
 - neither verified Pro nor verified High is usable;
 - executable credentials are detected in transmitted text;
 - required evidence was not actually transmitted;
-- the latest result cannot be bound to the exact sentinel and task ID.
+- the latest result cannot be bound to the exact sentinel and Task-ID.
 
 Never transmit known executable credentials, cookies, private keys, browser profiles, session material, or unrelated private context.
 
-Never claim an artifact was reviewed unless its actual contents were transmitted.
-
-Text attachments are scanned before Send. Non-text attachments require explicit local review before the binary confirmation flag may be used. That confirmation cannot override a detected credential finding.
-
----
-
-## 10. Model policy
-
-The supported model route is fixed:
+Model route:
 
 ```text
 verified usable GPT-5.6 Sol Pro
-    -> otherwise verified usable GPT-5.6 Sol High
-    -> otherwise fail closed
+  -> otherwise verified usable GPT-5.6 Sol High
+  -> otherwise fail closed
 ```
-
-`scripts/model_router.py` is the deterministic policy source inside `<SKILL_ROOT>`.
-
-A generic GPT-5 Pro label or a DOM locator does not prove GPT-5.6 Sol identity. The selected tier must be verified from fresh browser state.
-
-Re-verify model identity after creating a fresh conversation or branch.
-
----
-
-## 11. Result verification and local adoption
 
 The external response must begin with:
 
@@ -447,106 +298,64 @@ WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
 ```
 
-After generation completes, the latest assistant turn is extracted and verified with `<SKILL_ROOT>/scripts/result_verifier.py`.
-
-A verified Sol response is advisory evidence. Local Codex compares it with local facts and its own prior judgment, then decides what to adopt, reject, modify, or leave unresolved.
-
-For an independent review, preserve meaningful disagreement between Codex and Sol when it matters. Do not manufacture consensus.
-
-Only a verified result may establish or refresh the temporary Web conversation binding.
+Only after exact result verification may the current Codex conversation establish or refresh the Web conversation binding.
 
 ---
 
-## 12. Runtime file order
-
-When `/webgpt-consult` is actually invoked, read:
-
-```text
-1. <SKILL_ROOT>/SKILL.md
-2. <SKILL_ROOT>/references/chrome-workflow.md
-3. <SKILL_ROOT>/references/context-packet-template.md
-```
-
-Supporting runtime files:
-
-| File | Purpose |
-|---|---|
-| `agents/openai.yaml` | Display metadata and explicit invocation policy |
-| `scripts/model_router.py` | Pro -> High routing policy |
-| `scripts/submission_preflight.py` | Exact pre-Send safety and attachment checks |
-| `scripts/check_packet_safety.py` | Credential and unsafe-packet scanning |
-| `scripts/build_attachment_bundle.py` | Faithful bundling of multiple text artifacts |
-| `scripts/result_verifier.py` | Exact sentinel and task-ID binding |
-
-If this guide and `SKILL.md` ever conflict during execution, the installed `<SKILL_ROOT>/SKILL.md` is authoritative.
-
----
-
-## 13. Repository layout
-
-```text
-webgpt-consult/
-├── README.md
-├── README_en.md
-├── README_Agent.md
-├── LICENSE
-├── assets/
-│   └── logo.svg
-└── skills/
-    └── webgpt-consult/
-        ├── SKILL.md
-        ├── LICENSE
-        ├── agents/
-        │   └── openai.yaml
-        ├── references/
-        │   ├── chrome-workflow.md
-        │   └── context-packet-template.md
-        └── scripts/
-            ├── build_attachment_bundle.py
-            ├── check_packet_safety.py
-            ├── model_router.py
-            ├── result_verifier.py
-            └── submission_preflight.py
-```
-
----
-
-## 14. How to answer common user requests
-
-| User request | Agent response |
-|---|---|
-| "What is this project?" | Explain the verified GPT-5.6 Sol second-opinion workflow and local Codex authority. |
-| "Should I install it?" | Recommend it when the user regularly wants independent WebGPT review from Codex and has the Chrome/model prerequisites. |
-| "Install it." | Prefer `npx skills add R-jed/webgpt-consult -g -a codex`. |
-| "Can I install it from Codex?" | Yes. Use the explicit `/skill-installer` GitHub skill-path command as the Codex-native alternative. |
-| "How do I update it?" | Use `npx skills update webgpt-consult -g` when installed through the `skills` CLI. |
-| "How do I check installation?" | Use `npx skills list -g -a codex` and verify the installed Skill root when filesystem access is available. |
-| "How do I use it?" | Show `/webgpt-consult <review request>`. |
-| "Does it run automatically?" | No. Implicit invocation is disabled. |
-| "Does Sol replace Codex?" | No. Sol is an external reviewer; local Codex makes the adoption decision. |
-| "How does it find the previous Web review?" | It uses a temporary binding in the current Codex conversation, then verifies the candidate Web conversation with the previous Task-ID and sentinel. |
-| "What if the Web chat is full?" | Use `branch` from an earlier useful point and resend the current minimum evidence. If no useful branch point exists, use `independent`. |
-| "Does it store reviewer memory locally?" | No. The design deliberately avoids persistent reviewer memory. |
-| "Can it use another browser or OpenCLI?" | The supported browser transport is the Codex Chrome plugin; there is no OpenCLI fallback. |
-| "Is git clone enough?" | No. Cloning downloads source but does not register the Skill. |
-
----
-
-## 15. Failure handling
-
-During discovery or installation support, continue helping the user even when the Skill is not yet installed.
+## 8. Failure handling
 
 During an actual `/webgpt-consult` execution:
 
-- unresolved or incomplete `<SKILL_ROOT>` -> stop and report the installation problem;
-- Chrome plugin unavailable -> stop and report the missing browser capability;
+- unresolved `<SKILL_ROOT>` -> report the installation problem;
+- Chrome plugin unavailable -> stop;
 - ChatGPT not signed in -> ask the user to sign in;
 - no verified Pro or High -> fail closed;
 - preflight failure -> do not Send;
 - attachment upload failure -> do not claim the artifact was reviewed;
+- generation active -> do not duplicate Send or close that tab;
 - result verification failure -> mark the review incomplete;
-- ambiguous `continuation` -> use `independent`;
-- unavailable Web conversation -> use `independent`;
-- context-limited Web conversation -> use `branch`, or `independent` if no good branch point exists.
+- ambiguous or unverifiable continuation -> use `independent`;
+- context-limited conversation -> use `branch`, otherwise `independent`;
+- unknown tab ownership -> leave it open;
+- failed cleanup -> keep the verified review result and report cleanup only if it causes a meaningful user-visible issue.
 
-Do not claim success for any installation, model selection, upload, review, or verification step that was not actually observed.
+Do not claim success for installation, model selection, upload, consultation, binding, or cleanup that was not actually observed.
+
+---
+
+## 9. Common user questions
+
+| User request | Correct Agent response |
+|---|---|
+| "Install it." | `npx skills add R-jed/webgpt-consult` |
+| "Install globally for Codex without prompts." | `npx skills add R-jed/webgpt-consult -g -a codex -y` |
+| "Can I install from Codex?" | Use the documented `/skill-installer` path as an alternative. |
+| "How do I use it?" | `/webgpt-consult <review request>` |
+| "Does Sol replace Codex?" | No. Sol is advisory; local Codex makes the final decision. |
+| "How does it find the previous review?" | Current-session binding plus prior Task-ID and sentinel verification. |
+| "What if the Web chat is too long?" | Use `branch` from an earlier useful point, or `independent` if no useful branch point exists. |
+| "Does it store project memory locally?" | No. |
+| "Will it close my Chrome tabs?" | It may close only superseded tabs that the Skill explicitly created and can identify exactly. User/pre-existing/unknown tabs are left alone. |
+| "Does it kill browser processes?" | No. Process-level browser cleanup is outside this Skill. |
+
+---
+
+## 10. Source of truth
+
+Repository discovery files:
+
+```text
+README.md
+README_en.md
+README_Agent.md
+```
+
+Runtime source of truth:
+
+```text
+skills/webgpt-consult/SKILL.md
+skills/webgpt-consult/references/chrome-workflow.md
+skills/webgpt-consult/references/context-packet-template.md
+```
+
+If this file and `SKILL.md` conflict during execution, follow `SKILL.md`.
