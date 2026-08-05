@@ -25,10 +25,11 @@ These fail closed:
 - Model identity: GPT-5.6 Sol Pro is preferred; verified GPT-5.6 Sol High is the only fallback.
 - Credential hygiene: never send known executable credentials, cookies, private keys, browser profiles, or session material.
 - Evidence truthfulness: never claim a local artifact was reviewed unless its contents were actually transmitted.
+- Invocation identity: every consultation gets a fresh Task-ID and sentinel containing a fresh random nonce; never reuse identifiers from another invocation.
 - Result binding: the latest assistant turn must match the exact sentinel and task ID.
 - Send idempotency: send once and never duplicate a request while the existing turn may still be generating.
 - Conversation identity: never continue a Web conversation unless the current Codex session can bind it to the immediately relevant verified review.
-- Browser ownership: automatically close only tabs/pages that the Skill explicitly created and still identifies unambiguously. Never infer ownership from URL, title, project name, or content.
+- Browser ownership: automatically close only tabs/pages that the Skill created within the current Codex conversation and still identifies unambiguously. Never infer ownership from URL, title, project name, or content.
 
 Web conversation continuity is optional and temporary. If the useful Web context is unavailable or unclear, start fresh with the evidence needed for the current review.
 
@@ -110,7 +111,7 @@ last_sentinel: <verified sentinel>
 
 A tab handle and URL are locators, not proof of identity. The previous verified Task-ID and sentinel are the identity check.
 
-`review_tab_owned_by_skill=true` only when the current Skill invocation explicitly created that browser tab/page through the Chrome capability and still has an unambiguous handle for it. Reusing a user-opened tab, navigating an existing tab, or merely observing a ChatGPT URL does not establish ownership.
+`review_tab_owned_by_skill=true` only when this Skill created that browser tab/page earlier in the current Codex conversation and the exact handle still identifies the same resource. That ownership survives later `continuation` invocations while the handle remains unambiguous. Reusing a user-opened tab, navigating an existing unowned tab, or merely observing a ChatGPT URL does not establish ownership.
 
 For `continuation`, resolve the Web conversation in this order:
 
@@ -123,7 +124,7 @@ If the page cannot be opened, the prior Task-ID/sentinel cannot be matched, mult
 
 Do not locate an old review by guessing from ChatGPT sidebar titles, recent-chat ordering, browser history, semantic similarity, project name alone, or approximate timestamps.
 
-A newly successful `independent` review establishes a new binding for the current Codex session. A successful `branch` replaces the previous binding with the new branch. A successful `continuation` refreshes the binding to the currently verified tab and URL.
+A newly successful `independent` review establishes a new binding for the current Codex session. A successful `branch` replaces the previous binding with the new branch. A successful `continuation` refreshes the binding to the currently verified tab and URL without discarding proven ownership of the same handle.
 
 The binding lifetime is the current Codex conversation only. A new Codex conversation starts with no Web review binding and therefore defaults to `independent` unless the user explicitly supplies a Web conversation and it can be verified safely.
 
@@ -143,7 +144,7 @@ Treat every browser tab/page touched by the Skill as either `owned` or `unowned`
 
 Ownership rules:
 
-- `owned`: the Skill explicitly created the tab/page and still has its exact browser handle;
+- `owned`: the Skill created the tab/page during the current Codex conversation and still has its exact browser handle;
 - `unowned`: the tab existed before the Skill used it, came from the user, was merely discovered, or ownership is uncertain.
 
 Never upgrade `unowned` to `owned` by inference.
@@ -164,6 +165,8 @@ Do not create a persistent tab registry, background cleanup daemon, or cross-ses
 ## Context assembly
 
 Use `references/context-packet-template.md` as the compact starting point.
+
+Generate a fresh nonce for each invocation and use it to make the Task-ID and sentinel unique. Do not reuse the previous identifiers for `continuation` or `branch`.
 
 Prefer the smallest packet that still contains the causal truth. Include:
 
@@ -190,6 +193,8 @@ python3 "<path-to-installed-webgpt-consult>/scripts/submission_preflight.py" pac
   --attachment /path/to/file1
 ```
 
+Preflight must verify that the packet contains the exact supplied `Task-ID` line and exact supplied `Sentinel` line exactly once. A mismatch or duplicate fails closed.
+
 Text attachments are credential-scanned. Non-text attachments require explicit local review before `--confirm-unscanned-binary` may be used. That flag never overrides a detected credential finding.
 
 Proceed only when preflight returns `ok=true`.
@@ -206,7 +211,7 @@ verified usable GPT-5.6 Sol Pro
     -> otherwise fail closed
 ```
 
-A DOM ref is only a click locator. Generic GPT-5 Pro evidence does not establish GPT-5.6 Sol identity. Capture fresh picker context after selection and verify the checked tier.
+A checked but disabled candidate is not usable and must not block fallback. A DOM ref is only a click locator. Generic GPT-5 Pro evidence does not establish GPT-5.6 Sol identity. Capture fresh picker context after selection and verify the checked tier is still enabled.
 
 Re-verify model identity after opening a fresh conversation or branch.
 
@@ -224,13 +229,13 @@ continuation -> resolve and verify the current session binding before reuse
 branch       -> branch from the verified bound conversation, then replace the binding
 ```
 
-Track tab ownership from the moment a browser page is created or reused. Do not infer ownership later from page contents.
+Track tab ownership from the moment a browser page is created or reused. Preserve proven ownership when the same exact handle is reused within the current Codex conversation. Do not infer ownership later from page contents.
 
 If the chosen conversation path is unreliable, move toward a fresh `independent` review rather than inventing recovery data.
 
 ## Completion contract
 
-Require the external response to begin with:
+Require the external response to begin with the fresh identifiers for this invocation:
 
 ```text
 WEBGPT_CONSULT_RESULT_<unique-id>
@@ -241,8 +246,8 @@ After generation stops, extract only the latest assistant turn and verify it wit
 
 A review is complete only when:
 
-- Pro or High was verified;
-- preflight passed for the exact transmitted payload;
+- Pro or High was verified and enabled;
+- preflight passed for the exact transmitted payload and exact invocation identifiers;
 - required evidence was visibly present before Send;
 - generation completed;
 - the latest assistant turn was extracted;
@@ -263,8 +268,8 @@ Do not write the external answer into a persistent reviewer-memory layer.
 - Chrome unavailable or disconnected: stop and report the missing capability.
 - Not signed in: ask the user to sign in to ChatGPT Web in the selected Chrome profile.
 - No verified Pro or High: fail closed.
-- Model post-selection verification fails: fail closed.
-- Preflight fails: do not send.
+- Model post-selection verification fails or the selected tier is disabled: fail closed.
+- Preflight fails, including Task-ID/sentinel mismatch: do not send.
 - Attachment upload fails: retry upload or rebuild a faithful bundle; do not claim the artifact was received.
 - Still generating: remain in the same conversation and do not duplicate Send or close that tab.
 - Missing or misplaced sentinel/task ID: mark the review incomplete and do not establish or refresh a binding from that result.
