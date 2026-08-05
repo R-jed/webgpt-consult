@@ -58,7 +58,7 @@ After branching:
 
 If no suitable branch point exists, branching is unavailable, or the new branch is unreliable, switch to `independent`.
 
-Do not search for or restore old Web reviews from local state files. If the current review context is lost and cannot be identified confidently, start fresh.
+If the previous Web review is lost and cannot be identified confidently, start fresh. Do not build a local recovery mechanism for old Web conversations.
 
 ## 4. Verify the model
 
@@ -126,10 +126,10 @@ Return to the local Codex task.
 
 Compare the external review with local evidence and decide what to adopt, reject, modify, or leave unresolved.
 
-Do not create a persistent reviewer-memory file or review-state database after adoption.
+Do not create persistent reviewer memory after adoption.
 
 ## 10. Browser cleanup
 
 Keeping the current review tab open is optional and useful only for an immediate `continuation` or possible `branch`.
 
-Do not treat an open browser tab as durable project state. If it is later unavailable, use `independent` and rebuild the current review from the current task and evidence.
+Do not treat an open browser tab as project memory. If it is later unavailable, use `independent` and rebuild the current review from the current task and evidence.
