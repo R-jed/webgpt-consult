@@ -127,8 +127,6 @@ npx skills update webgpt-consult
 /webgpt-consult 检查这个修复方案有没有遗漏的架构风险，并给出第二意见。
 ```
 
-本 Skill 没有 OpenCLI fallback。Chrome plugin 不可用时会停止执行。
-
 <a id="使用说明"></a>
 
 ## 使用说明
