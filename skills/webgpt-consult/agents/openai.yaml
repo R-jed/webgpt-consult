@@ -1,7 +1,9 @@
 interface:
   display_name: "webgpt-consult"
   short_description: "Verified GPT-5.6 Sol second opinions through ChatGPT Web"
-  default_prompt: "Use /webgpt-consult for a verified GPT-5.6 Sol second opinion. Use independent for a fresh review, continuation only when the current Codex session has a verified Web conversation binding, and branch when that bound thread needs context relief."
+  icon_small: "./assets/logo.svg"
+  icon_large: "./assets/logo.svg"
+  brand_color: "#67E8F9"
 
 policy:
   allow_implicit_invocation: false
