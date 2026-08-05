@@ -1,6 +1,6 @@
 # Chrome workflow
 
-This reference contains browser-state rules that should remain deterministic. Prompt design and evidence selection belong to Codex and the user's request. Substantial consultations use the standard `CONTEXT_PACKET_V1` format from `context-packet-template.md`.
+This file defines the deterministic browser protocol for `webgpt-consult`. Task reasoning and evidence selection belong to Codex. Substantial consultations use `context-packet-template.md`.
 
 ## 1. Connect and authenticate
 
@@ -8,26 +8,26 @@ Use the Codex Chrome capability to open ChatGPT Web. Confirm that ChatGPT is sig
 
 Do not inspect cookies, local storage, passwords, browser profiles, or session databases.
 
-Treat a Chrome runtime reset, reconnect, or browser-tool restart as loss of all old locators, element references, pending promises, and transient browser objects. Reacquire browser state before the next interaction. Never reuse an unresolved file-chooser or other browser promise after a reset.
+A Chrome runtime reset, reconnect, or browser-tool restart invalidates old locators, element references, pending promises, and transient browser objects. Reacquire browser state before the next UI action. Never carry an unresolved file-chooser or another browser promise across calls or resets.
 
-For state-changing UI actions, work from fresh browser state. Prefer a stable semantic locator, confirm it resolves unambiguously when that is not self-evident, perform one action, then observe the resulting state again.
+For state-changing actions, work from fresh browser state. Resolve the intended control unambiguously, perform one action, then observe the resulting state again.
 
-## 2. Track browser ownership
+## 2. Browser ownership
 
-Treat every browser resource as either `owned` or `unowned`.
+Treat each browser resource as:
 
 ```text
-owned   = this Skill created it during the current Codex conversation and still knows the exact handle
-unowned = it existed beforehand, was supplied by the user, was merely discovered, or ownership is uncertain
+owned   = this Skill created the exact resource during the current Codex conversation and still knows its handle
+unowned = it existed beforehand, was user-supplied, merely discovered, or ownership is uncertain
 ```
 
-Ownership follows the exact browser handle. Navigating an existing user tab to ChatGPT does not make it owned. A new conversation URL does not imply a new tab.
+Ownership follows the exact handle. Navigating a user tab to ChatGPT does not make it owned. A new conversation URL does not imply a new tab.
 
-Never infer ownership later from URL, title, content, project name, or history.
+Never reconstruct ownership from URL, title, content, project name, or history.
 
-## 3. Resolve conversation continuity
+## 3. Conversation continuity
 
-After a successful consultation, the current Codex conversation may retain:
+A verified completed consultation may retain:
 
 ```text
 review_tab_handle
@@ -39,27 +39,42 @@ verified_web_model
 model_verified_conversation_url
 ```
 
-Do not persist these values outside the current Codex conversation.
+Keep this state only in the current Codex conversation.
 
-When the user's next request clearly continues the same Web consultation:
+### Live fast path
 
-1. reuse the bound tab handle if still valid;
-2. otherwise open the exact retained conversation URL when available;
-3. inspect the loaded conversation from fresh browser state;
-4. verify the immediately relevant prior assistant response against `last_sentinel`;
-5. continue only if the identity is unambiguous.
+Normal follow-ups should be cheap.
 
-If any step fails, start a fresh ChatGPT conversation only when no unresolved `SENT` or `UNKNOWN` submission remains attached to the previous one. Never search for an old consultation by guessing from sidebar titles, recent-chat order, browser history, project names, timestamps, or semantic similarity.
+Reuse the bound conversation directly without re-reading the previous sentinel when all of these are true:
 
-If the user says the expected answer is already visible, inspect and verify the existing conversation before preparing another submission.
+- the exact bound tab handle is still live;
+- it is still on the retained canonical conversation URL when that URL is available;
+- there was no navigation, branch, runtime-reset recovery, or other event that made conversation identity ambiguous;
+- the previous submission already completed and its sentinel was verified;
+- there is no unresolved `SENT` or `UNKNOWN` submission.
 
-If the same consultation should continue but the bound Web conversation is too context-heavy, use `Branch in new chat` from an earlier useful point when that preserves helpful context. If branching is unavailable or unhelpful, start fresh.
+In this fast path, prior identity has already been established. Prepare the new delta and verify only the new submission/result identity.
 
-Branching creates a new conversation identity and therefore invalidates the previous conversation's model cache.
+### Recovery path
+
+If the live fast path is unavailable:
+
+1. reuse the exact bound handle if it can still be recovered, otherwise open the exact retained conversation URL;
+2. inspect the recovered conversation from fresh browser state;
+3. verify the immediately relevant prior assistant result against `last_sentinel`;
+4. continue only when the identity is unambiguous.
+
+If recovery cannot prove the conversation identity, start fresh only when no unresolved `SENT` or `UNKNOWN` submission remains attached to the old conversation.
+
+Never recover a consultation by guessing from sidebar titles, recent-chat order, browser history, project names, timestamps, or semantic similarity.
+
+If the user says the answer is already visible, inspect and verify the existing latest assistant turn before preparing another request.
+
+If the same work should continue but the current Web thread is too context-heavy, use `Branch in new chat` from a useful earlier point when available. A branch is a new conversation identity and requires a new model verification.
 
 ## 4. Verify the Web model efficiently
 
-Use this policy only:
+Allowed policy:
 
 ```text
 GPT-5.6 Sol Pro
@@ -67,169 +82,193 @@ GPT-5.6 Sol Pro
   -> otherwise stop
 ```
 
-Only literal `Pro` and `High` entries associated with GPT-5.6 Sol are eligible. Reject legacy GPT-5.5 Pro entries, `Pro Extended`, base-Sol `Extra High`, ambiguous bare `Pro` text, Codex reasoning labels, and unrelated model names.
+Only literal `Pro` and `High` tiers associated with GPT-5.6 Sol are eligible. Reject GPT-5.5 Pro, `Pro Extended`, base-Sol `Extra High`, ambiguous bare `Pro`, Codex reasoning labels, and unrelated models.
 
-### First turn in a conversation
-
-For a fresh ChatGPT conversation or a newly branched conversation:
+### New or branched conversation
 
 1. open the model picker from fresh browser state;
 2. select GPT-5.6 Sol `Pro` when available, otherwise `High`;
 3. re-observe the picker and verify the selected tier;
-4. remember that verified tier as `verified_web_model` for this conversation.
+4. bind that tier to this conversation as `verified_web_model`.
 
-Do not maintain a DOM parser or hard-coded element-reference table. Use the current browser UI semantically.
+Use the current UI semantically. Do not maintain a hard-coded DOM parser or element-reference table.
 
-### Follow-up turns in the same conversation
+### Follow-up in the same conversation
 
-Do not reopen the model picker on every consult.
+Do not reopen the picker per message.
 
-When the continuation has been verified as the same bound conversation and `verified_web_model` is already associated with that conversation, reuse the cached tier. A normal second, third, or later message in the same conversation should not pay the browser/token cost of repeated picker inspection.
+When conversation identity is still verified and `verified_web_model` belongs to that conversation, reuse the cached tier. The live fast path does not need any model-menu work.
 
-The cached model remains valid when:
+A recovered conversation may also reuse the cached tier after identity is re-established with its exact URL/handle and prior sentinel, provided no fresh UI/error evidence contradicts it.
 
-- the exact bound handle is reused; or
-- the exact canonical conversation URL is reopened;
-- the prior response identity is verified with `last_sentinel`;
-- no fresh UI or error state contradicts the cached tier.
+A Chrome runtime reset alone does not invalidate the model cache.
 
-A browser runtime reset alone does not invalidate this cache. Reacquire browser objects, recover the same conversation, verify its identity, and continue using the cached tier.
+Re-open the picker only when:
 
-### Re-verification triggers
+- a fresh conversation or branch was created;
+- conversation identity changed or cannot be proven;
+- no valid cache exists;
+- visible UI shows another model/tier;
+- ChatGPT reports a model availability/switch error;
+- the user explicitly asks to check or change the tier.
 
-Open the picker again only when one of these occurs:
+## 5. Prepare task identity, context, and evidence
 
-- a fresh conversation is created;
-- `Branch in new chat` creates a new conversation;
-- the canonical conversation identity changes;
-- the binding cannot prove this is the same conversation;
-- no verified model cache exists;
-- fresh visible UI indicates a different model/tier;
-- ChatGPT reports a model availability or model-switch error;
-- the user explicitly requests a tier check or change.
-
-A cheap visible contradiction is enough to invalidate the cache; absence of repeated picker evidence is not.
-
-## 5. Prepare the consultation
-
-Generate a fresh task identity for every Web submission, including follow-ups in the same conversation:
+Every Web submission gets a fresh identity:
 
 ```text
 task_id:  webgpt-consult-YYYYMMDD-HHMMSS-<nonce>
 sentinel: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>
 ```
 
-For a simple question or short follow-up, Codex may write a direct prompt, but the prompt must include the fresh sentinel and require ChatGPT Web to begin its response with that sentinel.
+For a simple question, a direct prompt is enough, but it must contain the sentinel and require ChatGPT Web to start its reply with that exact sentinel.
 
-For a substantial consultation, use `context-packet-template.md` and preserve its `CONTEXT_PACKET_V1` metadata and section order. Fill the packet from the user's actual task rather than adding boilerplate.
+For substantial first-turn work, use the full `CONTEXT_PACKET_V1`. For second and later turns in the same verified conversation, use its delta form unless earlier context is stale, ambiguous, or contradicted.
 
-For a second or later turn in the same verified conversation, use the template's compact delta form with a fresh `task_id` and sentinel. Do not resend the full packet when the existing conversation already contains the relevant background.
+Choose the smallest evidence set that preserves the truth. A local path is never evidence by itself.
 
-Prefer minimal disclosure:
+Evidence preference:
 
-- send only context relevant to the current question;
-- for code work, use relevant excerpts or selected files before broader directories;
-- avoid uploading an entire repository merely because it is available;
-- remove unrelated personal/private information;
-- never send secrets, authentication material, or payment credentials.
+1. original selected human-readable files when upload is reliable;
+2. faithful excerpts when only a small part matters;
+3. `scripts/build_attachment_bundle.py` when many selected UTF-8 text files are awkward to upload individually or an archive is rejected.
 
-Run `scripts/safety_guard.py` on the exact outgoing prompt/packet text and every UTF-8 text attachment. A blocking finding must be removed or redacted before Send. Review non-blocking privacy warnings when relevant.
+Do not upload a whole repository merely because it is available.
 
-For binary/non-text files, inspect them locally before upload. If many small text files are genuinely needed and individual uploads become unreliable, Codex may create a temporary Markdown bundle from the selected files using ordinary local tooling.
+Run `scripts/safety_guard.py` on the exact outgoing prompt/packet and every UTF-8 text attachment. Blocking findings must be removed or redacted. Privacy warnings are reviewed in context rather than automatically deleting task-relevant business/project facts.
 
-## 6. Fill the composer and upload files
+The bundle helper performs its own final blocking scan and fails closed on incomplete evidence unless partial bundling was explicitly requested.
 
-The outgoing prompt must contain the current sentinel and instruct ChatGPT Web to begin its response with exactly that sentinel.
+Inspect binary/non-text files locally before upload.
 
-Use the real file chooser for attachments. Keep the entire chooser lifecycle together: establish the chooser wait, open the add-file UI, resolve the chooser, and set the selected files within the same browser-tool invocation whenever the browser API uses a pending chooser promise. Do not carry a pending chooser across calls or resets.
+## 6. Upload files and verify the composer
 
-After every upload UI change, reacquire the composer from fresh browser state. Confirm every required attachment is visibly present and fully uploaded.
+Use the real file chooser.
 
-Then insert the intended prompt once. Reacquire the composer again and verify its rendered text contains the expected sentinel and enough distinctive prompt text to prove the intended submission is present. For a context packet, also verify `CONTEXT_PACKET_V1` and the current `task_id` are present.
-
-If an uploaded text/Markdown preview leaves the composer empty and the current UI exposes exactly one associated `Show in text field`, `在文本字段中显示`, or equivalent action, use that recovery action once, then reacquire and verify the composer again. Do not cycle through multiple text-entry methods.
-
-Never click Send with an empty or unverified composer. Never claim a source or file was reviewed unless it was actually included or uploaded.
-
-## 7. Send once and track dispatch state
-
-Track the current submission with one transient state:
+When the browser API exposes a pending chooser promise, keep the entire lifecycle in one browser-tool invocation:
 
 ```text
-NOT_SENT = Send definitely has not been clicked
-SENT     = fresh browser evidence shows the submission occurred
-UNKNOWN  = reset, disconnect, or timeout occurred during/after Send before submission could be confirmed
+create chooser wait
+-> open add-file UI
+-> resolve chooser
+-> set selected files
 ```
+
+Never split a pending chooser lifecycle across browser calls or resets.
+
+After every upload UI change:
+
+1. reacquire the composer from fresh browser state;
+2. confirm every required attachment is visibly present and fully uploaded;
+3. insert the intended prompt/packet once;
+4. reacquire the composer again;
+5. verify rendered composer text contains the current sentinel and enough distinctive text to identify the intended submission;
+6. for `CONTEXT_PACKET_V1`, also verify the packet prefix and current `task_id`.
+
+If an uploaded Markdown/text preview leaves the composer empty and the fresh UI exposes exactly one associated `Show in text field`, `在文本字段中显示`, or equivalent action, use that action once. Reacquire and verify the composer again.
+
+Do not cycle through multiple fill/type/clipboard methods after a verified failure. An attachment chip or filename is not composer text.
+
+Never Send an empty or unverified composer. Never claim a file was reviewed unless its real content was delivered.
+
+## 7. Create the transient submission record
+
+Before Send, retain this session-only record in the current Codex conversation:
+
+```text
+current_task_id
+current_sentinel
+current_context_strategy
+current_attachment_names
+current_dispatch_state: NOT_SENT
+current_conversation_url
+```
+
+`current_attachment_names` must reflect the files actually visible in the composer, including a generated bundle when one is used.
+
+This record exists only to recover the in-flight submission. Do not write it to disk or turn it into consultation history.
+
+## 8. Send once
 
 Immediately before Send, confirm:
 
-- the intended Web conversation is active;
-- model state is valid, either from fresh verification for a new conversation or from the verified model cache for the same conversation;
-- the expected sentinel is present in the verified composer text;
-- for a context packet, the current `task_id` is present;
-- the prompt matches the user's current intent;
-- all required attachments are visibly uploaded;
-- the exact outgoing prompt and all UTF-8 text attachments passed the blocking safety checks;
-- no blocked secret/payment material remains.
+- the intended conversation is active;
+- model state is valid from fresh verification or the conversation-scoped cache;
+- the current sentinel and, for a packet, `task_id` are in the verified composer text;
+- all required attachment chips are present;
+- the outgoing prompt and UTF-8 text attachments passed blocking safety checks;
+- no blocked credential/payment material remains.
 
-Do not open the model picker solely for this pre-send check when the same verified conversation has a valid cached tier.
+Do not reopen the model picker solely for this pre-send gate when the same verified conversation has a valid cached tier.
 
-Send once.
+Track dispatch state:
 
-Set `SENT` only after fresh browser evidence shows submission, such as the new user turn, an emptied composer, or active generation. If browser state becomes ambiguous during or after the click, set `UNKNOWN`.
+```text
+NOT_SENT = Send definitely has not been clicked
+SENT     = fresh evidence shows the submission occurred
+UNKNOWN  = reset/disconnect/timeout happened during or after Send before submission could be proven
+```
 
-Recovery rules:
+Click Send once.
 
-- `NOT_SENT`: reconnect, recover the conversation, rebuild the draft if necessary, and send only after the draft is verified again. Re-check the picker only if a model-cache invalidation trigger occurred.
-- `SENT`: recover the same conversation and wait/extract. Never send the submission again.
-- `UNKNOWN`: recover the same tab or exact conversation URL and look for submission/generation evidence. Never create a replacement consultation or click Send again while the outcome remains uncertain.
+Set `SENT` only after fresh evidence such as the new user turn, an emptied composer, or active generation. Any ambiguous click outcome becomes `UNKNOWN`.
 
-If an `UNKNOWN` submission cannot be recovered unambiguously, mark the consultation incomplete rather than risking a duplicate.
+Recovery:
 
-## 8. Wait for completion
+- `NOT_SENT`: reacquire state, rebuild the draft if needed, re-check the model only if its cache was invalidated, then Send once after verification.
+- `SENT`: recover the same conversation and wait/extract. Never resend.
+- `UNKNOWN`: recover the exact bound handle or `current_conversation_url`, then look for the task/sentinel, user turn, or generation/result evidence. Never create a replacement consultation or click Send again while uncertainty remains.
 
-Stay in the same conversation while generation is active. Use fresh, targeted browser observations rather than repeatedly rebuilding the full page state.
+If an `UNKNOWN` submission cannot be recovered unambiguously, mark it incomplete rather than risking a duplicate.
 
-A visible stop-generating control, thinking/generating status, or an incomplete assistant turn while generation controls remain visible means the response is still active.
+## 9. Wait for completion
 
-While generation is active, do not resend, refresh, start a replacement consultation, close the tab, or send a `continue` message.
+Stay in the same conversation while generation is active. Use fresh targeted observations rather than repeatedly rebuilding the full page state.
 
-Long-running Pro responses may take substantial time. Continue observing the same submission until generation completes or a real browser failure requires recovery under the dispatch rules above.
+A visible stop-generating control, thinking/generating status, or an incomplete assistant turn while generation controls remain active means the response is not complete.
 
-## 9. Verify the result and bind the conversation
+While generation is active, do not resend, refresh, start a replacement consultation, close the tab, or send `continue`.
 
-When generation stops, inspect only the latest assistant turn from fresh browser state. Do not treat the user's echoed sentinel as success.
+Long Pro responses can take substantial time. Continue observing the same submission until completion or a real browser failure triggers dispatch-state recovery.
 
-The first non-empty line must exactly equal the current sentinel. There must be substantive content after that line.
+## 10. Verify result and refresh the binding
 
-If verification fails, re-read the complete latest assistant turn once. If the sentinel still does not match or the answer appears truncated, treat the consultation as incomplete.
+After generation stops, inspect only the latest assistant turn from fresh browser state. Do not count a sentinel echoed in the user's prompt as completion evidence.
 
-Only after verification passes may the current Codex conversation establish or refresh the temporary binding with the current handle, ownership value, canonical conversation URL when available, `last_task_id`, `last_sentinel`, and the current verified/cached Web model tier.
+The first non-empty assistant line must exactly equal the current sentinel and substantive content must follow.
 
-The model cache belongs to the verified conversation identity, not to the browser runtime or an individual submission.
+If verification fails, read the complete latest assistant turn once more. If the sentinel still does not match or the result is truncated, mark the consultation incomplete.
 
-## 10. Cleanup
+Only after verification succeeds:
 
-Binding replacement must happen before cleanup:
+1. refresh the conversation binding with the current handle, ownership, canonical URL, `last_task_id`, `last_sentinel`, and verified/cached model;
+2. mark the current submission complete;
+3. clear the transient `current_*` record.
+
+If the consultation is deliberately marked failed/incomplete and no unresolved Send outcome remains, clear the transient record then as well.
+
+## 11. Cleanup
+
+Binding replacement happens before cleanup:
 
 ```text
 verified result
-  -> new binding established and confirmed
-  -> inspect superseded browser resource
+-> replacement binding established and confirmed
+-> inspect superseded resource
 ```
 
-If the old and new bindings use the same handle, keep the tab open.
+If old and new bindings use the same handle, keep it open.
 
-If the handles differ, close the old tab only when it is proven Skill-owned. Leave user-owned or ownership-unknown tabs alone.
+If handles differ, close the old one only when it is proven Skill-owned.
 
 A failed temporary candidate may be closed only when:
 
 - it is proven Skill-owned;
-- it did not become the current binding;
+- it did not become the active binding;
 - its exact handle is still known;
-- no submission is still generating there;
+- no submission is generating there;
 - its dispatch state is not `UNKNOWN`.
 
-Never use `pkill`, `killall`, generic Chrome termination, process scanning, a background cleanup daemon, or a persistent tab registry.
+Never use `pkill`, `killall`, generic Chrome termination, process scanning, a cleanup daemon, or a persistent tab registry.
 
-If state is uncertain, leave the tab alone.
+If ownership, generation, or dispatch state is uncertain, leave the resource open.
