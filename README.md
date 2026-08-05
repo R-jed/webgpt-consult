@@ -66,10 +66,10 @@
 
 ### 推荐安装
 
-当前 Codex 自带 `$skill-installer`。直接在 Codex 中运行：
+当前 Codex 自带 `/skill-installer`。直接在 Codex 中运行：
 
 ```text
-$skill-installer install https://github.com/R-jed/webgpt-consult
+/skill-installer install https://github.com/R-jed/webgpt-consult
 ```
 
 安装器会把完整 Skill 放入 Codex 的 Skill 目录。默认 `CODEX_HOME` 下，通常是：
@@ -80,7 +80,7 @@ $skill-installer install https://github.com/R-jed/webgpt-consult
 
 安装完成后重启 Codex，再新建一个任务，让新的 Skill 被重新加载。
 
-如果当前 Codex 中没有 `$skill-installer`，优先升级 Codex。`webgpt-consult` 本身依赖 Codex Chrome plugin，因此不为旧版 Codex 维护另一套安装器。
+如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 本身依赖 Codex Chrome plugin，因此不为旧版 Codex 维护另一套安装器。
 
 > `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
