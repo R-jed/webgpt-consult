@@ -29,14 +29,14 @@
 
 > **如果你是 AI Agent，请先阅读 [README_Agent.md](README_Agent.md)，再以 [SKILL.md](SKILL.md) 为执行规范。**
 
-`webgpt-consult` 让 Codex 在处理复杂问题时，通过 ChatGPT Web 调用 GPT-5.6 Sol Pro 或 High 获取一个经过验证的独立第二意见。
+`webgpt-consult` 让 Codex 通过 ChatGPT Web 调用 GPT-5.6 Sol Pro 或 High，获得一个经过验证的独立第二意见。
 
-本地 Codex 负责理解任务、筛选证据和形成初始判断。WebGPT 负责独立审查。外部结果返回后，Codex 再结合本地事实决定采纳、拒绝或修改。
+本地 Codex 负责理解任务、形成初始判断、筛选证据和最终决策。WebGPT 负责独立审查。外部结果验证完成后，Codex 再结合本地事实决定采纳、拒绝或修改。
 
 ```text
 用户任务
   → 本地 Codex 先判断
-  → 选择 independent / follow-up
+  → 选择 independent / continuation / branch
   → 整理当前问题真正需要的证据
   → credential / attachment preflight
   → ChatGPT Web
@@ -48,9 +48,9 @@
 为什么需要这个项目：
 
 - 复杂架构、调试、产品和风险决策通常值得一次独立强模型复核
-- WebGPT 保持第二意见角色，避免变成项目长期记忆或第二个项目管理器
-- 发送内容按当前问题重新整理，减少历史结论持续累积造成的锚定和理解漂移
-- 模型身份、凭证安全、附件完整性和结果绑定都需要明确验证
+- WebGPT 保持第二意见角色，不承担项目长期记忆
+- 每次审查只发送当前问题需要的信息，降低历史结论持续累积造成的锚定和理解漂移
+- 模型身份、凭证安全、附件完整性和结果绑定都经过明确验证
 
 <a id="快速开始"></a>
 
@@ -66,13 +66,13 @@
 
 ### 推荐安装
 
-当前 Codex 自带 `/skill-installer`。直接在 Codex 中运行：
+直接在 Codex 中运行：
 
 ```text
 /skill-installer install https://github.com/R-jed/webgpt-consult
 ```
 
-安装器会把完整 Skill 放入 Codex 的 Skill 目录。默认 `CODEX_HOME` 下，通常是：
+默认 `CODEX_HOME` 下通常安装到：
 
 ```text
 ~/.codex/skills/webgpt-consult/
@@ -80,7 +80,7 @@
 
 安装完成后重启 Codex，再新建一个任务，让新的 Skill 被重新加载。
 
-如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 本身依赖 Codex Chrome plugin，因此不为旧版 Codex 维护另一套安装器。
+如果当前 Codex 中没有 `/skill-installer`，优先升级 Codex。`webgpt-consult` 依赖 Codex Chrome plugin，因此不维护旧版 Codex 的独立安装器。
 
 > `git clone` 只用于查看或开发源码，不会自动把 Skill 注册到 Codex。
 
@@ -92,7 +92,7 @@
 /webgpt-consult 对这个项目做一次独立的 GPT-5.6 Sol 架构审查。
 ```
 
-也可以把具体目标直接接在 Skill 名后面：
+或者：
 
 ```text
 /webgpt-consult 检查这个修复方案有没有遗漏的架构风险，并给出第二意见。
@@ -104,33 +104,37 @@
 
 ## 使用说明
 
-### 审查模式
+### 三种审查模式
 
-| 模式 | 适用场景 | Web 会话 |
+| 模式 | 适用场景 | Web 行为 |
 |---|---|---|
 | `independent` | deep review、里程碑 review、对抗性审查、架构重审、不同项目或明显不同的问题 | 新建 conversation |
-| `follow-up` | 明确继续当前同一条咨询 | 复用当前 conversation |
+| `continuation` | 明确继续当前同一条审查 | 继续当前 conversation |
+| `branch` | 同一条审查需要继续，但当前 conversation 上下文已经过长 | 从较早相关消息 `Branch in new chat` |
 
-`independent` 模式下，本地 Codex 会先形成自己的判断，但默认不把结论告诉 Sol，从而降低锚定。
+`independent` 下，本地 Codex 会先形成自己的判断，但默认不把结论告诉 Sol，从而降低锚定。
 
-`follow-up` 只在连续性非常明确、当前 Web conversation 仍然可用时复用。存在歧义时直接新建 conversation。
+`continuation` 只在当前 Web conversation 与新请求的关系非常明确，并且会话仍然可靠时使用。存在歧义时直接 `independent`。
+
+`branch` 只解决上下文压力。它不会创建项目记忆，也不会恢复本地保存的咨询状态。
 
 ### Web 会话连续性
 
-`webgpt-consult` 不在本地保存 consultation history、conversation URL、项目摘要或长期咨询状态。
+`webgpt-consult` 不在本地保存 review history、conversation URL、项目摘要、accepted decisions 或 reviewer memory。
 
 会话连续性只存在于当前 ChatGPT Web conversation：
 
-- 同一问题的明确 follow-up 可以继续当前会话
-- 不同项目默认新建会话
-- 同一项目但明显不同的独立问题默认新建会话
-- 当前 Web 会话丢失、无法确认或不再可靠时直接 fresh
+- 同一审查的直接继续使用 `continuation`
+- 不同项目默认使用 `independent`
+- 同一项目但明显不同的问题默认使用 `independent`
+- 当前会话上下文过长时使用 `branch`
+- 当前 Web 会话丢失、无法确认或不再可靠时使用 `independent`
 
-如果频繁咨询导致当前 Web conversation 出现明显上下文压力，优先使用 ChatGPT Web 的 `Branch in new chat`，从一个较早且仍然相关的消息节点创建分支，然后针对当前问题重新发送最小必要证据。
+`Branch in new chat` 会继承所选消息之前的历史。因此不要机械地从已经接近上下文上限的最后一条消息分支。应选择一个更早、仍然包含必要共享背景的节点，再重新发送当前问题所需的最小证据。
 
-分支会继承所选节点之前的历史，因此不要机械地从已经接近上下文上限的最后一条消息分支。如果没有合适的分支点，直接新建 conversation。
+如果没有合适的分支点，直接新建 conversation。
 
-这个设计让 WebGPT 保持独立 reviewer。Codex 每次只发送当前审查真正需要的信息，不依赖本地长期咨询记忆恢复 WebGPT 的项目认知。
+这个设计让 WebGPT 始终保持独立 reviewer。Codex 每次基于当前问题重新决定要发送什么，不依赖长期咨询记忆去维持 WebGPT 对项目的持续理解。
 
 <a id="安全与验证"></a>
 
@@ -184,7 +188,7 @@ Task-ID: <task-id>
 | [README_Agent.md](README_Agent.md) | AI Agent 发现、安装和支持入口 |
 | [agents/openai.yaml](agents/openai.yaml) | Skill 展示信息与 invocation policy |
 | [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web 浏览器执行与分支流程 |
-| [references/context-packet-template.md](references/context-packet-template.md) | Web 咨询上下文模板 |
+| [references/context-packet-template.md](references/context-packet-template.md) | Web 审查上下文模板 |
 | [scripts/model_router.py](scripts/model_router.py) | Pro → High 模型身份与路由策略 |
 | [scripts/submission_preflight.py](scripts/submission_preflight.py) | 发送前安全和附件检查 |
 | [scripts/result_verifier.py](scripts/result_verifier.py) | 外部结果精确绑定验证 |
