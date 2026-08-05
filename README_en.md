@@ -5,7 +5,7 @@
 <h1 align="center">webgpt-consult</h1>
 <h3 align="center">GPT-5.6 Sol Pro / High second-opinion Skill for Codex</h3>
 
-<p align="center">Judge locally · Review on the Web · Verify the result · Adopt locally</p>
+<p align="center">Judge locally · Review independently on the Web · Verify · Adopt locally</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Codex-Skill-111827" alt="Codex Skill" />
@@ -29,28 +29,28 @@
 
 > **AI agents should read [README_Agent.md](README_Agent.md) first, then treat [SKILL.md](SKILL.md) as the execution contract.**
 
-`webgpt-consult` lets Codex obtain a verified second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web when a problem deserves a stronger independent review.
+`webgpt-consult` lets Codex obtain a verified independent second opinion from GPT-5.6 Sol Pro or High through ChatGPT Web.
 
-Local Codex owns task understanding, evidence selection, and the initial judgment. WebGPT reviews the problem. After the external result is verified, Codex decides locally what to adopt, reject, or modify.
+Local Codex owns task understanding, evidence selection, and the initial judgment. WebGPT reviews the problem independently. After the external result is verified, Codex decides locally what to adopt, reject, or modify.
 
 ```text
 user task
   → local Codex judgment
   → choose independent / follow-up
-  → assemble truthful context and evidence
+  → assemble only the evidence needed for the current question
   → credential / attachment preflight
   → ChatGPT Web
   → GPT-5.6 Sol Pro, otherwise High
   → sentinel + task ID verification
   → local adoption decision
-  → optional local consultation-state update
 ```
 
 Why this project exists:
 
 - difficult architecture, debugging, product, and risk decisions often benefit from an independent strong-model review
-- blindly sending local context to the Web creates privacy, evidence-integrity, and model-identity risks
-- Web conversations eventually become long, unavailable, or unreliable, so reusable consultation state is kept locally
+- WebGPT stays a second-opinion reviewer instead of becoming long-lived project memory
+- each review sends the evidence required for the current question, reducing anchoring and understanding drift from accumulated historical summaries
+- model identity, credential hygiene, attachment integrity, and result binding are explicitly verified
 
 <a id="quick-start"></a>
 
@@ -108,39 +108,29 @@ There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavaila
 
 | Mode | Best for | Web conversation |
 |---|---|---|
-| `independent` | deep review, milestone review, adversarial review, architecture reset, materially different questions | fresh conversation |
-| `follow-up` | a clear continuation of one consultation with a unique anchor | may reuse the existing conversation |
+| `independent` | deep review, milestone review, adversarial review, architecture reset, a different project, or a materially different question | fresh conversation |
+| `follow-up` | a clear continuation of the current consultation | reuse the current conversation |
 
 In `independent` mode, local Codex forms its own judgment first but normally keeps that conclusion private from Sol to reduce anchoring.
 
-`follow-up` reuses an old conversation only when continuity is unambiguous. If the match is uncertain, the Skill starts fresh.
+`follow-up` reuses the current Web conversation only when continuity is unambiguous and the conversation remains useful. If the match is uncertain, start fresh.
 
-### Consultation continuity
+### Web conversation continuity
 
-Durable consultation state is stored locally:
+`webgpt-consult` does not persist consultation history, conversation URLs, project summaries, or long-lived consultation state locally.
 
-```text
-~/.codex/webgpt-consult/state/<project-id>/<consult-id>.json
-```
+Continuity exists only in the active ChatGPT Web conversation:
 
-A snapshot contains only locally adopted reusable state such as:
+- a clear follow-up to the same question may continue in the current conversation
+- a different project starts a fresh conversation by default
+- a materially different independent question in the same project starts fresh by default
+- if the active Web conversation is lost, ambiguous, or unreliable, start fresh
 
-- user intent and standing constraints
-- accepted decisions
-- rejected or deferred paths
-- open questions
-- evidence references
-- current project state
+If frequent consultation creates clear context pressure, prefer ChatGPT Web's `Branch in new chat` from an earlier still-relevant message, then send the minimum evidence required for the current question again.
 
-It does not store a full transcript and does not treat raw Sol output as project truth.
+A branch inherits the history before the selected message, so mechanically branching from a near-limit final message may carry most of the context pressure forward. If there is no useful earlier branch point, start a fresh conversation.
 
-If the old Web conversation is unavailable, context-limited, or visibly unreliable, Codex creates a fresh conversation and restores the same consultation from the local snapshot plus the current delta and current evidence.
-
-List consultations for the current checkout with:
-
-```bash
-python3 scripts/consult_state.py --project-root . list
-```
+This keeps WebGPT independent. Codex sends what the current review needs instead of rebuilding WebGPT's project understanding from durable local consultation memory.
 
 <a id="safety-and-verification"></a>
 
@@ -191,11 +181,10 @@ Task-ID: <task-id>
 | File | Purpose |
 |---|---|
 | [SKILL.md](SKILL.md) | authoritative Skill execution contract |
-| [README_Agent.md](README_Agent.md) | AI-agent discovery and reading entry point |
+| [README_Agent.md](README_Agent.md) | AI-agent discovery, installation, and support entry point |
 | [agents/openai.yaml](agents/openai.yaml) | display metadata and invocation policy |
-| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser workflow |
+| [references/chrome-workflow.md](references/chrome-workflow.md) | ChatGPT Web browser and branching workflow |
 | [references/context-packet-template.md](references/context-packet-template.md) | consultation context template |
-| [scripts/consult_state.py](scripts/consult_state.py) | local consultation-state management |
 | [scripts/model_router.py](scripts/model_router.py) | Pro → High identity and routing policy |
 | [scripts/submission_preflight.py](scripts/submission_preflight.py) | pre-send safety and attachment checks |
 | [scripts/result_verifier.py](scripts/result_verifier.py) | exact external-result binding |
@@ -219,7 +208,6 @@ webgpt-consult/
 └── scripts/
     ├── build_attachment_bundle.py
     ├── check_packet_safety.py
-    ├── consult_state.py
     ├── model_router.py
     ├── result_verifier.py
     └── submission_preflight.py
