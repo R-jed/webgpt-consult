@@ -94,7 +94,7 @@ Check the smallest relevant set of facts first:
 
 1. Is the current Codex version recent enough to expose `/skill-installer` and the required Chrome capability?
 2. Is `~/.codex/skills/webgpt-consult/` present?
-3. Does the installed directory contain `SKILL.md`, `agents/openai.yaml`, `references/`, and `scripts/`?
+3. Does the installed directory contain `SKILL.md`, `LICENSE`, `agents/openai.yaml`, `references/`, and `scripts/`?
 4. If just installed, has the user tried the next turn before assuming a restart is required?
 5. Is the user invoking `/webgpt-consult` explicitly?
 6. Is the Codex Chrome plugin installed and connected?
@@ -175,6 +175,7 @@ Do not use the repository root URL as the preferred install target. The canonica
 ```text
 <SKILL_ROOT>/
 ├── SKILL.md
+├── LICENSE
 ├── agents/
 │   └── openai.yaml
 ├── references/
@@ -188,7 +189,7 @@ Do not use the repository root URL as the preferred install target. The canonica
     └── submission_preflight.py
 ```
 
-`README_Agent.md`, the public READMEs, the repository logo, and the repository `LICENSE` are project/discovery files. They are not required inside the installed Skill package.
+`README_Agent.md`, the public READMEs, and the repository logo are project/discovery files. The MIT license is mirrored into the canonical Skill package so the installed copy carries its license text.
 
 ### Activation
 
@@ -437,6 +438,7 @@ webgpt-consult/
 └── skills/
     └── webgpt-consult/
         ├── SKILL.md
+        ├── LICENSE
         ├── agents/
         │   └── openai.yaml
         ├── references/
