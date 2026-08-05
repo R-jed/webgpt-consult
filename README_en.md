@@ -1,8 +1,5 @@
-<h1 align="center">webgpt consult</h1>
-
 <p align="center">
-  <strong>A Codex Skill for a verified GPT-5.6 Sol Pro/High second opinion</strong><br/>
-  Web chats are disposable; local judgment and adopted project state are durable
+  <img src="./assets/readme/hero.svg" width="100%" alt="webgpt-consult: a verified GPT-5.6 Sol second opinion for Codex through ChatGPT Web">
 </p>
 
 <p align="center">
@@ -11,42 +8,35 @@
   <a href="README_Agent.md">AI Agent guide</a>
 </p>
 
-## Core purpose
+`webgpt-consult` is a Codex Skill for difficult architecture, debugging, product, business, risk, and file-grounded review work. Local Codex forms its own judgment first, sends a carefully bounded evidence set through the Codex Chrome plugin to ChatGPT Web, obtains a GPT-5.6 Sol second opinion, verifies the returned result, and then decides locally what to adopt, reject, or modify.
 
-`webgpt-consult` lets local Codex send a carefully prepared difficult problem and truthful evidence to ChatGPT Web for a GPT-5.6 Sol second opinion. The external answer remains advisory. Local Codex decides what to adopt, reject, or modify.
+<p align="center">
+  <img src="./assets/readme/workflow.svg" width="100%" alt="webgpt-consult workflow from local judgment through evidence, preflight, Sol review, verification, and local adoption">
+</p>
 
-The supported path is intentionally narrow:
+## Two review modes
 
-```text
-local Codex judgment
-  -> independent or follow-up review
-  -> truthful context + evidence
-  -> fail-closed preflight
-  -> verified GPT-5.6 Sol Pro, then High
-  -> exact result verification
-  -> local adoption decision
-  -> optional durable local state update
-```
+Use `independent` for milestone reviews, deep reviews, adversarial checks, architecture resets, or materially different questions. It starts a fresh ChatGPT conversation. Codex still forms its own judgment first, but normally keeps that conclusion private from Sol to reduce anchoring.
 
-## Independent vs follow-up review
+Use `follow-up` only for a clear continuation of one consultation. Explicit continuation, or one unique anchor such as a PR, issue, branch, or named artifact, can justify reusing the stored Web conversation.
 
-Use `independent` for milestone reviews, deep reviews, adversarial checks, architecture resets, or materially different questions. It always starts a fresh ChatGPT conversation. Codex still forms its own judgment first, but normally keeps that conclusion private from Sol to reduce anchoring.
-
-Use `follow-up` only for a clear continuation of one consultation. Explicit continuation or one unique anchor such as a PR, issue, branch, or named artifact can justify reuse of the stored Web conversation.
-
-If the match is ambiguous, start fresh. Repeating some context is safer than attaching the request to the wrong consultation.
+If the match is ambiguous, start fresh. Repeating some context is safer than attaching a request to the wrong consultation.
 
 ## Durable continuity
 
-Long-lived consultation state lives locally:
+Long-lived consultation state is stored locally:
 
 ```text
 ~/.codex/webgpt-consult/state/<project-id>/<consult-id>.json
 ```
 
-Each snapshot stores only locally adopted reusable state such as user intent, standing constraints, accepted decisions, rejected or deferred paths, open questions, evidence references, and current state.
+Each snapshot contains only locally adopted reusable state such as user intent, standing constraints, accepted decisions, rejected or deferred paths, open questions, evidence references, and current project state.
 
-It is not a transcript and it is not a backup of Sol's raw answer.
+A ChatGPT Web conversation is an execution container. If the stored chat is unavailable, context-limited, visibly forgetting important decisions, or otherwise unreliable, Codex opens a fresh conversation and restores the same consultation from the local snapshot plus the current delta and current evidence.
+
+<p align="center">
+  <img src="./assets/readme/continuity.svg" width="100%" alt="webgpt-consult keeps durable consultation state locally while allowing Web conversations to be replaced under context pressure">
+</p>
 
 List consultations for the current checkout with:
 
@@ -54,33 +44,17 @@ List consultations for the current checkout with:
 python3 scripts/consult_state.py --project-root . list
 ```
 
-A corrupt state file is skipped with a warning instead of blocking the Skill. Project identity includes the canonical checkout path so separate clones or worktrees do not silently share consultation state.
+Project identity includes the canonical checkout path, so separate clones or worktrees do not silently share consultation state.
 
-## When the Web chat reaches context pressure
+## Safety and verification
 
-A ChatGPT Web conversation is only a reusable execution container.
-
-If the stored chat is unavailable, context-limited, visibly forgetting important decisions, or otherwise unreliable, stop using it and open a fresh conversation. Restore the same local consultation from:
-
-```text
-durable local snapshot
-+ current delta
-+ current evidence
-```
-
-The local `consult_id` remains the same and the stored `conversation_url` is replaced after the new result is verified and locally adopted.
-
-Correctness no longer depends on `Branch in new chat`, historical message IDs, rollover counters, root tasks, branch bases, or continuity capsules.
-
-## Safety and evidence integrity
-
-These remain fail-closed boundaries:
+These boundaries fail closed:
 
 - GPT-5.6 Sol model identity cannot be verified
 - neither Pro nor High is usable
 - executable credentials are detected in transmitted text
 - required evidence was not actually transmitted
-- exact sentinel/task binding fails
+- exact sentinel and task-ID binding fails
 
 Run preflight immediately before Send:
 
@@ -91,53 +65,48 @@ python3 scripts/submission_preflight.py packet.md \
   --attachment ./src/example.py
 ```
 
-Non-text attachments require local manual review before `--confirm-unscanned-binary` may be used. That confirmation never overrides a detected credential finding.
+Non-text attachments require local review before `--confirm-unscanned-binary` may be used. That confirmation never overrides a detected credential finding.
 
-## Model routing
+Model routing is fixed:
 
 ```text
-verified usable GPT-5.6 Sol Pro
+verified GPT-5.6 Sol Pro
       ↓ unavailable / disabled / ambiguous / not actionable
-verified usable GPT-5.6 Sol High
+verified GPT-5.6 Sol High
       ↓ unavailable
 fail closed
 ```
 
-`model_router.py` is the deterministic policy source. DOM refs are click locators only, and generic GPT-5 Pro evidence does not establish GPT-5.6 Sol identity.
-
-## Result verification
-
-The external reply must start with:
+The external reply must begin with:
 
 ```text
 WEBGPT_CONSULT_RESULT_<unique-id>
 Task-ID: <task-id>
 ```
 
-`scripts/result_verifier.py` verifies the extracted latest assistant turn locally. A sentinel merely appearing later in prose does not count.
+`scripts/result_verifier.py` verifies the latest assistant turn. A sentinel merely appearing later in prose does not count.
 
-## Requirements
+## Quick start
 
-- Python >= 3.10
-- Codex
-- Codex Chrome plugin installed and connected
-- ChatGPT Web signed in in the selected Chrome profile
-- GPT-5.6 Sol Pro or High actually exposed by the account
+Requirements: Python 3.10+, Codex, a connected Codex Chrome plugin, ChatGPT Web signed in in the selected Chrome profile, and an account that actually exposes GPT-5.6 Sol Pro or High.
 
-There is no OpenCLI fallback.
-
-## Development validation
+If your Codex environment uses the Skills CLI:
 
 ```bash
-git clone https://github.com/R-jed/webgpt-consult.git
-cd webgpt-consult
-python3 -m unittest discover -s tests -p 'test_*.py' -v
-python3 -m py_compile scripts/*.py
+npx skills add R-jed/webgpt-consult -g -y
 ```
 
-Cloning the repository only downloads source. It does not register the Skill with Codex.
+Restart or open a new Codex task, then invoke it explicitly:
 
-## Repository layout
+```text
+Use $webgpt-consult to get a strict GPT-5.6 Sol review of this architecture.
+```
+
+You may also clone the repository and load the complete directory through the Skill or Plugin mechanism supported by your Codex environment. `git clone` alone does not register the Skill.
+
+There is no OpenCLI fallback. The Skill stops when the Chrome plugin is unavailable.
+
+## Release layout
 
 ```text
 webgpt-consult/
@@ -145,23 +114,26 @@ webgpt-consult/
 ├── README.md
 ├── README_en.md
 ├── README_Agent.md
+├── LICENSE
 ├── agents/openai.yaml
+├── assets/readme/
+│   ├── hero.svg
+│   ├── workflow.svg
+│   └── continuity.svg
 ├── references/
 │   ├── chrome-workflow.md
 │   └── context-packet-template.md
-├── scripts/
-│   ├── build_attachment_bundle.py
-│   ├── check_packet_safety.py
-│   ├── consult_state.py
-│   ├── model_router.py
-│   ├── result_verifier.py
-│   └── submission_preflight.py
-├── tests/
-└── VALIDATION.md
+└── scripts/
+    ├── build_attachment_bundle.py
+    ├── check_packet_safety.py
+    ├── consult_state.py
+    ├── model_router.py
+    ├── result_verifier.py
+    └── submission_preflight.py
 ```
 
 AI agents should read [README_Agent.md](README_Agent.md) first and treat [SKILL.md](SKILL.md) as the authoritative execution contract.
 
 ## License
 
-MIT
+[MIT](./LICENSE)
