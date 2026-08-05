@@ -1,8 +1,8 @@
-<h1 align="center">webgpt consult</h1>
+<h1 align="center">webgpt-consult-skill</h1>
 
 <p align="center">
-  <strong>让 Codex 用 GPT-5.6 Sol Pro/High 获得一个可验证的第二意见</strong><br/>
-  Web 会话可以丢，本地判断与项目状态不能丢
+  <strong>让 Codex 用 WEB GPT-5.6 Sol Pro/High 获得一个可验证的第二意见</strong><br/>
+  
 </p>
 
 <p align="center">
