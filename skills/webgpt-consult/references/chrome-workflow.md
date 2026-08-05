@@ -86,7 +86,7 @@ Prefer minimal disclosure:
 - remove unrelated personal/private information;
 - never send secrets, authentication material, or payment credentials.
 
-Run `scripts/safety_guard.py` over text that may contain sensitive values. If it blocks, redact or remove the value locally and scan again.
+Run `scripts/safety_guard.py` on the exact outgoing prompt text and every UTF-8 text attachment. If it blocks, redact or remove the value locally and scan again.
 
 For binary/non-text files, inspect them locally before upload. The Skill does not attempt to build a general binary DLP system.
 
@@ -113,6 +113,7 @@ Immediately before Send, confirm:
 - the fresh request ID is present;
 - the prompt matches the user's current intent;
 - all required attachments are visibly uploaded;
+- the exact outgoing prompt and all UTF-8 text attachments passed `safety_guard.py`;
 - no blocked secret/payment material remains.
 
 Send once.
