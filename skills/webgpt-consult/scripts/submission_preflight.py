@@ -39,6 +39,7 @@ def inspect_file(path: Path, *, allow_unscanned_binary: bool = False) -> dict:
         result = scan(text)
         item["scan_status"] = "passed" if result["ok"] else "blocked"
         item["high_count"] = result["high_count"]
+        item["warn_count"] = result["warn_count"]
         if not result["ok"]:
             item["findings"] = result["findings"]
     else:
@@ -46,27 +47,47 @@ def inspect_file(path: Path, *, allow_unscanned_binary: bool = False) -> dict:
     return item
 
 
+def _packet_binding_status(packet_text: str, *, task_id: str, sentinel: str) -> dict:
+    lines = [line.strip() for line in packet_text.splitlines()]
+    expected_task = f"Task-ID: {task_id}"
+    expected_sentinel = f"Sentinel: {sentinel}"
+    task_count = sum(line == expected_task for line in lines)
+    sentinel_count = sum(line == expected_sentinel for line in lines)
+    return {
+        "ok": task_count == 1 and sentinel_count == 1,
+        "task_id_exactly_once": task_count == 1,
+        "sentinel_exactly_once": sentinel_count == 1,
+        "task_id_count": task_count,
+        "sentinel_count": sentinel_count,
+    }
+
+
 def build_manifest(packet: Path, attachments: list[Path], *, task_id: str, sentinel: str, allow_unscanned_binary: bool) -> dict:
     if not packet.exists() or not packet.is_file():
         raise ValueError(f"packet missing or not a file: {packet}")
+    if packet.is_symlink():
+        raise ValueError(f"symlink packet is not allowed: {packet}")
     packet_raw = packet.read_bytes()
     packet_text = packet_raw.decode("utf-8")
     packet_scan = scan(packet_text)
+    binding = _packet_binding_status(packet_text, task_id=task_id, sentinel=sentinel)
     items = [inspect_file(path, allow_unscanned_binary=allow_unscanned_binary) for path in attachments]
     blocked = [item for item in items if item["scan_status"] == "blocked"]
     manual = [item for item in items if item["scan_status"] == "manual_review_required"]
-    ok = packet_scan["ok"] and not blocked and not manual
+    ok = packet_scan["ok"] and binding["ok"] and not blocked and not manual
     return {
         "ok": ok,
         "task_id": task_id,
         "sentinel": sentinel,
         "context_hash": sha256_bytes(packet_raw),
+        "binding": binding,
         "packet": {
             "name": packet.name,
             "bytes": len(packet_raw),
             "sha256": sha256_bytes(packet_raw),
             "scan_status": "passed" if packet_scan["ok"] else "blocked",
             "high_count": packet_scan["high_count"],
+            "warn_count": packet_scan["warn_count"],
         },
         "attachments": items,
         "manual_review_required": [item["name"] for item in manual],
