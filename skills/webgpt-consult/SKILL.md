@@ -28,6 +28,7 @@ These fail closed:
 - Result binding: the latest assistant turn must match the exact sentinel and task ID.
 - Send idempotency: send once and never duplicate a request while the existing turn may still be generating.
 - Conversation identity: never continue a Web conversation unless the current Codex session can bind it to the immediately relevant verified review.
+- Browser ownership: automatically close only tabs/pages that the Skill explicitly created and still identifies unambiguously. Never infer ownership from URL, title, project name, or content.
 
 Web conversation continuity is optional and temporary. If the useful Web context is unavailable or unclear, start fresh with the evidence needed for the current review.
 
@@ -84,7 +85,8 @@ After branching:
 2. re-verify the GPT-5.6 Sol tier;
 3. send the current task plus the minimum necessary evidence;
 4. complete result verification;
-5. replace the session-scoped conversation binding with the new branch.
+5. replace the session-scoped conversation binding with the new branch;
+6. clean up the superseded tab only when it is distinct and explicitly Skill-owned.
 
 If no suitable branch point exists, branching is unavailable, or the branch is unreliable, fall back to `independent` with a fresh conversation.
 
@@ -100,12 +102,15 @@ After every successfully verified `independent`, `continuation`, or `branch` rev
 
 ```text
 review_tab_handle: <Chrome plugin tab/page handle when available>
+review_tab_owned_by_skill: true | false
 review_conversation_url: <exact canonical chatgpt.com conversation URL when available>
 last_task_id: <verified Task-ID>
 last_sentinel: <verified sentinel>
 ```
 
 A tab handle and URL are locators, not proof of identity. The previous verified Task-ID and sentinel are the identity check.
+
+`review_tab_owned_by_skill=true` only when the current Skill invocation explicitly created that browser tab/page through the Chrome capability and still has an unambiguous handle for it. Reusing a user-opened tab, navigating an existing tab, or merely observing a ChatGPT URL does not establish ownership.
 
 For `continuation`, resolve the Web conversation in this order:
 
@@ -131,6 +136,30 @@ Each invocation is grounded in the user's current task and the evidence that cur
 A Web conversation may carry short-term context while it remains useful. Once that context is lost or unsuitable, rebuild only the minimum current packet needed for the next review.
 
 Do not carry historical conclusions forward merely to preserve continuity. Reintroduce prior facts only when they are still necessary inputs to the current question.
+
+## Browser resource lifecycle
+
+Treat every browser tab/page touched by the Skill as either `owned` or `unowned`.
+
+Ownership rules:
+
+- `owned`: the Skill explicitly created the tab/page and still has its exact browser handle;
+- `unowned`: the tab existed before the Skill used it, came from the user, was merely discovered, or ownership is uncertain.
+
+Never upgrade `unowned` to `owned` by inference.
+
+Cleanup rules:
+
+1. keep the current verified bound review tab available for `continuation` or `branch`;
+2. when a new verified binding supersedes an older binding, close the old tab only if the old tab is distinct and explicitly `owned`;
+3. close temporary candidate tabs created during the current invocation when they never become the verified binding, but only after confirming no request is still generating there;
+4. if browser state is ambiguous, a generation may still be active, or ownership cannot be proved, leave the tab alone;
+5. never close arbitrary ChatGPT tabs, user-opened tabs, normal Chrome windows, or tabs selected by title/history similarity;
+6. never use process-wide browser cleanup such as `pkill`, `killall`, or generic Chrome termination.
+
+A cleanup failure does not invalidate an otherwise verified consultation result. Report it only when it leaves a meaningful user-visible resource leak or prevents safe continuation.
+
+Do not create a persistent tab registry, background cleanup daemon, or cross-session browser state database.
 
 ## Context assembly
 
@@ -195,6 +224,8 @@ continuation -> resolve and verify the current session binding before reuse
 branch       -> branch from the verified bound conversation, then replace the binding
 ```
 
+Track tab ownership from the moment a browser page is created or reused. Do not infer ownership later from page contents.
+
 If the chosen conversation path is unreliable, move toward a fresh `independent` review rather than inventing recovery data.
 
 ## Completion contract
@@ -217,7 +248,7 @@ A review is complete only when:
 - the latest assistant turn was extracted;
 - exact result verification passed.
 
-Only after exact result verification may the current Codex session establish or refresh the temporary conversation binding.
+Only after exact result verification may the current Codex session establish or refresh the temporary conversation binding. Only after the new binding is established may a superseded Skill-owned tab be cleaned up.
 
 ## Local adoption
 
@@ -235,10 +266,13 @@ Do not write the external answer into a persistent reviewer-memory layer.
 - Model post-selection verification fails: fail closed.
 - Preflight fails: do not send.
 - Attachment upload fails: retry upload or rebuild a faithful bundle; do not claim the artifact was received.
-- Still generating: remain in the same conversation and do not duplicate Send.
+- Still generating: remain in the same conversation and do not duplicate Send or close that tab.
 - Missing or misplaced sentinel/task ID: mark the review incomplete and do not establish or refresh a binding from that result.
 - Ambiguous `continuation`: switch to `independent`.
 - Missing, stale, or unverifiable session binding: switch to `independent`.
 - Lost or unreliable current conversation: switch to `independent`.
 - Context-limited current conversation: use `branch` from an earlier useful point; if unsuitable, switch to `independent`.
+- Failed candidate tab before Send: close it only if it is explicitly Skill-owned.
+- Failed candidate tab after Send: close it only after generation is known to have stopped and ownership is explicit.
+- Unknown tab ownership: leave it open.
 - Low-quality external answer: reject unsupported parts and keep local judgment authoritative.
