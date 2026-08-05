@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import mimetypes
+import re
 from pathlib import Path
 
 from check_packet_safety import scan
@@ -16,6 +17,8 @@ TEXT_EXTENSIONS = {
     ".java", ".js", ".json", ".jsx", ".md", ".mjs", ".py", ".rb", ".rs", ".sh",
     ".sql", ".toml", ".ts", ".tsx", ".txt", ".xml", ".yaml", ".yml",
 }
+TASK_ID_RE = re.compile(r"^webgpt-consult-(\d{8})-(\d{6})-([A-Za-z0-9_-]{8,})$")
+SENTINEL_RE = re.compile(r"^WEBGPT_CONSULT_RESULT_(\d{8})_(\d{6})_([A-Za-z0-9_-]{8,})$")
 
 
 def sha256_bytes(raw: bytes) -> str:
@@ -47,6 +50,22 @@ def inspect_file(path: Path, *, allow_unscanned_binary: bool = False) -> dict:
     return item
 
 
+def _invocation_identity_status(*, task_id: str, sentinel: str) -> dict:
+    task_match = TASK_ID_RE.fullmatch(task_id)
+    sentinel_match = SENTINEL_RE.fullmatch(sentinel)
+    task_format_ok = task_match is not None
+    sentinel_format_ok = sentinel_match is not None
+    pair_ok = False
+    if task_match and sentinel_match:
+        pair_ok = task_match.groups() == sentinel_match.groups()
+    return {
+        "ok": task_format_ok and sentinel_format_ok and pair_ok,
+        "task_id_format_ok": task_format_ok,
+        "sentinel_format_ok": sentinel_format_ok,
+        "timestamp_and_nonce_match": pair_ok,
+    }
+
+
 def _packet_binding_status(packet_text: str, *, task_id: str, sentinel: str) -> dict:
     lines = [line.strip() for line in packet_text.splitlines()]
     expected_task = f"Task-ID: {task_id}"
@@ -70,25 +89,30 @@ def build_manifest(packet: Path, attachments: list[Path], *, task_id: str, senti
     packet_raw = packet.read_bytes()
     packet_text = packet_raw.decode("utf-8")
     packet_scan = scan(packet_text)
+    identity = _invocation_identity_status(task_id=task_id, sentinel=sentinel)
     binding = _packet_binding_status(packet_text, task_id=task_id, sentinel=sentinel)
     items = [inspect_file(path, allow_unscanned_binary=allow_unscanned_binary) for path in attachments]
     blocked = [item for item in items if item["scan_status"] == "blocked"]
     manual = [item for item in items if item["scan_status"] == "manual_review_required"]
-    ok = packet_scan["ok"] and binding["ok"] and not blocked and not manual
+    ok = packet_scan["ok"] and identity["ok"] and binding["ok"] and not blocked and not manual
+    packet_info = {
+        "name": packet.name,
+        "bytes": len(packet_raw),
+        "sha256": sha256_bytes(packet_raw),
+        "scan_status": "passed" if packet_scan["ok"] else "blocked",
+        "high_count": packet_scan["high_count"],
+        "warn_count": packet_scan["warn_count"],
+    }
+    if not packet_scan["ok"]:
+        packet_info["findings"] = packet_scan["findings"]
     return {
         "ok": ok,
         "task_id": task_id,
         "sentinel": sentinel,
         "context_hash": sha256_bytes(packet_raw),
+        "identity": identity,
         "binding": binding,
-        "packet": {
-            "name": packet.name,
-            "bytes": len(packet_raw),
-            "sha256": sha256_bytes(packet_raw),
-            "scan_status": "passed" if packet_scan["ok"] else "blocked",
-            "high_count": packet_scan["high_count"],
-            "warn_count": packet_scan["warn_count"],
-        },
+        "packet": packet_info,
         "attachments": items,
         "manual_review_required": [item["name"] for item in manual],
     }
