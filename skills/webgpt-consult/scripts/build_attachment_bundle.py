@@ -258,7 +258,8 @@ def build_bundle(
         raise BundleError(f"bundle safety scan blocked output: {', '.join(kinds)}")
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(bundle, encoding="utf-8")
+    bundle_bytes = bundle.encode("utf-8")
+    output.write_bytes(bundle_bytes)
     return {
         "ok": True,
         "output": str(output),
@@ -266,7 +267,7 @@ def build_bundle(
         "partial_files": sum(source.status != "full" for source in sources),
         "excluded": len(skipped),
         "warning_count": len(warnings),
-        "bundle_bytes": len(bundle.encode("utf-8")),
+        "bundle_bytes": len(bundle_bytes),
     }
 
 
