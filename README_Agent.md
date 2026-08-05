@@ -93,7 +93,7 @@ Never transmit known secrets, authentication material, or payment credentials. T
 <SKILL_ROOT>/scripts/safety_guard.py
 ```
 
-Use it on UTF-8 text that may contain sensitive values. If it blocks, redact/remove the value locally and scan again. Do not bypass the guard.
+Run it on the exact outgoing prompt text and every UTF-8 text attachment before Send. If it blocks, redact/remove the value locally and scan again. Do not bypass the guard.
 
 The guard is intentionally narrow. Do not expand project behavior into a general DLP/PII system. Codex should minimize unrelated private information contextually before transmission.
 
