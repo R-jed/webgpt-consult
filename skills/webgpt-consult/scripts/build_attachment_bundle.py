@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
@@ -56,13 +57,18 @@ def _load_safety_scan() -> Callable[[str], list[dict]]:
     return module.scan
 
 
-def _fence(path: Path) -> str:
+def _language(path: Path) -> str:
     ext = path.suffix.lower().lstrip(".")
     return {
         "md": "markdown", "py": "python", "js": "javascript", "mjs": "javascript",
         "ts": "typescript", "tsx": "tsx", "json": "json", "yaml": "yaml",
         "yml": "yaml", "sh": "bash", "html": "html", "css": "css",
     }.get(ext, ext or "text")
+
+
+def _fence_delimiter(text: str) -> str:
+    longest = max((len(match.group(0)) for match in re.finditer(r"`+", text)), default=0)
+    return "`" * max(4, longest + 1)
 
 
 def _truncate_utf8(text: str, max_bytes: int) -> str:
@@ -199,13 +205,14 @@ def _render(sources: list[SourceFile], skipped: list[str], partial_allowed: bool
 
     lines.extend(["", "## Files"])
     for source in sources:
+        fence = _fence_delimiter(source.text)
         lines.extend([
             "",
             f"### `{source.label}`",
             "",
-            f"````{_fence(source.path)}",
+            f"{fence}{_language(source.path)}",
             source.text.rstrip(),
-            "````",
+            fence,
         ])
         if source.status == "truncated":
             lines.extend([
