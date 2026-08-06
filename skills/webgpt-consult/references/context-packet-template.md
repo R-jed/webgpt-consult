@@ -1,6 +1,6 @@
-# GPT-5.6 Sol Pro Context Packet Template
+# GPT-5.6 Sol Context Packet Template
 
-Use this format for substantial ChatGPT Web consultations. It retains the proven `CONTEXT_PACKET_V1` structure from `gpt56-sol-pro-consult`, with identifiers adapted for `webgpt-consult` and a compact delta form for verified follow-up turns.
+Use this canonical `CONTEXT_PACKET_V1` format for substantial ChatGPT Web consultations. It supports a full first-turn packet and a compact delta form for verified follow-up turns.
 
 Use enough context to preserve the causal truth of the problem. For genuinely difficult work, roughly 8,000 to 15,000 characters can be appropriate when a shorter prompt would remove important constraints, evidence, attempts, or tradeoffs. This is guidance, not a quota. Do not pad a packet.
 
