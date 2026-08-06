@@ -1,8 +1,6 @@
 interface:
   display_name: "webgpt-consult"
   short_description: "Verified multi-turn ChatGPT Web consultation with GPT-5.6 Sol Pro/High"
-  icon_small: "./assets/mobius-white.svg"
-  icon_large: "./assets/mobius-white.svg"
   brand_color: "#000000"
 
 policy:
