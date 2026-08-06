@@ -1,12 +1,12 @@
-# webgpt-consult: AI Agent bootstrap
+# README for AI agents
 
-This file is for AI agents that discover or support the project. Human users should read [README.md](README.md) or [README_en.md](README_en.md).
+This file is for AI agents that find or support `webgpt-consult`. Human users should read [README.md](README.md) or [README_en.md](README_en.md).
 
-`webgpt-consult` is a Codex Skill for verified, multi-turn consultation with GPT-5.6 Sol Pro or High through ChatGPT Web in Chrome.
+The Skill lets Codex use Chrome to ask GPT-5.6 Sol Pro or High for a second opinion, keep the same Web conversation across follow-up turns, send real supporting files, and recover safely when browser work is interrupted.
 
 ## Install
 
-Project scope:
+Current project:
 
 ```bash
 npx skills add R-jed/webgpt-consult
@@ -24,11 +24,11 @@ Update:
 npx skills update webgpt-consult
 ```
 
-Add `-g` for a global installation. Do not invent another installer, setup script, package format, or symlink workflow.
+Add `-g` when updating a global installation. Do not invent another installer or setup flow.
 
 ## Invoke
 
-User-facing entry point:
+The user-facing command is:
 
 ```text
 /webgpt-consult <consultation request>
@@ -38,57 +38,58 @@ Implicit invocation is disabled.
 
 ## Read order
 
-Resolve the installed Skill root, then read:
+Before doing browser work, resolve the installed Skill root and read these files in order:
 
 ```text
 1. <SKILL_ROOT>/SKILL.md
 2. <SKILL_ROOT>/references/chrome-workflow.md
-3. <SKILL_ROOT>/references/context-packet-template.md   when the consultation is substantial
+3. <SKILL_ROOT>/references/context-packet-template.md   for a substantial consultation
 ```
 
-Do not reconstruct runtime behavior from this bootstrap file. The canonical responsibilities are:
+Also read the installed Chrome-control Skill's current documentation before using its browser API.
 
-| Source | Authority |
+Use each file for one clear purpose:
+
+| File | What it tells you |
 | --- | --- |
-| `SKILL.md` | Product boundaries, routing, consultation policy, evidence discipline, completion semantics, failure policy |
-| `references/chrome-workflow.md` | Executable Chrome protocol: runtime initialization, browser state discipline, conversation binding, live fast path, recovery, model cache, file chooser, composer verification, dispatch state, result verification, ownership, cleanup |
-| `references/context-packet-template.md` | Full `CONTEXT_PACKET_V1`, adaptation rules, follow-up delta form, packet integrity rules |
-| `scripts/safety_guard.py` | Local blocking and warning behavior for outgoing UTF-8 text |
-| `scripts/build_attachment_bundle.py` | Canonical multi-file Unicode text-bundle behavior with strict explicit decoding and UTF-8 output |
+| `SKILL.md` | What the Skill is allowed to do, how to choose evidence, when a consultation is complete, and what to do on failure |
+| `references/chrome-workflow.md` | The executable Chrome protocol: opening or recovering the right conversation, model checks, file upload, composer checks, Send recovery, result checks, and cleanup |
+| `references/context-packet-template.md` | The full `CONTEXT_PACKET_V1` format and the shorter follow-up form |
+| `scripts/safety_guard.py` | What outgoing UTF-8 text is blocked or warned about |
+| `scripts/build_attachment_bundle.py` | How several selected text files are turned into one safe UTF-8 Markdown bundle |
 
-Before browser work, read the installed Chrome-control Skill's current documentation. The executable workflow contains current adapter patterns such as JavaScript browser initialization and Playwright file-chooser handling, while the Chrome-control Skill remains authoritative for the exact API available in that environment.
+Do not rebuild the runtime rules from this README. The files above are the source of truth.
 
-## Critical boundaries
+## Rules that must stay true
 
-Keep these boundaries intact when explaining or modifying the project:
+- Use Codex-controlled Chrome for the Web consultation.
+- For a fresh or branched conversation, use verified GPT-5.6 Sol Pro when available, otherwise verified High, otherwise stop.
+- Decide whether an existing verified conversation can be reused before opening the model picker.
+- For a normal follow-up in the same verified conversation, reuse the existing model and conversation state.
+- If no valid conversation exists, create a new Skill-owned ChatGPT tab instead of taking over an unrelated user tab.
+- A local path is not evidence. Deliver the real file, faithful content, or a generated bundle.
+- Scan outgoing text for blocked secrets before Send.
+- Send once. If the Send result is uncertain, recover the original conversation before doing anything else.
+- `UNKNOWN` means the Send outcome is unclear. It does not automatically mean the verified model cache is wrong.
+- Keep conversation bindings and recovery state only in the current Codex conversation. Do not create a persistent consultation database.
+- Only close browser resources that this Skill can prove it created.
+- Treat the Web answer as advice. Codex still checks important claims against local facts before final delivery.
 
-- Runtime transport is Codex Chrome only. There is no OpenCLI fallback in this project.
-- New or branched Web conversations use verified GPT-5.6 Sol Pro when available, otherwise verified High, otherwise stop.
-- Resolve conversation continuity before deciding whether model-picker work is needed.
-- Normal follow-ups in the same verified Web conversation reuse the confirmed model and conversation state. Do not reopen the model picker per message.
-- `UNKNOWN` describes an unresolved Send outcome. It does not by itself invalidate the conversation-scoped model cache.
-- Simple consultations may use a compact prompt. Substantial first-turn work uses `CONTEXT_PACKET_V1`. Same-conversation follow-ups should use the delta form when the earlier context remains valid.
-- A local path or filename is not evidence. Deliver the real file, faithful content, or a generated bundle.
-- Prefer original selected human-readable files. Use the bundle helper when many selected supported Unicode text files are awkward to upload individually or an archive is rejected.
-- Never send blocked credentials, authentication material, or payment secrets.
-- Submit once. An ambiguous Send outcome must recover the original conversation rather than create a duplicate.
-- Conversation bindings, model caches, and in-flight recovery state are session-scoped. Do not persist reviewer or project memory to disk.
-- Only close browser resources proven to have been created by this Skill in the current Codex conversation.
-- ChatGPT Web is advisory. Codex owns local verification and final delivery.
+## How much context to send
 
-## Consultation discipline
+For a simple question, use a compact prompt.
 
-For difficult review, architecture, business, product, risk, or similar second-opinion work, preserve enough causal context for the Web model to challenge the real problem rather than a stripped-down summary.
+For a difficult first-turn review, architecture decision, debugging problem, product question, risk review, or similar task, use the full `CONTEXT_PACKET_V1` when losing context would hurt the answer. Keep facts, local judgment, assumptions, evidence, previous attempts, options, and risks separate when they matter.
 
-When a useful local judgment already exists, keep it separate from facts and unknowns in the context packet. Omit it when the user wants an independent first view.
+A difficult packet may be around 8,000 to 15,000 characters when that information is genuinely useful. This is guidance, not a target.
 
-For genuinely difficult work, a packet around 8,000 to 15,000 characters can be appropriate when shortening it would remove important evidence, attempts, constraints, or tradeoffs. This is guidance, not a target.
+For later turns in the same verified Web conversation, normally send only what changed, the new evidence, and the next question. Use the follow-up delta form and a fresh task identity.
 
-Later turns in the same verified conversation should reuse valid prior context and send only the new state, evidence, and ask unless earlier material needs correction.
+## Files and safety
 
-## Evidence helper
+Prefer original selected files when they can be uploaded reliably.
 
-When many relevant text files are awkward to upload individually:
+When many relevant text files are awkward to upload one by one, use:
 
 ```bash
 python3 "<SKILL_ROOT>/scripts/build_attachment_bundle.py" \
@@ -96,38 +97,26 @@ python3 "<SKILL_ROOT>/scripts/build_attachment_bundle.py" \
   -o /tmp/webgpt-consult-bundle.md
 ```
 
-The helper accepts UTF-8 directly and BOM-declared UTF-8, UTF-16, or UTF-32 through strict decoding. It normalizes bundled content to UTF-8, never guesses a legacy charset, and never uses replacement decoding.
+The helper accepts UTF-8 and BOM-declared UTF-8, UTF-16, or UTF-32 text. It decodes strictly, outputs UTF-8, does not guess legacy encodings, and does not replace bad bytes with guessed characters.
 
-Its manifest keeps one `sha256` for the exact UTF-8 content actually placed in each code fence, plus encoding, `source_bytes`, `included_bytes`, and status. The helper is fail-closed by default when size limits would make the evidence incomplete. `--allow-partial` is an explicit opt-in and must never be presented as complete evidence.
+The bundle records one `sha256` for the exact UTF-8 content placed in each code fence, together with encoding, `source_bytes`, `included_bytes`, and status. It stops by default if size limits would make the evidence incomplete. `--allow-partial` is an explicit opt-in and partial evidence must be described as partial.
 
-Do not automatically bundle or upload an entire repository. Codex selects the evidence first.
+Do not automatically package or upload an entire repository.
 
 ## Validation assets
 
-The installed package includes lightweight deterministic tests and manual Chrome eval scenarios:
+The package includes automated tests and browser acceptance scenarios:
 
 ```text
 <SKILL_ROOT>/tests/
 <SKILL_ROOT>/evals/evals.json
 ```
 
-The tests cover safety behavior, bundle integrity, executable Chrome-contract invariants, and documentation boundaries. The evals preserve real Chrome failure modes such as empty-composer recovery, ambiguous Send recovery, multi-turn model reuse, runtime reset recovery, and existing-result extraction.
+The tests cover the safety guard, bundle behavior, the executable Chrome protocol, multi-turn model reuse, Send recovery, document boundaries, and other stable contracts. The eval file covers realistic browser situations such as empty composer recovery, uncertain Send recovery, Chrome reset, High fallback, fresh conversation creation, and reusing an answer that is already visible.
 
-These assets validate protocol behavior. They do not prescribe how Codex should reason about the user's task.
+## Do not claim unsupported behavior
 
-## Unsupported claims
-
-Do not claim that the Skill:
-
-- provides an OpenCLI fallback;
-- stores durable reviewer or project memory;
-- automatically packages or uploads an entire repository;
-- requires the full context packet for every request;
-- reopens the model picker on every follow-up;
-- guesses legacy text encodings when no explicit Unicode signal exists;
-- can recover a conversation by guessing from sidebar titles, recent-chat order, timestamps, project names, or semantic similarity;
-- owns or closes user-created browser tabs;
-- supports Web models outside GPT-5.6 Sol Pro or High.
+Do not say that the Skill stores long-term reviewer memory, automatically uploads a whole repository, requires a full context packet for every question, reopens the model picker on every follow-up, guesses unknown text encodings, recovers conversations by guessing from sidebar titles, or owns user-created browser tabs.
 
 ## Third-party notices
 
