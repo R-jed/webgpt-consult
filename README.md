@@ -7,23 +7,30 @@
 
 <p align="center">
   <a href="#安装">安装</a> ·
-  <a href="#使用">使用</a> ·
-  <a href="#工作方式">工作方式</a> ·
-  <a href="#隐私与安全">隐私与安全</a> ·
+  <a href="#怎么用">怎么用</a> ·
+  <a href="#它会做什么">它会做什么</a> ·
+  <a href="#文件和安全">文件和安全</a> ·
   <a href="README_en.md">English</a>
 </p>
 
-`webgpt-consult` 让 Codex 通过 Chrome 把问题和真正相关的资料交给 ChatGPT Web 的 GPT-5.6 Sol，再把结果带回当前任务。
+`webgpt-consult` 做的事情很简单：让 Codex 打开 ChatGPT 网页，把你正在处理的问题和真正需要的资料交给 GPT-5.6 Sol，再把回答带回当前任务。
 
-简单问题可以直接问。复杂的架构、代码、排错、产品或风险问题会使用标准 `CONTEXT_PACKET_V1`，把背景、证据、已经尝试过的方法、当前判断、选项和风险整理清楚。连续追问会尽量沿用同一个 Web 对话和已经确认过的模型，避免一遍遍重传背景、检查模型菜单或重复提交。
+它适合用在这些场景：代码或排错卡住了，想让另一个模型找遗漏；准备定架构或产品方案，想再听一个独立意见；改完一轮以后，想继续在同一个 Web 对话里追问；或者最终提交前想再做一次严格检查。
 
-> **如果你是 AI Agent，请先看 [README_Agent.md](README_Agent.md)。实际执行规则以 [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md) 为准。**
+简单问题直接问。复杂问题会把背景、证据、已经试过的方法、当前判断和风险整理好再发过去。后续追问会尽量继续使用同一个 ChatGPT Web 对话，所以不用每一轮都重新交代全部背景，也不用反复打开模型菜单。
+
+> **如果你是 AI Agent，请先看 [README_Agent.md](README_Agent.md)。真正的运行规则写在 [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md)。**
 
 ## 安装
 
-需要 Codex、已连接的 Codex Chrome 插件，以及已经登录 ChatGPT Web 并能使用 GPT-5.6 Sol Pro 或 High 的账号。
+你需要：
 
-项目内安装：
+- Codex
+- 能被 Codex 控制的 Chrome
+- 已经登录 ChatGPT Web 的账号
+- 账号里能使用 GPT-5.6 Sol Pro 或 High
+
+安装到当前项目：
 
 ```bash
 npx skills add R-jed/webgpt-consult
@@ -41,71 +48,67 @@ npx skills add R-jed/webgpt-consult -g -a codex
 npx skills update webgpt-consult
 ```
 
-全局安装时加 `-g`。
+全局安装的更新命令加 `-g`。
 
-## 使用
+## 怎么用
+
+直接调用：
 
 ```text
-/webgpt-consult <你的咨询请求>
+/webgpt-consult <你想让 ChatGPT Web 帮忙看的问题>
 ```
 
 例如：
 
 ```text
-/webgpt-consult 请让 GPT-5.6 Sol 看一下这个登录 bug，需要的话读取相关源码和日志。
+/webgpt-consult 这个登录问题我已经排查很久了，请让 GPT-5.6 Sol 帮我找根因，需要的话看相关源码和日志。
 ```
 
-Codex 会自己判断哪些材料真正有用。ChatGPT Web 不能直接读取你电脑上的路径，所以源码、日志或文档只有真正上传、粘贴或整理成附件后，才会被当成已经提供给 Web 端的证据。
+你不需要自己整理浏览器步骤，也不需要手动复制来回复制去。Codex 会决定哪些资料值得带过去，然后负责把 Web 端的结果带回来。
 
-如果需要的文本文件很多，Skill 自带一个 bundle 工具，可以把选中的文件整理成一份带文件名和 SHA-256 清单的 Markdown 附件。它支持能够明确识别的 Unicode 文本：UTF-8，以及带 BOM 的 UTF-16/UTF-32。无法可靠解码时会直接停止，不会猜编码或用替换字符悄悄修改内容。超大文件默认也不会被静默截断；资料不完整时会停下来，除非明确允许生成 partial bundle。
+## 它会做什么
 
-## 工作方式
-
-第一次进入一个新的 ChatGPT Web 对话时，Skill 会确认 GPT-5.6 Sol Pro；Pro 不可用时使用 High。确认以后，同一个 Web 对话里的正常后续咨询直接复用这个模型。
-
-只要原来的 tab 和对话身份一直没有变化，后续轮次会走 fast path，直接继续聊天。发生 Chrome 重连、tab 丢失或需要重新打开对话时，Skill 才会用上一轮的 Sentinel 重新确认找回的是同一个会话。
-
-复杂任务会使用 `CONTEXT_PACKET_V1`。如果这是一次架构、风险、产品或其他“第二意见”式审查，Codex 会在已有本地判断时把它和事实分开写清楚，让 GPT-5.6 Sol 真正去挑战这个判断。Web 端的回答始终是咨询意见，Codex 还会结合本地源码和事实决定哪些建议采用、修改或放弃。
-
-同一个问题继续追问时，只发送新的进展、证据和问题，已经存在于 Web 对话里的背景不会整包重复发送。
+一次正常咨询大致是这样：
 
 ```text
-你的请求
+你的问题
   ↓
-Codex 选择真正相关的上下文和文件
+Codex 先理解任务，并挑出真正相关的资料
   ↓
-本地敏感信息检查
+在本地检查敏感信息
   ↓
-复用已验证会话，或新建 ChatGPT Web 会话
+继续已有的 ChatGPT Web 对话，或开一个新的对话
   ↓
-GPT-5.6 Sol Pro / High
+新对话优先使用 GPT-5.6 Sol Pro，Pro 没有就用 High
   ↓
-只发送一次并等待完整回答
+上传需要的真实文件并确认消息内容正确
   ↓
-核对 Web 意见和本地证据
+只发送一次，等待完整回答
   ↓
-带回当前任务
+Codex 再用本地源码、日志和事实核对 Web 端建议
+  ↓
+把有用的结论带回当前任务
 ```
 
-例如你正在排查一个登录问题：
+如果你继续追问同一个问题，Skill 会尽量沿用已经确认过的 Web 对话和模型。例如第一轮让它审架构，第二轮告诉它“我已经改完了，再看一次”，第三轮再补一份失败日志，都可以留在同一个咨询上下文里。
 
-```text
-/webgpt-consult 这个登录问题我已经查了很久，请让 GPT-5.6 Sol 帮我找根因。
-```
+如果原来的 Chrome 连接中断，Skill 会先找回原来的对话。尤其是在点击 Send 前后发生断线时，它不会为了省事再发送一份相同请求，从而避免重复咨询。
 
-Codex 可以选择 `auth.py`、`session.py` 和实际报错作为证据。如果相关源码很多，可以上传选中的原文件，或生成一个 review bundle。你随后说“我按它的建议改了，但这个测试还是失败”，下一轮只需要补充新代码、测试结果和新的问题。
+复杂任务会使用 `CONTEXT_PACKET_V1`。可以把它理解成一份整理好的咨询说明，把问题、背景、证据、已经做过什么、当前判断和风险分开写清楚。普通小问题不会强行套这个格式。
 
-浏览器如果恰好在点击 Send 时断开，Skill 会把状态区分成 `NOT_SENT`、`SENT` 或 `UNKNOWN`。结果不确定时优先找回原对话，不会为了省事再发一份相同请求。
+## 文件和安全
 
-## 隐私与安全
+ChatGPT Web 看不到你电脑上的本地路径。写一句 `/Users/me/project/auth.py` 并不等于已经把文件交给它。真正需要看的源码、日志或文档必须实际上传、粘贴，或者整理成附件。
 
-发送前会在本地拦截常见的 API key、密码、访问令牌、cookie/session、private key、验证码和支付卡信息。
+文件少时优先直接上传原文件。文件很多时，Skill 带有一个 bundle 工具，可以把选中的文本文件整理成一份 Markdown 附件，并保留文件名、大小和内容校验信息。它不会默认偷偷截断超大文件；如果资料会变得不完整，会先停下来，除非明确允许生成 partial bundle。
 
-普通的项目或业务背景如果确实影响判断，可以保留；与当前问题无关的姓名、邮箱、地址等私人信息应该尽量删掉。安全检查的目标是拦住凭据和无关隐私，同时保留解决问题真正需要的上下文。
+Bundle 支持普通 UTF-8 文本，也支持带明确 Unicode 编码标记的 UTF-16/UTF-32 文本。无法可靠判断编码时会停止，不会靠猜测改写内容。
 
-## 模型
+发送前还会在本地检查常见的 API key、密码、访问令牌、cookie/session、private key、验证码和支付卡信息。发现这类内容时会先拦下来。普通项目背景如果确实会影响判断，可以保留；与问题无关的私人信息应尽量删掉。
 
-新建 Web 会话时：
+## 模型和限制
+
+新开一个 ChatGPT Web 对话时，模型顺序是：
 
 ```text
 GPT-5.6 Sol Pro
@@ -115,36 +118,28 @@ GPT-5.6 Sol High
 停止
 ```
 
-同一个已经验证过的 Web 对话会复用确认过的模型。只有新会话、Branch、会话身份变化、模型状态异常或明确要求重新检查时才会再次打开模型菜单。
+同一个已经确认过的 Web 对话会继续使用原来的模型，不会每发一条消息都重新检查。
 
-Codex 自己正在使用什么模型或 reasoning level，不影响 Web 端模型选择。
+这个 Skill 只走 Codex 控制的 Chrome。它不会在磁盘上保存长期咨询记忆，也不会自动把整个仓库全部上传。ChatGPT Web 给出的内容始终是一份外部意见，最终结果仍由 Codex结合本地事实判断。
 
-## 项目结构
+## 给想看源码的人
+
+核心文件在：
 
 ```text
 skills/webgpt-consult/
-├── SKILL.md
-├── LICENSE
-├── THIRD_PARTY_NOTICES.md
-├── agents/
-│   └── openai.yaml
-├── assets/
-│   └── mobius-white.svg
+├── SKILL.md                         # 整体规则
 ├── references/
-│   ├── chrome-workflow.md
-│   └── context-packet-template.md
+│   ├── chrome-workflow.md           # Chrome 的实际执行流程
+│   └── context-packet-template.md   # 复杂咨询的上下文格式
 ├── scripts/
-│   ├── build_attachment_bundle.py
-│   └── safety_guard.py
-├── evals/
-│   └── evals.json
-└── tests/
-    ├── test_attachment_bundle.py
-    ├── test_safety_guard.py
-    └── test_skill_contract.py
+│   ├── build_attachment_bundle.py   # 多文件打包
+│   └── safety_guard.py              # 本地敏感信息检查
+├── evals/evals.json                 # 浏览器场景验收用例
+└── tests/                            # 自动测试
 ```
 
-详细运行规则见 [SKILL.md](skills/webgpt-consult/SKILL.md)。
+AI Agent 的入口说明见 [README_Agent.md](README_Agent.md)。详细运行规则见 [SKILL.md](skills/webgpt-consult/SKILL.md)。
 
 ## License
 
