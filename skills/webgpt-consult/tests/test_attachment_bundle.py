@@ -16,6 +16,9 @@ import build_attachment_bundle as bundle  # noqa: E402
 
 
 class AttachmentBundleTests(unittest.TestCase):
+    def _read_bundle(self, output: Path) -> str:
+        return output.read_bytes().decode("utf-8")
+
     def _embedded_text(self, bundle_text: str, language: str) -> str:
         opening = f"````{language}\n"
         start = bundle_text.index(opening) + len(opening)
@@ -33,7 +36,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             result = bundle.build_bundle([root], output)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
             first_hash = hashlib.sha256(first.read_bytes()).hexdigest()
 
             self.assertTrue(result["ok"])
@@ -55,7 +58,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             bundle.build_bundle([source], output)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
             embedded = self._embedded_text(text, "txt")
             digest = hashlib.sha256(original.encode("utf-8")).hexdigest()
 
@@ -81,7 +84,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             result = bundle.build_bundle([source], output, max_file_bytes=20, allow_partial=True)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
             included = "x" * 20
             digest = hashlib.sha256(included.encode("utf-8")).hexdigest()
 
@@ -102,7 +105,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             bundle.build_bundle([source], output)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
             embedded = self._embedded_text(text, "txt")
             digest = hashlib.sha256(original.encode("utf-8")).hexdigest()
 
@@ -120,7 +123,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             bundle.build_bundle([source], output)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
             embedded = self._embedded_text(text, "txt")
             included_raw = original.encode("utf-8")
 
@@ -139,7 +142,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             bundle.build_bundle([source], output)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
             embedded = self._embedded_text(text, "txt")
 
             self.assertEqual(embedded, original)
@@ -183,7 +186,7 @@ class AttachmentBundleTests(unittest.TestCase):
             output = Path(tmp) / "bundle.md"
 
             bundle.build_bundle([source], output)
-            text = output.read_text(encoding="utf-8")
+            text = self._read_bundle(output)
 
             self.assertIn("`````markdown", text)
             self.assertIn("````python", text)
