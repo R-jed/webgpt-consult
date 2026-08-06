@@ -72,14 +72,14 @@ class SkillContractTests(unittest.TestCase):
         ):
             self.assertIn(required, packet)
 
-    def test_agent_readme_is_bootstrap_not_second_runtime_spec(self) -> None:
+    def test_agent_readme_is_plain_bootstrap_not_second_runtime_spec(self) -> None:
         agent_readme = (REPO_ROOT / "README_Agent.md").read_text(encoding="utf-8")
         for required in (
             "## Read order",
-            "## Critical boundaries",
+            "## Rules that must stay true",
             "## Validation assets",
-            "Executable Chrome protocol",
-            "Full `CONTEXT_PACKET_V1`",
+            "executable Chrome protocol",
+            "full `CONTEXT_PACKET_V1`",
         ):
             self.assertIn(required, agent_readme)
         for duplicated_state_field in (
@@ -102,6 +102,18 @@ class SkillContractTests(unittest.TestCase):
             "Required invariants",
             "Cleanup decision matrix",
             "first non-empty assistant line to equal the current sentinel exactly",
+        ):
+            self.assertIn(required, workflow)
+
+    def test_chrome_workflow_has_safe_fresh_conversation_path(self) -> None:
+        workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
+        for required in (
+            "### Fresh conversation path",
+            "create a new tab through the documented Chrome-control API",
+            "record the exact new handle as Skill-owned",
+            "navigate that tab to `https://chatgpt.com/`",
+            "start from a fresh chat state",
+            "Do not take over an unrelated user tab",
         ):
             self.assertIn(required, workflow)
 
@@ -130,6 +142,14 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("never click Send again for the same submission", workflow)
         self.assertIn("mark the consultation incomplete", workflow)
 
+    def test_model_policy_keeps_pro_to_high_fallback(self) -> None:
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
+        for text in (skill, workflow):
+            self.assertIn("GPT-5.6 Sol Pro", text)
+            self.assertIn("GPT-5.6 Sol High", text)
+        self.assertIn("select GPT-5.6 Sol `Pro` when available, otherwise `High`", workflow)
+
     def test_bundle_is_canonical_multi_file_fallback(self) -> None:
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
         workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
@@ -146,7 +166,7 @@ class SkillContractTests(unittest.TestCase):
 
         self.assertIn("one `sha256`", skill)
         self.assertIn("BOM-declared UTF-8, UTF-16, or UTF-32", skill)
-        self.assertIn("never guesses a legacy charset", agent_readme)
+        self.assertIn("does not guess legacy encodings", agent_readme)
         self.assertIn("BOM-declared UTF-8, UTF-16, and UTF-32", workflow)
 
         self.assertIn("sha256: str", bundle)
@@ -163,7 +183,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertFalse((SKILL_DIR / "scripts/run_gpt56_sol_pro_consult.py").exists())
         self.assertFalse((SKILL_DIR / "scripts/extract_chatgpt_reply.py").exists())
 
-    def test_project_docs_use_project_native_narrative(self) -> None:
+    def test_project_docs_use_only_project_native_product_language(self) -> None:
         product_docs = (
             REPO_ROOT / "README.md",
             REPO_ROOT / "README_en.md",
@@ -178,8 +198,13 @@ class SkillContractTests(unittest.TestCase):
             "upstream",
             "informed by",
             "incorporates and adapts",
+            "adapted from",
+            "inspired by",
             "吸收自",
             "借鉴",
+            "参考其它项目",
+            "参考其他项目",
+            "学习自",
         )
         for path in product_docs:
             text = path.read_text(encoding="utf-8").lower()
@@ -191,11 +216,12 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("Copyright (c) 2026 zjp1997720", notice)
         self.assertIn("gpt56-sol-pro-consult", notice)
 
-    def test_metadata_keeps_explicit_invocation(self) -> None:
+    def test_metadata_matches_current_product_positioning(self) -> None:
         metadata = (SKILL_DIR / "agents/openai.yaml").read_text(encoding="utf-8")
+        self.assertIn("Verified multi-turn ChatGPT Web consultation", metadata)
         self.assertIn("allow_implicit_invocation: false", metadata)
 
-    def test_evals_cover_real_failure_modes(self) -> None:
+    def test_evals_cover_real_failure_modes_and_product_paths(self) -> None:
         payload = json.loads((SKILL_DIR / "evals/evals.json").read_text(encoding="utf-8"))
         scenarios = "\n".join(
             f"{case['prompt']}\n{case['expected_output']}" for case in payload["evals"]
@@ -207,8 +233,11 @@ class SkillContractTests(unittest.TestCase):
             "model picker",
             "Show in text field",
             "already visible",
+            "GPT-5.6 Sol High",
+            "Skill-owned",
         ):
             self.assertIn(concept, scenarios)
+        self.assertGreaterEqual(len(payload["evals"]), 10)
 
 
 if __name__ == "__main__":
