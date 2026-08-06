@@ -63,6 +63,8 @@ Do not over-sanitize context that materially affects the judgment. Task-relevant
 
 Run `scripts/safety_guard.py` on the exact outgoing prompt or packet and every UTF-8 text attachment before Send. Blocking findings must be removed or redacted locally and scanned again.
 
+When a selected text source is BOM-declared UTF-16 or UTF-32, do not bypass safety because the original bytes are not UTF-8. Route it through the bundle helper, or make a faithful local UTF-8 copy for scanning and delivery. The bundle helper strictly decodes supported Unicode text, normalizes it to UTF-8, then performs its own blocking scan.
+
 ### Exactly-once submission
 
 Submit once. If the Send outcome becomes uncertain, recover the original conversation rather than issuing a replacement.
@@ -83,8 +85,8 @@ For each consultation:
 2. **Resolve continuity.** Reuse the current verified Web conversation when the request clearly continues it. If the expected answer may already be visible, inspect that conversation before preparing another submission.
 3. **Choose the handoff form.** Use a compact prompt for simple work, full `CONTEXT_PACKET_V1` for substantial first-turn work, and the delta form for same-conversation follow-ups unless prior context is stale, ambiguous, or contradicted.
 4. **Create a fresh identity.** Every Web submission gets a fresh `task_id` and sentinel. The canonical formats are defined in `references/context-packet-template.md`.
-5. **Select real evidence.** Prefer original human-readable files when reliable upload is practical. Use faithful excerpts when only a small section matters. Use `scripts/build_attachment_bundle.py` when many selected UTF-8 text files would otherwise be awkward to deliver.
-6. **Apply safety checks.** Scan the exact outgoing text and all UTF-8 text attachments. Inspect binary or non-text attachments locally before upload. Remove unrelated private material and blocked credentials.
+5. **Select real evidence.** Prefer original human-readable files when reliable upload is practical. Use faithful excerpts when only a small section matters. Use `scripts/build_attachment_bundle.py` when many selected supported Unicode text files would otherwise be awkward to deliver.
+6. **Apply safety checks.** Scan the exact outgoing text and all UTF-8 text attachments. For BOM-declared UTF-16/UTF-32 sources, use the bundle helper or a faithful UTF-8 normalization so the actual textual evidence is scanned before Send. Inspect binary or non-text attachments locally before upload. Remove unrelated private material and blocked credentials.
 7. **Execute the Chrome protocol.** Follow `references/chrome-workflow.md` for conversation binding, model resolution and reuse, file chooser handling, composer verification, in-flight state, Send recovery, waiting, result verification, and cleanup.
 8. **Verify completion.** Accept only the latest completed assistant turn whose identity matches the current submission and whose substantive response is complete.
 9. **Integrate locally.** Compare important Web claims with local source, evidence, and user constraints. For review or decision work, explicitly adopt, reject, or modify advice when that helps the final deliverable.
@@ -130,7 +132,7 @@ Evidence preference:
 
 1. original selected human-readable files when reliable upload is practical;
 2. faithful excerpts when only a small section matters;
-3. `scripts/build_attachment_bundle.py` when many selected UTF-8 text files are awkward to upload individually or an archive is rejected.
+3. `scripts/build_attachment_bundle.py` when many selected supported Unicode text files are awkward to upload individually or an archive is rejected.
 
 Bundle example:
 
@@ -140,7 +142,11 @@ python3 "<SKILL_ROOT>/scripts/build_attachment_bundle.py" \
   -o /tmp/webgpt-consult-bundle.md
 ```
 
-The helper skips common dependency, cache, and build directories; accepts selected text extensions using strict UTF-8; records relative provenance labels, byte counts, and SHA-256 integrity metadata; fails closed when configured size limits would make evidence incomplete; allows truncation or omission only with explicit `--allow-partial`; and runs the local blocking safety scan before writing the bundle.
+The helper skips common dependency, cache, and build directories. It accepts UTF-8 text directly and BOM-declared UTF-8, UTF-16, or UTF-32 text through strict decoding. BOM-declared UTF-16/UTF-32 is faithfully transcoded to UTF-8 for the generated bundle. The helper never guesses legacy charsets and never uses replacement decoding.
+
+Each manifest entry records the source encoding label, original `source_bytes`, actual UTF-8 `included_bytes`, status, and one `sha256` for the exact UTF-8 content placed in the code fence. The hash describes what is actually delivered to ChatGPT Web, not a second audit hash for the original byte representation.
+
+The helper fails closed when configured size limits would make evidence incomplete, allows truncation or omission only with explicit `--allow-partial`, and runs the local blocking safety scan before writing the bundle.
 
 A partial bundle changes the evidence set. Use `--allow-partial` only when the omission is understood and acceptable for the user's question. Never describe partial evidence as complete.
 
@@ -185,6 +191,7 @@ For a strict review or decision consultation, an explicit `Adopt / Reject / Modi
 - **Fresh or branched conversation cannot verify Pro or High:** stop.
 - **Cached model state is contradicted or conversation identity becomes uncertain:** follow the Chrome recovery and re-verification rules before Send.
 - **Safety guard blocks:** remove or redact the blocked material locally and scan again.
+- **Bundle decode fails:** do not guess the charset or substitute replacement characters. Convert the source locally only when its encoding is known, or provide another faithful representation.
 - **Bundle completeness or safety check fails:** select fewer files, use faithful excerpts, or upload originals. Do not hide missing evidence.
 - **Required attachment fails:** stop or adapt the evidence set explicitly. Do not claim it was reviewed.
 - **Composer is empty or unverified:** do not Send. Use only the recovery action allowed by the Chrome workflow.
