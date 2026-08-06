@@ -54,7 +54,7 @@ Do not reconstruct runtime behavior from this bootstrap file. The canonical resp
 | `references/chrome-workflow.md` | Browser state machine, conversation binding, live fast path, recovery, model cache, upload, dispatch state, result verification, ownership, cleanup |
 | `references/context-packet-template.md` | Full `CONTEXT_PACKET_V1`, adaptation rules, follow-up delta form, packet integrity rules |
 | `scripts/safety_guard.py` | Local blocking and warning behavior for outgoing UTF-8 text |
-| `scripts/build_attachment_bundle.py` | Canonical multi-file UTF-8 text-bundle behavior |
+| `scripts/build_attachment_bundle.py` | Canonical multi-file Unicode text-bundle behavior with strict explicit decoding and UTF-8 output |
 
 ## Critical boundaries
 
@@ -65,7 +65,7 @@ Keep these boundaries intact when explaining or modifying the project:
 - Normal follow-ups in the same verified Web conversation reuse the confirmed model and conversation state. Do not reopen the model picker per message.
 - Simple consultations may use a compact prompt. Substantial first-turn work uses `CONTEXT_PACKET_V1`. Same-conversation follow-ups should use the delta form when the earlier context remains valid.
 - A local path or filename is not evidence. Deliver the real file, faithful content, or a generated bundle.
-- Prefer original selected human-readable files. Use the bundle helper when many selected UTF-8 text files are awkward to upload individually or an archive is rejected.
+- Prefer original selected human-readable files. Use the bundle helper when many selected supported Unicode text files are awkward to upload individually or an archive is rejected.
 - Never send blocked credentials, authentication material, or payment secrets.
 - Submit once. An ambiguous Send outcome must recover the original conversation rather than create a duplicate.
 - Conversation bindings, model caches, and in-flight recovery state are session-scoped. Do not persist reviewer or project memory to disk.
@@ -84,7 +84,7 @@ Later turns in the same verified conversation should reuse valid prior context a
 
 ## Evidence helper
 
-When many relevant UTF-8 text files are awkward to upload individually:
+When many relevant text files are awkward to upload individually:
 
 ```bash
 python3 "<SKILL_ROOT>/scripts/build_attachment_bundle.py" \
@@ -92,7 +92,9 @@ python3 "<SKILL_ROOT>/scripts/build_attachment_bundle.py" \
   -o /tmp/webgpt-consult-bundle.md
 ```
 
-The helper is fail-closed by default when size limits would make the evidence incomplete. `--allow-partial` is an explicit opt-in and must never be presented as complete evidence.
+The helper accepts UTF-8 directly and BOM-declared UTF-8, UTF-16, or UTF-32 through strict decoding. It normalizes bundled content to UTF-8, never guesses a legacy charset, and never uses replacement decoding.
+
+Its manifest keeps one `sha256` for the exact UTF-8 content actually placed in each code fence, plus encoding, `source_bytes`, `included_bytes`, and status. The helper is fail-closed by default when size limits would make the evidence incomplete. `--allow-partial` is an explicit opt-in and must never be presented as complete evidence.
 
 Do not automatically bundle or upload an entire repository. Codex selects the evidence first.
 
@@ -118,6 +120,7 @@ Do not claim that the Skill:
 - automatically packages or uploads an entire repository;
 - requires the full context packet for every request;
 - reopens the model picker on every follow-up;
+- guesses legacy text encodings when no explicit Unicode signal exists;
 - can recover a conversation by guessing from sidebar titles, recent-chat order, timestamps, project names, or semantic similarity;
 - owns or closes user-created browser tabs;
 - supports Web models outside GPT-5.6 Sol Pro or High.
