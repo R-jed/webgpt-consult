@@ -57,7 +57,7 @@ For example:
 
 Codex decides which material is actually useful. ChatGPT Web cannot read a local path by itself, so source, logs, or documents count as evidence only after their real content is uploaded, pasted, or placed in an attachment bundle.
 
-When many text files are needed, the Skill includes a bundle helper that produces one Markdown attachment with provenance labels and SHA-256 hashes. It does not silently truncate oversized evidence by default. If the selected evidence would be incomplete, it stops unless partial bundling was explicitly allowed.
+When many text files are needed, the Skill includes a bundle helper that produces one Markdown attachment with provenance labels and SHA-256 metadata. It accepts explicitly identifiable Unicode text: UTF-8 plus BOM-declared UTF-16/UTF-32. If the text cannot be decoded reliably, it stops instead of guessing the charset or silently inserting replacement characters. Oversized evidence is also fail-closed by default unless partial bundling was explicitly allowed.
 
 ## How it works
 
