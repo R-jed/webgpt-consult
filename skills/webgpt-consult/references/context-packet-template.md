@@ -1,8 +1,10 @@
 # GPT-5.6 Sol Pro Context Packet Template
 
-Use this format for substantial ChatGPT Web consultations. It retains the proven `CONTEXT_PACKET_V1` structure from `gpt56-sol-pro-consult`, with identifiers adapted for `webgpt-consult`.
+Use this format for substantial ChatGPT Web consultations. It retains the proven `CONTEXT_PACKET_V1` structure from `gpt56-sol-pro-consult`, with identifiers adapted for `webgpt-consult` and a compact delta form for verified follow-up turns.
 
 Use enough context to preserve the causal truth of the problem. For genuinely difficult work, roughly 8,000 to 15,000 characters can be appropriate when a shorter prompt would remove important constraints, evidence, attempts, or tradeoffs. This is guidance, not a quota. Do not pad a packet.
+
+## Canonical full packet
 
 ````markdown
 CONTEXT_PACKET_V1
@@ -64,18 +66,20 @@ The user's request remains authoritative.
 
 - Use the full format for substantial first-turn reviews, decisions, architecture work, difficult debugging, and other tasks where context loss would damage the answer.
 - Change `task_type`, `required_output`, and `RETURN_FORMAT` when the requested deliverable calls for it.
-- For second-opinion work, fill `LOCAL_JUDGMENT` before consultation when a local view already exists. This creates a concrete position for the Web model to challenge and makes later adopt/reject/modify decisions auditable.
-- Omit `LOCAL_JUDGMENT` when the user wants an independent first view or when no meaningful local judgment exists yet.
-- Separate facts, local judgment, and unknowns. Do not present assumptions as evidence.
-- Sections with no useful information may be omitted instead of filled with boilerplate.
+- For second-opinion work, fill `LOCAL_JUDGMENT` when a meaningful local view already exists. Keep it separate from facts and unknowns so the Web model can challenge a concrete position.
+- Omit `LOCAL_JUDGMENT` when the user wants an independent first view or no meaningful local judgment exists yet.
+- Separate facts, local judgment, assumptions, and unknowns. Do not present assumptions as evidence.
+- Preserve verbatim errors, measurements, source details, and important constraints when wording or structure matters.
+- Omit sections with no useful information instead of filling them with boilerplate.
 - `credential_status` must reflect the actual local safety check.
-- If `context_hash` is populated, compute SHA-256 over the exact UTF-8 packet body that follows the closing metadata code fence. This avoids self-referential hashing. It is an integrity/audit marker; completion still depends on Chrome verification and the sentinel.
 - Generate a fresh `task_id` and sentinel for every Web submission.
 - Treat the Web answer as advisory. Codex verifies important claims against local evidence before final delivery.
 
-## Follow-up in the same verified conversation
+Evidence selection, attachment truthfulness, credential handling, and upload behavior are governed by `SKILL.md` and `chrome-workflow.md`. A local path by itself never counts as evidence.
 
-Do not resend the full packet when the existing conversation already contains the relevant background. Reuse the same verified conversation and send a compact delta packet with a fresh identity:
+## Follow-up delta packet
+
+Do not resend the full packet when the verified conversation already contains the relevant background. Use a fresh identity and send only the new state, evidence, and ask unless older context is stale, ambiguous, contradicted, or essential to the new question.
 
 ````markdown
 CONTEXT_PACKET_V1
@@ -101,13 +105,12 @@ CONTEXT_PACKET_V1
 First line must be: WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>
 ````
 
-Reuse prior context already present in the verified conversation. Restate older material only when it is stale, ambiguous, contradicted by new evidence, or essential to the new question.
+Reuse prior context already present in the verified conversation. Restate older material only when doing so restores accuracy or prevents ambiguity.
 
-## Evidence rules
+## Integrity rules
 
-- A local path is not evidence by itself. Upload the actual file, paste the relevant content, or provide a faithful excerpt/bundle.
-- Prefer the smallest evidence set that preserves the truth of the problem.
-- Prefer original human-readable files when they can be uploaded reliably. Use the bundled helper when many selected text files are awkward to upload individually or an archive is rejected.
-- Preserve verbatim errors, measurements, source details, and important constraints when wording or structure matters.
-- Do not strip task-relevant user-owned business/project facts merely because they are private. Remove unrelated private information and block executable credentials/payment secrets.
-- Run the local safety guard on the exact outgoing packet and every UTF-8 text attachment before Send.
+- `task_id` and sentinel identify one Web submission. Use the same nonce in both and generate a new pair for every submission.
+- If `context_hash` is populated, compute SHA-256 over the exact UTF-8 packet body that follows the closing metadata code fence. This avoids self-referential hashing.
+- `context_hash` is an integrity and audit marker. It does not replace browser verification, attachment verification, or sentinel verification.
+- The first non-empty assistant line must match the current sentinel exactly as required by the Chrome workflow.
+- A follow-up delta inherits only context that is still valid in the verified conversation. Correct stale or contradicted context explicitly.
