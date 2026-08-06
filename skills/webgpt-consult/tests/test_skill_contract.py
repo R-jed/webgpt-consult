@@ -40,8 +40,8 @@ class SkillContractTests(unittest.TestCase):
             "## Failure handling",
         ):
             self.assertIn(heading, skill)
-        self.assertIn("canonical browser state machine", skill)
-        self.assertIn("belong exclusively to `references/chrome-workflow.md`", skill)
+        self.assertIn("canonical executable browser protocol", skill)
+        self.assertIn("browser-adapter execution steps", skill)
 
     def test_context_packet_retains_core_contract(self) -> None:
         packet = (SKILL_DIR / "references/context-packet-template.md").read_text(encoding="utf-8")
@@ -78,7 +78,7 @@ class SkillContractTests(unittest.TestCase):
             "## Read order",
             "## Critical boundaries",
             "## Validation assets",
-            "Browser state machine",
+            "Executable Chrome protocol",
             "Full `CONTEXT_PACKET_V1`",
         ):
             self.assertIn(required, agent_readme)
@@ -89,13 +89,31 @@ class SkillContractTests(unittest.TestCase):
         ):
             self.assertNotIn(duplicated_state_field, agent_readme)
 
+    def test_chrome_workflow_has_executable_adapter_mechanics(self) -> None:
+        workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
+        for required in (
+            "Read the installed `chrome:control-chrome` Skill completely",
+            "`node_repl js`",
+            "`browser-client.mjs`",
+            'agent.browsers.get("extension")',
+            "Action discipline",
+            'waitForEvent("filechooser")',
+            'getByTestId("composer-plus-btn")',
+            "Required invariants",
+            "Cleanup decision matrix",
+            "first non-empty assistant line to equal the current sentinel exactly",
+        ):
+            self.assertIn(required, workflow)
+
     def test_chrome_workflow_has_live_fast_path_and_model_cache(self) -> None:
         workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
         for required in (
             "Live fast path",
             "without re-reading the previous sentinel",
-            "Do not reopen the picker per message",
-            "A Chrome runtime reset alone does not invalidate the model cache",
+            "Same live verified conversation with valid cache",
+            "do not open picker",
+            "browser runtime reset does not by itself invalidate a verified conversation-scoped model cache",
+            "`UNKNOWN` is a dispatch state, not a model state",
             "current_task_id",
             "current_sentinel",
             "current_attachment_names",
@@ -108,8 +126,9 @@ class SkillContractTests(unittest.TestCase):
         workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
         for state in ("NOT_SENT", "SENT", "UNKNOWN"):
             self.assertIn(state, workflow)
-        self.assertIn("Never create a replacement consultation or click Send again", workflow)
-        self.assertIn("mark it incomplete rather than risking a duplicate", workflow)
+        self.assertIn("Never create a replacement consultation or click Send again while `UNKNOWN` remains unresolved", workflow)
+        self.assertIn("never click Send again for the same submission", workflow)
+        self.assertIn("mark the consultation incomplete", workflow)
 
     def test_bundle_is_canonical_multi_file_fallback(self) -> None:
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
@@ -128,7 +147,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("one `sha256`", skill)
         self.assertIn("BOM-declared UTF-8, UTF-16, or UTF-32", skill)
         self.assertIn("never guesses a legacy charset", agent_readme)
-        self.assertIn("BOM-declared UTF-8/UTF-16/UTF-32", workflow)
+        self.assertIn("BOM-declared UTF-8, UTF-16, and UTF-32", workflow)
 
         self.assertIn("sha256: str", bundle)
         self.assertNotIn("source_sha256", bundle)
@@ -143,6 +162,34 @@ class SkillContractTests(unittest.TestCase):
         self.assertFalse((SKILL_DIR / "references/opencli-fallback.md").exists())
         self.assertFalse((SKILL_DIR / "scripts/run_gpt56_sol_pro_consult.py").exists())
         self.assertFalse((SKILL_DIR / "scripts/extract_chatgpt_reply.py").exists())
+
+    def test_project_docs_use_project_native_narrative(self) -> None:
+        product_docs = (
+            REPO_ROOT / "README.md",
+            REPO_ROOT / "README_en.md",
+            REPO_ROOT / "README_Agent.md",
+            SKILL_DIR / "SKILL.md",
+            SKILL_DIR / "references/chrome-workflow.md",
+            SKILL_DIR / "references/context-packet-template.md",
+        )
+        forbidden = (
+            "gpt56-sol-pro-consult",
+            "zhijian-skills",
+            "upstream",
+            "informed by",
+            "incorporates and adapts",
+            "吸收自",
+            "借鉴",
+        )
+        for path in product_docs:
+            text = path.read_text(encoding="utf-8").lower()
+            for phrase in forbidden:
+                self.assertNotIn(phrase.lower(), text, f"{phrase!r} found in {path}")
+
+        notice = (SKILL_DIR / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+        self.assertIn("MIT License", notice)
+        self.assertIn("Copyright (c) 2026 zjp1997720", notice)
+        self.assertIn("gpt56-sol-pro-consult", notice)
 
     def test_metadata_keeps_explicit_invocation(self) -> None:
         metadata = (SKILL_DIR / "agents/openai.yaml").read_text(encoding="utf-8")
