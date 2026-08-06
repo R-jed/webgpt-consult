@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import hashlib
 import sys
 import tempfile
@@ -15,7 +16,13 @@ import build_attachment_bundle as bundle  # noqa: E402
 
 
 class AttachmentBundleTests(unittest.TestCase):
-    def test_complete_bundle_has_manifest_hashes_and_relative_labels(self) -> None:
+    def _embedded_text(self, bundle_text: str, language: str) -> str:
+        opening = f"````{language}\n"
+        start = bundle_text.index(opening) + len(opening)
+        end = bundle_text.index("````\n", start)
+        return bundle_text[start:end]
+
+    def test_complete_bundle_has_one_content_hash_and_relative_labels(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "project"
             root.mkdir()
@@ -33,12 +40,14 @@ class AttachmentBundleTests(unittest.TestCase):
             self.assertEqual(result["files"], 2)
             self.assertIn("`project/a.py`", text)
             self.assertIn("`project/notes.md`", text)
-            self.assertIn(f"source_sha256={first_hash}", text)
-            self.assertIn(f"included_sha256={first_hash}", text)
+            self.assertIn("encoding=utf-8", text)
+            self.assertIn(f"sha256={first_hash}", text)
+            self.assertNotIn("source_sha256=", text)
+            self.assertNotIn("included_sha256=", text)
             self.assertIn("status=full", text)
             self.assertNotIn(str(root.resolve()), text)
 
-    def test_preserves_trailing_whitespace_inside_source_fence(self) -> None:
+    def test_preserves_trailing_whitespace_and_hashes_embedded_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "exact.txt"
             original = "value with spaces  \n\n"
@@ -47,17 +56,13 @@ class AttachmentBundleTests(unittest.TestCase):
 
             bundle.build_bundle([source], output)
             text = output.read_text(encoding="utf-8")
-            opening = "````txt\n"
-            start = text.index(opening) + len(opening)
-            end = text.index("````\n", start)
-            embedded = text[start:end]
+            embedded = self._embedded_text(text, "txt")
             digest = hashlib.sha256(original.encode("utf-8")).hexdigest()
 
             self.assertEqual(embedded, original)
             self.assertIn(f"source_bytes={len(original.encode('utf-8'))}", text)
             self.assertIn(f"included_bytes={len(original.encode('utf-8'))}", text)
-            self.assertIn(f"source_sha256={digest}", text)
-            self.assertIn(f"included_sha256={digest}", text)
+            self.assertIn(f"sha256={digest}", text)
 
     def test_oversized_file_fails_closed_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -69,7 +74,7 @@ class AttachmentBundleTests(unittest.TestCase):
                 bundle.build_bundle([source], output, max_file_bytes=20)
             self.assertFalse(output.exists())
 
-    def test_partial_bundle_requires_explicit_opt_in(self) -> None:
+    def test_partial_bundle_hashes_only_the_included_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "large.txt"
             source.write_text("x" * 100, encoding="utf-8")
@@ -77,27 +82,94 @@ class AttachmentBundleTests(unittest.TestCase):
 
             result = bundle.build_bundle([source], output, max_file_bytes=20, allow_partial=True)
             text = output.read_text(encoding="utf-8")
+            included = "x" * 20
+            digest = hashlib.sha256(included.encode("utf-8")).hexdigest()
 
             self.assertEqual(result["partial_files"], 1)
             self.assertIn("status=truncated", text)
+            self.assertIn("source_bytes=100", text)
+            self.assertIn("included_bytes=20", text)
+            self.assertIn(f"sha256={digest}", text)
             self.assertIn("PARTIAL FILE", text)
-            self.assertIn("source_sha256=", text)
-            self.assertIn("included_sha256=", text)
+            self.assertNotIn("source_sha256=", text)
+            self.assertNotIn("included_sha256=", text)
 
-    def test_secret_blocks_bundle_output(self) -> None:
+    def test_utf8_bom_is_decoded_strictly_and_not_embedded(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            source = Path(tmp) / "secret.txt"
-            source.write_text("OPENAI_API_KEY=sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n", encoding="utf-8")
+            source = Path(tmp) / "bom.txt"
+            original = "hello 世界\n"
+            source.write_bytes(codecs.BOM_UTF8 + original.encode("utf-8"))
+            output = Path(tmp) / "bundle.md"
+
+            bundle.build_bundle([source], output)
+            text = output.read_text(encoding="utf-8")
+            embedded = self._embedded_text(text, "txt")
+            digest = hashlib.sha256(original.encode("utf-8")).hexdigest()
+
+            self.assertEqual(embedded, original)
+            self.assertNotIn("\ufeff", embedded)
+            self.assertIn("encoding=utf-8-bom", text)
+            self.assertIn(f"sha256={digest}", text)
+
+    def test_bom_declared_utf16_is_transcoded_to_utf8_without_guessing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "utf16.txt"
+            original = "hello 世界\r\n"
+            raw = original.encode("utf-16")
+            source.write_bytes(raw)
+            output = Path(tmp) / "bundle.md"
+
+            bundle.build_bundle([source], output)
+            text = output.read_text(encoding="utf-8")
+            embedded = self._embedded_text(text, "txt")
+            included_raw = original.encode("utf-8")
+
+            self.assertEqual(embedded, original)
+            self.assertIn("encoding=utf-16", text)
+            self.assertIn(f"source_bytes={len(raw)}", text)
+            self.assertIn(f"included_bytes={len(included_raw)}", text)
+            self.assertIn(f"sha256={hashlib.sha256(included_raw).hexdigest()}", text)
+
+    def test_bom_declared_utf32_is_transcoded_to_utf8_without_guessing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "utf32.txt"
+            original = "plain text\n"
+            raw = original.encode("utf-32")
+            source.write_bytes(raw)
+            output = Path(tmp) / "bundle.md"
+
+            bundle.build_bundle([source], output)
+            text = output.read_text(encoding="utf-8")
+            embedded = self._embedded_text(text, "txt")
+
+            self.assertEqual(embedded, original)
+            self.assertIn("encoding=utf-32", text)
+            self.assertIn(f"sha256={hashlib.sha256(original.encode('utf-8')).hexdigest()}", text)
+
+    def test_invalid_non_bom_encoding_still_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "broken.txt"
+            source.write_bytes(b"hello\xffworld")
             output = Path(tmp) / "bundle.md"
 
             with self.assertRaises(bundle.BundleError):
                 bundle.build_bundle([source], output)
             self.assertFalse(output.exists())
 
-    def test_invalid_utf8_in_supported_file_fails(self) -> None:
+    def test_nul_bytes_without_unicode_bom_are_rejected_as_binary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            source = Path(tmp) / "broken.txt"
-            source.write_bytes(b"hello\xffworld")
+            source = Path(tmp) / "binary.txt"
+            source.write_bytes(b"hello\x00world")
+            output = Path(tmp) / "bundle.md"
+
+            with self.assertRaises(bundle.BundleError):
+                bundle.build_bundle([source], output)
+            self.assertFalse(output.exists())
+
+    def test_secret_blocks_bundle_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "secret.txt"
+            source.write_text("OPENAI_API_KEY=sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n", encoding="utf-8")
             output = Path(tmp) / "bundle.md"
 
             with self.assertRaises(bundle.BundleError):
