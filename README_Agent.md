@@ -51,10 +51,12 @@ Do not reconstruct runtime behavior from this bootstrap file. The canonical resp
 | Source | Authority |
 | --- | --- |
 | `SKILL.md` | Product boundaries, routing, consultation policy, evidence discipline, completion semantics, failure policy |
-| `references/chrome-workflow.md` | Browser state machine, conversation binding, live fast path, recovery, model cache, upload, dispatch state, result verification, ownership, cleanup |
+| `references/chrome-workflow.md` | Executable Chrome protocol: runtime initialization, browser state discipline, conversation binding, live fast path, recovery, model cache, file chooser, composer verification, dispatch state, result verification, ownership, cleanup |
 | `references/context-packet-template.md` | Full `CONTEXT_PACKET_V1`, adaptation rules, follow-up delta form, packet integrity rules |
 | `scripts/safety_guard.py` | Local blocking and warning behavior for outgoing UTF-8 text |
 | `scripts/build_attachment_bundle.py` | Canonical multi-file Unicode text-bundle behavior with strict explicit decoding and UTF-8 output |
+
+Before browser work, read the installed Chrome-control Skill's current documentation. The executable workflow contains current adapter patterns such as JavaScript browser initialization and Playwright file-chooser handling, while the Chrome-control Skill remains authoritative for the exact API available in that environment.
 
 ## Critical boundaries
 
@@ -62,7 +64,9 @@ Keep these boundaries intact when explaining or modifying the project:
 
 - Runtime transport is Codex Chrome only. There is no OpenCLI fallback in this project.
 - New or branched Web conversations use verified GPT-5.6 Sol Pro when available, otherwise verified High, otherwise stop.
+- Resolve conversation continuity before deciding whether model-picker work is needed.
 - Normal follow-ups in the same verified Web conversation reuse the confirmed model and conversation state. Do not reopen the model picker per message.
+- `UNKNOWN` describes an unresolved Send outcome. It does not by itself invalidate the conversation-scoped model cache.
 - Simple consultations may use a compact prompt. Substantial first-turn work uses `CONTEXT_PACKET_V1`. Same-conversation follow-ups should use the delta form when the earlier context remains valid.
 - A local path or filename is not evidence. Deliver the real file, faithful content, or a generated bundle.
 - Prefer original selected human-readable files. Use the bundle helper when many selected supported Unicode text files are awkward to upload individually or an archive is rejected.
@@ -107,7 +111,7 @@ The installed package includes lightweight deterministic tests and manual Chrome
 <SKILL_ROOT>/evals/evals.json
 ```
 
-The tests cover safety behavior, bundle integrity, and runtime-contract invariants. The evals preserve real Chrome failure modes such as empty-composer recovery, ambiguous Send recovery, multi-turn model reuse, runtime reset recovery, and existing-result extraction.
+The tests cover safety behavior, bundle integrity, executable Chrome-contract invariants, and documentation boundaries. The evals preserve real Chrome failure modes such as empty-composer recovery, ambiguous Send recovery, multi-turn model reuse, runtime reset recovery, and existing-result extraction.
 
 These assets validate protocol behavior. They do not prescribe how Codex should reason about the user's task.
 
@@ -125,8 +129,6 @@ Do not claim that the Skill:
 - owns or closes user-created browser tabs;
 - supports Web models outside GPT-5.6 Sol Pro or High.
 
-## Attribution
+## Third-party notices
 
-The `CONTEXT_PACKET_V1` structure, Chrome consultation and recovery workflow, multi-file evidence approach, and related reliability scenarios were informed by `gpt56-sol-pro-consult` in `zjp1997720/zhijian-skills`.
-
-See [skills/webgpt-consult/THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md).
+Third-party copyright and license notices are recorded in [skills/webgpt-consult/THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md).
