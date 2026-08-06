@@ -15,22 +15,18 @@
 
 ## 关于项目
 
-`webgpt-consult` 做的事情很简单：让 Codex 打开 ChatGPT 网页，把你正在处理的问题和真正需要的资料交给 GPT-5.6 Sol，再把回答带回当前任务。
+`webgpt-consult` 可以让Codex找ChatGPT的Pro或High终得已证独立之他见。
 
-它适合用在这些场景：代码或排错卡住了，想让另一个模型找遗漏；准备定架构或产品方案，想再听一个独立意见；改完一轮以后，想继续在同一个 Web 对话里追问；或者最终提交前想再做一次严格检查。
-
-简单问题直接问。复杂问题会把背景、证据、已经试过的方法、当前判断和风险整理好再发过去。后续追问会尽量继续使用同一个 ChatGPT Web 对话，所以不用每一轮都重新交代全部背景，也不用反复打开模型菜单。
-
-> **如果你是 AI Agent，请先看 [README_Agent.md](README_Agent.md)。真正的运行规则写在 [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md)。**
+> **如果你是 AI Agent，请先看 [README_Agent.md](README_Agent.md)。**
 
 ## 安装
 
 你需要：
 
-- Codex
-- 能被 Codex 控制的 Chrome
+- 已安装 Codex
+- Chrome 浏览器已安装chatGPT Chrome拓展插件
 - 已经登录 ChatGPT Web 的账号
-- 账号里能使用 GPT-5.6 Sol Pro 或 High
+- 账号拥有 ChatGPT的 Pro 或 High 订阅
 
 安装到当前项目：
 
