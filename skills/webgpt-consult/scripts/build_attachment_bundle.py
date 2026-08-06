@@ -87,7 +87,7 @@ def _truncate_utf8(text: str, max_bytes: int) -> str:
 
 
 def _unicode_encoding(raw: bytes) -> tuple[str, str]:
-    """Return the strict decoder and manifest label without guessing legacy charsets."""
+    """Return a strict Unicode decoder selected only from explicit byte evidence."""
     if raw.startswith(codecs.BOM_UTF8):
         return "utf-8-sig", "utf-8-bom"
     # UTF-32 BOMs share a prefix with UTF-16, so test them first.
@@ -157,13 +157,6 @@ def _collect(
             continue
 
         raw = path.read_bytes()
-        codec, _encoding_label = _unicode_encoding(raw)
-        if codec == "utf-8" and b"\x00" in raw:
-            if explicit:
-                raise BundleError(f"explicit input appears binary: {path}")
-            skipped.append(f"{label} (binary)")
-            continue
-
         text, encoding_label = _decode_unicode_text(raw, label)
         if "\x00" in text:
             if explicit:
@@ -221,7 +214,7 @@ def _render(sources: list[SourceFile], skipped: list[str], partial_allowed: bool
         "",
         "This bundle contains selected local text files for ChatGPT Web review.",
         "Manifest labels are provenance labels; they do not give ChatGPT access to the local filesystem.",
-        "Each sha256 identifies the exact UTF-8 source content placed inside that file's code fence.",
+        "Each sha256 identifies the exact UTF-8 content placed inside that file's code fence.",
         "Source encoding is decoded strictly: UTF-8 by default, plus BOM-declared UTF-16/UTF-32. No charset guessing or replacement decoding is used.",
         "If a source does not end with a newline, the bundle adds one wrapper newline before the closing fence;",
         "that wrapper newline is not part of included_bytes or sha256.",
