@@ -131,13 +131,15 @@ Evidence preference:
 
 1. original selected human-readable files when upload is reliable;
 2. faithful excerpts when only a small part matters;
-3. `scripts/build_attachment_bundle.py` when many selected UTF-8 text files are awkward to upload individually or an archive is rejected.
+3. `scripts/build_attachment_bundle.py` when many selected supported Unicode text files are awkward to upload individually or an archive is rejected.
 
 Do not upload a whole repository merely because it is available.
 
 Run `scripts/safety_guard.py` on the exact outgoing prompt/packet and every UTF-8 text attachment. Blocking findings must be removed or redacted. Privacy warnings are reviewed in context rather than automatically deleting task-relevant business/project facts.
 
-The bundle helper performs its own final blocking scan and fails closed on incomplete evidence unless partial bundling was explicitly requested.
+For BOM-declared UTF-16/UTF-32 text sources, use the bundle helper or a faithful local UTF-8 normalization so their actual text is safety-scanned before Send. Do not treat a non-UTF-8 encoding as permission to bypass the text safety boundary.
+
+The bundle helper accepts UTF-8 plus BOM-declared UTF-8/UTF-16/UTF-32 through strict decoding, normalizes bundled content to UTF-8, never guesses legacy charsets, never uses replacement decoding, and performs its own final blocking scan. It fails closed on incomplete evidence unless partial bundling was explicitly requested.
 
 Inspect binary/non-text files locally before upload.
 
@@ -196,7 +198,7 @@ Immediately before Send, confirm:
 - model state is valid from fresh verification or the conversation-scoped cache;
 - the current sentinel and, for a packet, `task_id` are in the verified composer text;
 - all required attachment chips are present;
-- the outgoing prompt and UTF-8 text attachments passed blocking safety checks;
+- the outgoing prompt and every textual attachment have passed the applicable blocking safety path;
 - no blocked credential/payment material remains.
 
 Do not reopen the model picker solely for this pre-send gate when the same verified conversation has a valid cached tier.
