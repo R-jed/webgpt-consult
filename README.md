@@ -15,7 +15,7 @@
 
 ## 关于项目
 
-`webgpt-consult` 可以让Codex找ChatGPT的Pro或High终得已证独立之他见。
+`webgpt-consult` 可以让Codex找ChatGPT的Pro或High得已证独立之他见。
 
 > **如果你是 AI Agent，请先看 [README_Agent.md](README_Agent.md)。**
 
