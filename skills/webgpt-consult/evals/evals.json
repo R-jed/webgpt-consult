@@ -40,6 +40,16 @@
       "id": 8,
       "prompt": "The user says the GPT answer is already visible in the bound Web conversation.",
       "expected_output": "Inspects and verifies the existing latest assistant turn and sentinel before preparing another submission; does not duplicate a consultation whose result is already present."
+    },
+    {
+      "id": 9,
+      "prompt": "Start a new consultation on an account where GPT-5.6 Sol Pro is unavailable but GPT-5.6 Sol High is available.",
+      "expected_output": "Checks the fresh conversation model picker, uses verified GPT-5.6 Sol High when Pro is unavailable, binds High to that conversation, and continues normally instead of failing just because Pro is missing."
+    },
+    {
+      "id": 10,
+      "prompt": "Start a new consultation when there is no valid bound ChatGPT conversation to reuse.",
+      "expected_output": "Creates a new Skill-owned Chrome tab, navigates it to ChatGPT Web, confirms sign-in and composer readiness, starts from a fresh chat, verifies the eligible GPT-5.6 Sol tier, and does not take over or later close an unrelated user tab."
     }
   ]
 }
