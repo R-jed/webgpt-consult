@@ -7,21 +7,28 @@
 
 <p align="center">
   <a href="#install">Install</a> ·
-  <a href="#use">Use</a> ·
-  <a href="#how-it-works">How it works</a> ·
-  <a href="#privacy-and-safety">Privacy &amp; Safety</a> ·
+  <a href="#how-to-use-it">How to use it</a> ·
+  <a href="#what-it-does">What it does</a> ·
+  <a href="#files-and-safety">Files and safety</a> ·
   <a href="README.md">中文</a>
 </p>
 
-`webgpt-consult` lets Codex send a problem and the evidence that actually matters to GPT-5.6 Sol in ChatGPT Web through Chrome, then bring the result back into the current task.
+`webgpt-consult` has one job: let Codex open ChatGPT Web, send GPT-5.6 Sol the problem you are working on together with the material that actually matters, then bring the answer back into the current task.
 
-Simple questions stay simple. Larger architecture, code, debugging, product, and risk tasks use the standard `CONTEXT_PACKET_V1` to keep background, evidence, prior attempts, local judgment, options, and risks clear. Follow-up turns reuse the same verified Web conversation and model whenever possible, avoiding repeated context uploads, model-picker checks, and duplicate submissions.
+It is useful when you are stuck on a bug, want another model to challenge an architecture or product decision, want a second review before shipping, or want to keep discussing the same problem over several rounds without rebuilding the whole context every time.
 
-> **AI agents should read [README_Agent.md](README_Agent.md) first. Runtime behavior is defined by [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md).**
+Small questions stay small. For difficult work, the Skill can organize the problem, evidence, previous attempts, current judgment, and risks before sending them. Follow-up turns try to stay in the same verified ChatGPT Web conversation, so the background and model choice do not have to be rebuilt for every message.
+
+> **AI agents should read [README_Agent.md](README_Agent.md) first. The actual runtime rules are in [skills/webgpt-consult/SKILL.md](skills/webgpt-consult/SKILL.md).**
 
 ## Install
 
-You need Codex, the Codex Chrome plugin connected, and a signed-in ChatGPT Web account where GPT-5.6 Sol Pro or High is available.
+You need:
+
+- Codex
+- Chrome that Codex can control
+- a signed-in ChatGPT Web account
+- access to GPT-5.6 Sol Pro or High
 
 Install for the current project:
 
@@ -41,71 +48,67 @@ Update:
 npx skills update webgpt-consult
 ```
 
-Add `-g` when updating a global install.
+Add `-g` when updating a global installation.
 
-## Use
+## How to use it
+
+Call the Skill directly:
 
 ```text
-/webgpt-consult <your consultation request>
+/webgpt-consult <what you want ChatGPT Web to review>
 ```
 
 For example:
 
 ```text
-/webgpt-consult Ask GPT-5.6 Sol to investigate this login bug and inspect the relevant source and logs if needed.
+/webgpt-consult I have been chasing this login bug for a while. Ask GPT-5.6 Sol to find the root cause and inspect the relevant source and logs if needed.
 ```
 
-Codex decides which material is actually useful. ChatGPT Web cannot read a local path by itself, so source, logs, or documents count as evidence only after their real content is uploaded, pasted, or placed in an attachment bundle.
+You do not need to manage the browser steps yourself. Codex decides what evidence is useful, sends the consultation through Chrome, and brings the Web answer back.
 
-When many text files are needed, the Skill includes a bundle helper that produces one Markdown attachment with provenance labels and SHA-256 metadata. It accepts explicitly identifiable Unicode text: UTF-8 plus BOM-declared UTF-16/UTF-32. If the text cannot be decoded reliably, it stops instead of guessing the charset or silently inserting replacement characters. Oversized evidence is also fail-closed by default unless partial bundling was explicitly allowed.
+## What it does
 
-## How it works
-
-The first time a new ChatGPT Web conversation is used, the Skill verifies GPT-5.6 Sol Pro, with High as the fallback. Normal follow-up turns in that same conversation reuse the verified model.
-
-When the original tab and conversation identity are still intact, follow-ups use a live fast path and continue directly. After a Chrome reconnect, lost tab handle, or explicit conversation reopen, the Skill uses the previous sentinel to prove it recovered the same conversation before continuing.
-
-Substantial work uses `CONTEXT_PACKET_V1`. For architecture, risk, product, or other second-opinion reviews, an existing local judgment is kept separate from facts so GPT-5.6 Sol can challenge a concrete position. The Web answer remains advisory. Codex still checks it against local source and facts and decides what to adopt, modify, or reject.
-
-Later turns in the same conversation send only the new evidence, current state, and next question unless older context needs correction.
+A normal consultation looks roughly like this:
 
 ```text
-Your request
+Your question
   ↓
-Codex selects the relevant context and files
+Codex understands the task and selects the useful evidence
   ↓
-Local safety check
+Sensitive text is checked locally
   ↓
-Reuse the verified conversation, or open a new ChatGPT Web conversation
+Reuse the existing ChatGPT Web conversation, or open a fresh one
   ↓
-GPT-5.6 Sol Pro / High
+A fresh conversation uses GPT-5.6 Sol Pro when available, otherwise High
   ↓
-Send once and wait for the complete reply
+Upload the real files that matter and verify the message
   ↓
-Check the Web advice against local evidence
+Send once and wait for the complete answer
   ↓
-Return it to the current task
+Codex checks the Web advice against local source, logs, and facts
+  ↓
+Useful conclusions return to the current task
 ```
 
-For example, suppose you are debugging a login issue:
+If you keep working on the same problem, the Skill tries to keep the same verified Web conversation and model. One round can review the architecture, the next can review your implementation, and another can inspect a new failing test without resending the entire history.
 
-```text
-/webgpt-consult I have been chasing this login issue for a while. Ask GPT-5.6 Sol to help find the root cause.
-```
+If Chrome disconnects, the Skill first tries to recover the original conversation. If the disconnect happens around the Send click, it does not blindly send the same consultation again.
 
-Codex might select `auth.py`, `session.py`, and the real error output. If several source files matter, it can upload the selected originals or build one review bundle. If you then say, “I implemented the suggestion, but this test still fails,” the next Web turn only needs the changed code, the test result, and the new question.
+Larger tasks can use `CONTEXT_PACKET_V1`. Think of it as a tidy handoff that separates the problem, background, evidence, previous attempts, current view, and risks. Small questions do not have to use it.
 
-If Chrome disconnects around the Send click, the Skill tracks the outcome as `NOT_SENT`, `SENT`, or `UNKNOWN`. An uncertain outcome is recovered from the original conversation instead of submitting the same request again.
+## Files and safety
 
-## Privacy and safety
+ChatGPT Web cannot read a local path on your computer. Mentioning `/Users/me/project/auth.py` does not mean the file was delivered. Source, logs, or documents only count as evidence after the real content is uploaded, pasted, or placed in an attachment.
 
-Before text is sent to the Web, the Skill locally blocks common API keys, passwords, access tokens, cookies or session data, private keys, one-time codes, and payment-card details.
+When only a few files matter, the Skill prefers the original files. When many text files are needed, it can build one Markdown bundle with filenames, sizes, and content-integrity information. Oversized evidence is not silently cut by default. If a complete bundle cannot be produced, the helper stops unless partial bundling was explicitly allowed.
 
-Task-relevant project or business context can remain when it materially affects the judgment. Unrelated names, email addresses, physical addresses, and other private details should be removed. The goal is to block credentials and unnecessary private data without stripping away context the consultation actually needs.
+The bundle accepts normal UTF-8 text and Unicode text with an explicit UTF-16 or UTF-32 BOM. If the encoding cannot be determined reliably, it stops instead of guessing and changing the content.
 
-## Model
+Before sending text to the Web, the Skill locally checks for common API keys, passwords, access tokens, cookies or session data, private keys, one-time codes, and payment-card details. Relevant project or business context can stay when it matters to the answer. Unrelated private information should be removed.
 
-For a new Web conversation:
+## Model and limits
+
+For a fresh ChatGPT Web conversation:
 
 ```text
 GPT-5.6 Sol Pro
@@ -115,36 +118,28 @@ GPT-5.6 Sol High
 stop
 ```
 
-A verified multi-turn Web conversation reuses its confirmed model. The picker is opened again only for a new conversation or branch, an identity change, contradictory model state, a model error, or an explicit request to re-check the tier.
+A verified conversation keeps using its confirmed model. The Skill does not reopen the model picker for every follow-up.
 
-The model or reasoning level currently selected in Codex does not affect Web model selection.
+The runtime uses Chrome controlled by Codex. It does not keep long-term consultation memory on disk, and it does not automatically upload an entire repository. The ChatGPT Web answer is an external opinion; Codex still checks it against the local task before using it.
 
-## Package layout
+## For people who want to inspect the source
+
+The main files are:
 
 ```text
 skills/webgpt-consult/
-├── SKILL.md
-├── LICENSE
-├── THIRD_PARTY_NOTICES.md
-├── agents/
-│   └── openai.yaml
-├── assets/
-│   └── mobius-white.svg
+├── SKILL.md                         # overall rules
 ├── references/
-│   ├── chrome-workflow.md
-│   └── context-packet-template.md
+│   ├── chrome-workflow.md           # executable Chrome workflow
+│   └── context-packet-template.md   # context format for larger consultations
 ├── scripts/
-│   ├── build_attachment_bundle.py
-│   └── safety_guard.py
-├── evals/
-│   └── evals.json
-└── tests/
-    ├── test_attachment_bundle.py
-    ├── test_safety_guard.py
-    └── test_skill_contract.py
+│   ├── build_attachment_bundle.py   # multi-file text bundle helper
+│   └── safety_guard.py              # local sensitive-data check
+├── evals/evals.json                 # browser acceptance scenarios
+└── tests/                            # automated tests
 ```
 
-See [SKILL.md](skills/webgpt-consult/SKILL.md) for the detailed runtime rules.
+AI-agent setup is in [README_Agent.md](README_Agent.md). Detailed runtime behavior is in [SKILL.md](skills/webgpt-consult/SKILL.md).
 
 ## License
 
