@@ -148,4 +148,4 @@ See [SKILL.md](skills/webgpt-consult/SKILL.md) for the detailed runtime rules.
 
 ## License
 
-This project is released under the [MIT License](LICENSE). The `CONTEXT_PACKET_V1` structure, Chrome consultation workflow, and multi-file evidence handling were informed by `gpt56-sol-pro-consult` in `zjp1997720/zhijian-skills`; see [THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md).
+This project is released under the [MIT License](LICENSE). Third-party copyright and license notices are recorded in [THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md).
