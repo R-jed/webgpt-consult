@@ -1,10 +1,10 @@
 # Codex Chrome Workflow
 
-This file is the canonical executable browser protocol for `webgpt-consult`. It defines both the browser actions Codex should perform and the invariants that must remain true while those actions run.
+This file is the canonical executable browser protocol for `webgpt-consult`. It defines the browser actions Codex should perform and the rules that must remain true while those actions run.
 
 Task reasoning and evidence selection belong to Codex. Substantial consultations use `context-packet-template.md`.
 
-The installed Chrome-control Skill is authoritative for the exact browser runtime API available in the current environment. Read its current documentation before browser work. When it exposes the current `node_repl js` + Playwright adapter, use the execution patterns below. If the adapter changes, preserve the state and verification invariants in this document while using the documented replacement API.
+The installed Chrome-control Skill is authoritative for the exact browser API available in the current environment. Read its current documentation before browser work. When it exposes the current `node_repl js` + Playwright adapter, use the execution patterns below. If the adapter changes, keep the state, safety, and verification rules in this document while using the documented replacement API.
 
 ## Runtime invariants
 
@@ -27,8 +27,8 @@ These rules apply across every stage:
 3. Initialize the browser runtime from the Chrome plugin's own documented absolute `browser-client.mjs` path when that adapter is in use.
 4. Select the extension-backed browser binding using the current documented API. In the current adapter this may be `agent.browsers.get("extension")`.
 5. Read the browser binding's current documentation before interacting.
-6. Keep browser work in the background unless the user asks to see it.
-7. Confirm ChatGPT Web is signed in and the composer is usable before preparing a submission.
+6. Inspect the current tab inventory without changing unrelated tabs.
+7. Keep browser work in the background unless the user asks to see it.
 
 If a reset, reconnect, or browser-tool restart occurs, reinitialize the runtime and reacquire `agent`, browser objects, tabs, locators, and any other transient objects. Never carry an unresolved Playwright promise into a later browser invocation.
 
@@ -91,7 +91,7 @@ In this path, prior identity is already established. Prepare the new delta and v
 
 ### Recovery path
 
-If the live fast path is unavailable:
+If the live fast path is unavailable and a prior verified conversation should still exist:
 
 1. reuse the exact bound handle if it can still be recovered, otherwise open the exact retained conversation URL;
 2. inspect the recovered conversation from fresh browser state;
@@ -103,6 +103,23 @@ If recovery cannot prove the conversation identity, start fresh only when no unr
 Never recover a consultation by guessing from sidebar titles, recent-chat order, browser history, project names, timestamps, or semantic similarity.
 
 If the user says the expected answer is already visible, inspect and verify the existing latest assistant turn before preparing another submission.
+
+### Fresh conversation path
+
+Use this path when the request is new, no valid continuation exists, or a fresh start is required and no unresolved old submission prevents it.
+
+1. create a new tab through the documented Chrome-control API;
+2. record the exact new handle as Skill-owned;
+3. navigate that tab to `https://chatgpt.com/`;
+4. confirm ChatGPT Web is signed in and the composer is usable;
+5. start from a fresh chat state rather than reusing an unrelated existing conversation;
+6. continue to model verification before preparing evidence or a draft.
+
+Do not take over an unrelated user tab merely to avoid creating a new one. If the user explicitly supplies a ChatGPT tab for this consultation, treat it as unowned and never close it automatically.
+
+If ChatGPT is not signed in, stop and ask the user to sign in in the selected Chrome profile.
+
+### Branch when the thread is too heavy
 
 If the same work should continue but the current Web thread is too context-heavy, use `Branch in new chat` from a useful earlier point when available. A branch is a new conversation identity and requires fresh model verification.
 
@@ -193,7 +210,7 @@ Read the installed Chrome-control Skill's current file-upload documentation befo
 
 Use the real file chooser. When the current adapter exposes Playwright, keep chooser-wait creation, add-file interaction, chooser resolution, and `setFiles(...)` inside one JavaScript browser invocation.
 
-### Reference implementation for the current adapter
+### Current adapter example
 
 The following is an execution pattern, not a permanent DOM contract. Build the locators from fresh UI state and change test IDs or localized text when the current UI differs.
 
@@ -337,7 +354,7 @@ After generation stops:
 5. if verification fails, read the complete latest assistant turn once more;
 6. if the sentinel still does not match or the result is truncated, mark the consultation incomplete.
 
-Do not normalize the sentinel into another protocol or accept a partial/fuzzy match.
+Do not normalize the sentinel into another protocol or accept a partial or fuzzy match.
 
 ## 11. Refresh the binding and clean up safely
 
