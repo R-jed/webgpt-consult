@@ -119,6 +119,24 @@ class SkillContractTests(unittest.TestCase):
             self.assertIn("original", text.lower())
         self.assertIn("--allow-partial", skill)
 
+    def test_bundle_contract_uses_one_content_hash_and_explicit_unicode_only(self) -> None:
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
+        agent_readme = (REPO_ROOT / "README_Agent.md").read_text(encoding="utf-8")
+        bundle = (SKILL_DIR / "scripts/build_attachment_bundle.py").read_text(encoding="utf-8")
+
+        self.assertIn("one `sha256`", skill)
+        self.assertIn("BOM-declared UTF-8, UTF-16, or UTF-32", skill)
+        self.assertIn("never guesses a legacy charset", agent_readme)
+        self.assertIn("BOM-declared UTF-8/UTF-16/UTF-32", workflow)
+
+        self.assertIn("sha256: str", bundle)
+        self.assertNotIn("source_sha256", bundle)
+        self.assertNotIn("included_sha256", bundle)
+        self.assertNotIn('errors="replace"', bundle)
+        self.assertNotIn("charset-normalizer", bundle)
+        self.assertNotIn("chardet", bundle)
+
     def test_runtime_stays_chrome_only(self) -> None:
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("Use the Codex Chrome capability only", skill)
