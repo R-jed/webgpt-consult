@@ -14,16 +14,16 @@ Codex owns task understanding, evidence selection, local verification, and final
 Use these files as the runtime source-of-truth stack:
 
 1. `SKILL.md` defines product boundaries, consultation policy, evidence discipline, and completion semantics.
-2. `references/chrome-workflow.md` defines the canonical browser state machine, including continuity, model reuse, upload, dispatch recovery, result verification, ownership, and cleanup.
+2. `references/chrome-workflow.md` defines the canonical executable browser protocol, including Chrome runtime initialization, continuity, model reuse, file upload, composer verification, dispatch recovery, result verification, ownership, and cleanup.
 3. `references/context-packet-template.md` defines the canonical `CONTEXT_PACKET_V1` full and follow-up formats.
 
-Read `references/chrome-workflow.md` before browser work. For substantial consultations, also read `references/context-packet-template.md`.
+Read `references/chrome-workflow.md` before browser work. It requires reading the installed Chrome-control Skill's current documentation before using its browser adapter. For substantial consultations, also read `references/context-packet-template.md`.
 
 Use `scripts/build_attachment_bundle.py` only when several selected text files are genuinely needed and individual upload is impractical or an archive is rejected.
 
 ## Routing and requirements
 
-Use the Codex Chrome capability only. This project does not include the upstream OpenCLI fallback.
+Use the Codex Chrome capability only. OpenCLI is not a supported runtime path.
 
 The selected Chrome profile must be signed in to ChatGPT Web. A new or branched Web conversation must expose an eligible GPT-5.6 Sol tier before submission:
 
@@ -71,6 +71,8 @@ Submit once. If the Send outcome becomes uncertain, recover the original convers
 
 The exact `NOT_SENT`, `SENT`, and `UNKNOWN` state machine lives in `references/chrome-workflow.md`. `SENT` and `UNKNOWN` must never create a replacement submission while the original outcome is unresolved.
 
+`UNKNOWN` is a dispatch state, not a model-cache invalidation event. The cached tier remains usable only when recovery proves the same conversation identity and no model evidence contradicts it.
+
 ### Session-scoped state and ownership
 
 Conversation bindings, model caches, and in-flight recovery state exist only in the current Codex conversation. Do not persist reviewer history, project summaries, browser state, consultation memory, or model bindings to disk.
@@ -82,18 +84,19 @@ A browser resource is Skill-owned only when this Skill created the exact resourc
 For each consultation:
 
 1. **Form the local view.** Understand the task, success condition, evidence, constraints, attempts, unknowns, and meaningful options before asking the Web model. For review or decision work, record an existing local judgment when one is useful to challenge. Omit it when the user wants an independent first view.
-2. **Resolve continuity.** Reuse the current verified Web conversation when the request clearly continues it. If the expected answer may already be visible, inspect that conversation before preparing another submission.
-3. **Choose the handoff form.** Use a compact prompt for simple work, full `CONTEXT_PACKET_V1` for substantial first-turn work, and the delta form for same-conversation follow-ups unless prior context is stale, ambiguous, or contradicted.
-4. **Create a fresh identity.** Every Web submission gets a fresh `task_id` and sentinel. The canonical formats are defined in `references/context-packet-template.md`.
-5. **Select real evidence.** Prefer original human-readable files when reliable upload is practical. Use faithful excerpts when only a small section matters. Use `scripts/build_attachment_bundle.py` when many selected supported Unicode text files would otherwise be awkward to deliver.
-6. **Apply safety checks.** Scan the exact outgoing text and all UTF-8 text attachments. For BOM-declared UTF-16/UTF-32 sources, use the bundle helper or a faithful UTF-8 normalization so the actual textual evidence is scanned before Send. Inspect binary or non-text attachments locally before upload. Remove unrelated private material and blocked credentials.
-7. **Execute the Chrome protocol.** Follow `references/chrome-workflow.md` for conversation binding, model resolution and reuse, file chooser handling, composer verification, in-flight state, Send recovery, waiting, result verification, and cleanup.
-8. **Verify completion.** Accept only the latest completed assistant turn whose identity matches the current submission and whose substantive response is complete.
-9. **Integrate locally.** Compare important Web claims with local source, evidence, and user constraints. For review or decision work, explicitly adopt, reject, or modify advice when that helps the final deliverable.
+2. **Initialize Chrome and resolve continuity.** Follow the executable Chrome workflow to initialize the current browser adapter, then reuse the current verified Web conversation when the request clearly continues it. If the expected answer may already be visible, inspect that conversation before preparing another submission.
+3. **Resolve the Web model.** Verify Pro or High for a new or branched conversation. Reuse the conversation-scoped cache for a valid live or recovered continuation according to the Chrome workflow.
+4. **Choose the handoff form.** Use a compact prompt for simple work, full `CONTEXT_PACKET_V1` for substantial first-turn work, and the delta form for same-conversation follow-ups unless prior context is stale, ambiguous, or contradicted.
+5. **Create a fresh identity.** Every Web submission gets a fresh `task_id` and sentinel. The canonical formats are defined in `references/context-packet-template.md`.
+6. **Select real evidence.** Prefer original human-readable files when reliable upload is practical. Use faithful excerpts when only a small section matters. Use `scripts/build_attachment_bundle.py` when many selected supported Unicode text files would otherwise be awkward to deliver.
+7. **Apply safety checks.** Scan the exact outgoing text and all UTF-8 text attachments. For BOM-declared UTF-16/UTF-32 sources, use the bundle helper or a faithful UTF-8 normalization so the actual textual evidence is scanned before Send. Inspect binary or non-text attachments locally before upload. Remove unrelated private material and blocked credentials.
+8. **Execute upload, composer, and exactly-once dispatch.** Follow `references/chrome-workflow.md` for the current browser adapter, atomic file chooser handling, fresh locator discipline, composer verification, in-flight state, Send classification, recovery, waiting, result verification, and cleanup.
+9. **Verify completion.** Accept only the latest completed assistant turn whose first non-empty line exactly matches the current sentinel and whose substantive response is complete.
+10. **Integrate locally.** Compare important Web claims with local source, evidence, and user constraints. For review or decision work, explicitly adopt, reject, or modify advice when that helps the final deliverable.
 
 ## Context assembly
 
-`references/context-packet-template.md` is the canonical substantial-consultation format. It retains the upstream `CONTEXT_PACKET_V1` structure:
+`references/context-packet-template.md` is the canonical substantial-consultation format:
 
 ```text
 task_id
@@ -160,7 +163,7 @@ If browser tooling resets, a handle is lost, or the exact conversation must be r
 
 If the same work should continue but the Web thread has become too context-heavy, use `Branch in new chat` from a useful earlier point when available. A branch is a new conversation identity and requires fresh model verification.
 
-The exact binding fields, cache invalidation rules, in-flight submission record, and cleanup order belong exclusively to `references/chrome-workflow.md`.
+The exact binding fields, cache invalidation rules, in-flight submission record, browser-adapter execution steps, and cleanup order belong exclusively to `references/chrome-workflow.md`.
 
 ## Completion contract
 
@@ -174,7 +177,7 @@ A consultation is complete only when all relevant conditions are satisfied:
 - the submission is sent once;
 - generation has stopped;
 - the complete latest assistant turn is extracted;
-- the expected sentinel verifies the current result.
+- the first non-empty assistant line exactly matches the expected sentinel.
 
 If any required condition cannot be established, mark the consultation incomplete rather than inventing success or risking a duplicate submission.
 
@@ -186,7 +189,7 @@ For a strict review or decision consultation, an explicit `Adopt / Reject / Modi
 
 ## Failure handling
 
-- **Chrome unavailable or disconnected:** stop and report the missing capability. Do not invent an OpenCLI route.
+- **Chrome unavailable or disconnected:** stop and report the missing capability. Do not invent another runtime route.
 - **ChatGPT not signed in:** ask the user to sign in to ChatGPT Web in the selected profile.
 - **Fresh or branched conversation cannot verify Pro or High:** stop.
 - **Cached model state is contradicted or conversation identity becomes uncertain:** follow the Chrome recovery and re-verification rules before Send.
@@ -197,7 +200,7 @@ For a strict review or decision consultation, an explicit `Adopt / Reject / Modi
 - **Composer is empty or unverified:** do not Send. Use only the recovery action allowed by the Chrome workflow.
 - **Send outcome is `NOT_SENT`:** recovery may rebuild and submit after fresh verification.
 - **Send outcome is `SENT`:** recover the original conversation and wait or extract. Never resend.
-- **Send outcome is `UNKNOWN`:** recover the original conversation and look for submission, generation, or result evidence. Never send a replacement while uncertainty remains.
+- **Send outcome is `UNKNOWN`:** recover the original conversation and look for submission, generation, or result evidence. Never send a replacement while uncertainty remains. Do not invalidate the model cache solely because the dispatch state is `UNKNOWN`.
 - **Generation is active:** stay in the same conversation. Do not resend, refresh, close it, or send `continue`.
 - **Sentinel verification fails after the permitted complete re-read:** mark the consultation incomplete and do not refresh the binding.
 - **Continuation identity cannot be verified:** start fresh only when no unresolved `SENT` or `UNKNOWN` submission remains attached to the old conversation.
