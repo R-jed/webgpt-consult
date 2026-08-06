@@ -148,4 +148,4 @@ skills/webgpt-consult/
 
 ## License
 
-项目使用 [MIT License](LICENSE)。`CONTEXT_PACKET_V1`、Chrome consultation workflow 和多文件证据处理思路吸收自 `zjp1997720/zhijian-skills` 的 `gpt56-sol-pro-consult`，许可信息见 [THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md)。
+项目使用 [MIT License](LICENSE)。第三方版权与许可声明见 [THIRD_PARTY_NOTICES.md](skills/webgpt-consult/THIRD_PARTY_NOTICES.md)。
