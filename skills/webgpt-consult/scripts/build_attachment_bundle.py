@@ -9,6 +9,7 @@ preferred evidence when they can be uploaded reliably.
 from __future__ import annotations
 
 import argparse
+import codecs
 import hashlib
 import importlib.util
 import json
@@ -43,8 +44,8 @@ class SourceFile:
     text: str
     source_bytes: int
     included_bytes: int
-    source_sha256: str
-    included_sha256: str
+    encoding: str
+    sha256: str
     status: str
 
 
@@ -83,6 +84,29 @@ def _truncate_utf8(text: str, max_bytes: int) -> str:
         else:
             high = mid - 1
     return text[:low]
+
+
+def _unicode_encoding(raw: bytes) -> tuple[str, str]:
+    """Return the strict decoder and manifest label without guessing legacy charsets."""
+    if raw.startswith(codecs.BOM_UTF8):
+        return "utf-8-sig", "utf-8-bom"
+    # UTF-32 BOMs share a prefix with UTF-16, so test them first.
+    if raw.startswith(codecs.BOM_UTF32_LE) or raw.startswith(codecs.BOM_UTF32_BE):
+        return "utf-32", "utf-32"
+    if raw.startswith(codecs.BOM_UTF16_LE) or raw.startswith(codecs.BOM_UTF16_BE):
+        return "utf-16", "utf-16"
+    return "utf-8", "utf-8"
+
+
+def _decode_unicode_text(raw: bytes, label: str) -> tuple[str, str]:
+    codec, encoding_label = _unicode_encoding(raw)
+    try:
+        text = raw.decode(codec)
+    except UnicodeDecodeError as exc:
+        raise BundleError(
+            f"strict Unicode decode failed for {label}: expected UTF-8 or BOM-declared UTF-16/UTF-32; {exc}"
+        ) from exc
+    return text, encoding_label
 
 
 def _iter_candidates(inputs: list[Path], output: Path) -> Iterable[tuple[Path, str, bool]]:
@@ -133,33 +157,37 @@ def _collect(
             continue
 
         raw = path.read_bytes()
-        if b"\x00" in raw:
+        codec, _encoding_label = _unicode_encoding(raw)
+        if codec == "utf-8" and b"\x00" in raw:
             if explicit:
                 raise BundleError(f"explicit input appears binary: {path}")
             skipped.append(f"{label} (binary)")
             continue
-        try:
-            text = raw.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise BundleError(f"strict UTF-8 decode failed for {label}: {exc}") from exc
 
-        source_sha256 = hashlib.sha256(raw).hexdigest()
+        text, encoding_label = _decode_unicode_text(raw, label)
+        if "\x00" in text:
+            if explicit:
+                raise BundleError(f"explicit input appears binary after decoding: {path}")
+            skipped.append(f"{label} (binary after decoding)")
+            continue
+
         source_bytes = len(raw)
         status = "full"
         included = text
+        included_raw = included.encode("utf-8")
 
-        if source_bytes > max_file_bytes:
+        if len(included_raw) > max_file_bytes:
             if not allow_partial:
                 raise BundleError(
-                    f"{label} exceeds --max-file-bytes ({source_bytes} > {max_file_bytes}); "
-                    "select a smaller excerpt or rerun with --allow-partial"
+                    f"{label} exceeds --max-file-bytes after UTF-8 normalization "
+                    f"({len(included_raw)} > {max_file_bytes}); select a smaller excerpt or rerun with --allow-partial"
                 )
             included = _truncate_utf8(text, max_file_bytes)
+            included_raw = included.encode("utf-8")
             status = "truncated"
 
-        included_raw = included.encode("utf-8")
         included_bytes = len(included_raw)
-        included_sha256 = hashlib.sha256(included_raw).hexdigest()
+        digest = hashlib.sha256(included_raw).hexdigest()
         if total + included_bytes > max_total_bytes:
             if not allow_partial:
                 raise BundleError(
@@ -176,14 +204,14 @@ def _collect(
                 text=included,
                 source_bytes=source_bytes,
                 included_bytes=included_bytes,
-                source_sha256=source_sha256,
-                included_sha256=included_sha256,
+                encoding=encoding_label,
+                sha256=digest,
                 status=status,
             )
         )
 
     if not sources:
-        raise BundleError("no UTF-8 text files were selected for the bundle")
+        raise BundleError("no supported Unicode text files were selected for the bundle")
     return sources, skipped
 
 
@@ -193,8 +221,10 @@ def _render(sources: list[SourceFile], skipped: list[str], partial_allowed: bool
         "",
         "This bundle contains selected local text files for ChatGPT Web review.",
         "Manifest labels are provenance labels; they do not give ChatGPT access to the local filesystem.",
-        "The bytes and hashes describe the source content inside each code fence. If a source does not end with a newline,",
-        "the bundle adds one wrapper newline before the closing fence; that wrapper newline is not part of included_bytes/included_sha256.",
+        "Each sha256 identifies the exact UTF-8 source content placed inside that file's code fence.",
+        "Source encoding is decoded strictly: UTF-8 by default, plus BOM-declared UTF-16/UTF-32. No charset guessing or replacement decoding is used.",
+        "If a source does not end with a newline, the bundle adds one wrapper newline before the closing fence;",
+        "that wrapper newline is not part of included_bytes or sha256.",
         "",
         f"Partial bundle explicitly allowed: {'yes' if partial_allowed else 'no'}",
         "",
@@ -202,9 +232,8 @@ def _render(sources: list[SourceFile], skipped: list[str], partial_allowed: bool
     ]
     for source in sources:
         header.append(
-            f"- `{source.label}` | status={source.status} | source_bytes={source.source_bytes} | "
-            f"included_bytes={source.included_bytes} | source_sha256={source.source_sha256} | "
-            f"included_sha256={source.included_sha256}"
+            f"- `{source.label}` | status={source.status} | encoding={source.encoding} | "
+            f"source_bytes={source.source_bytes} | included_bytes={source.included_bytes} | sha256={source.sha256}"
         )
     if skipped:
         header.extend(["", "## Excluded"])
