@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = SKILL_DIR.parents[1]
 
 
 class SkillContractTests(unittest.TestCase):
@@ -23,6 +24,24 @@ class SkillContractTests(unittest.TestCase):
             "THIRD_PARTY_NOTICES.md",
         ):
             self.assertTrue((SKILL_DIR / relative).is_file(), relative)
+
+    def test_skill_uses_clear_runtime_authority_structure(self) -> None:
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        for heading in (
+            "## Runtime sources",
+            "## Routing and requirements",
+            "## Hard gates",
+            "## Workflow",
+            "## Context assembly",
+            "## Attachments",
+            "## Conversation continuity",
+            "## Completion contract",
+            "## Local integration",
+            "## Failure handling",
+        ):
+            self.assertIn(heading, skill)
+        self.assertIn("canonical browser state machine", skill)
+        self.assertIn("belong exclusively to `references/chrome-workflow.md`", skill)
 
     def test_context_packet_retains_core_contract(self) -> None:
         packet = (SKILL_DIR / "references/context-packet-template.md").read_text(encoding="utf-8")
@@ -45,8 +64,30 @@ class SkillContractTests(unittest.TestCase):
             "## ASK",
             "## RETURN_FORMAT",
             "WEBGPT_CONSULT_RESULT_YYYYMMDD_HHMMSS_<same-nonce>",
+            "## Follow-up delta packet",
+            '"context_strategy": "same_conversation_delta"',
+            "## CURRENT_DELTA",
+            "## Integrity rules",
+            "8,000 to 15,000 characters",
         ):
             self.assertIn(required, packet)
+
+    def test_agent_readme_is_bootstrap_not_second_runtime_spec(self) -> None:
+        agent_readme = (REPO_ROOT / "README_Agent.md").read_text(encoding="utf-8")
+        for required in (
+            "## Read order",
+            "## Critical boundaries",
+            "## Validation assets",
+            "Browser state machine",
+            "Full `CONTEXT_PACKET_V1`",
+        ):
+            self.assertIn(required, agent_readme)
+        for duplicated_state_field in (
+            "review_tab_handle",
+            "current_task_id",
+            "current_dispatch_state",
+        ):
+            self.assertNotIn(duplicated_state_field, agent_readme)
 
     def test_chrome_workflow_has_live_fast_path_and_model_cache(self) -> None:
         workflow = (SKILL_DIR / "references/chrome-workflow.md").read_text(encoding="utf-8")
