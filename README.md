@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="./skills/webgpt-consult/assets/mobius-white.svg" alt="webgpt-consult" width="136" />
-</p>
-
 <h1 align="center">webgpt-consult</h1>
 <p align="center">Codex → Chrome → ChatGPT Web</p>
 
